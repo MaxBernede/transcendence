@@ -1,0 +1,38 @@
+services:
+
+  db:
+    image: postgres
+    restart: always
+    container_name: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: user
+      POSTGRES_DB: postgresdbb
+    ports:
+      - "5432:5432"
+    networks:
+    - backend
+
+  pgadmin:
+    container_name: pgadmin
+    build:
+      context: ./pgadmin
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    ports:
+      - '5050:80'
+    depends_on:
+      - db
+    networks:
+      - backend
+    volumes:
+      - ./pgadmin/config/servers.json:/pgadmin4/servers.json  
+      - ./pgadmin/config/config_distro.py:/pgadmin4/config_distro.py
+
+
+networks:
+  backend:
+    driver: bridge
+
+
