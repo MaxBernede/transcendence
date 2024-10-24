@@ -10,11 +10,13 @@
 	After that, you will have access to the project port 3000 (default nestjs) and you will have access to the database on pgadmin on port 5050 (localhost:5050)
 	
 ### Things to know
+	Any passwords can be found in the .env file, I didn't add the .env file in the .gitignore but in professionals projects it should be done
+
 	If you don't have access to localhost:5050. docker logs pgadmin, if it's pgAdmin 4 - Application Initialisation. Wait until the process is finished. 
 
 	If you can login to pgadmin but the database is not linked (happen sometimes), make down and make again. I don't know why it happens sometimes
 
-	NestJs will create the tables that you can find in pgadmin on Schemas, public, Tables. if nestJs not run yet, you wont find anything (or just find the previous ones)
+	NestJs will create the tables that you can find in pgadmin on Schemas, public, Tables. if nestJs not run yet, you wont find anything (or just find the previous ones).
 
 
 
@@ -22,7 +24,7 @@
 ### Postman
 	I started to use Postman to create API calls to our endpoints for easier testing than clicking buttons on the website and checking the replies
 ### Notion
-	I will start using Notion to take notes on the project and have an easy documentation of it
+	I will start using Notion to take notes on the project and have an easy documentation of it. Please let's try to keep it up to date so we can easily find the relevent informations
 ### Trello
 	Should we start using Trello for the project ?
 
