@@ -1,33 +1,22 @@
 import React from 'react';
-import { BrowserRouter as Router, Link, Route, Routes } from 'react-router-dom';
-import Home from './components/Home';
-import About from './components/About';
-import Products from './components/Products';
-// import Contact from './components/Contact';
+import {BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import Home from './pages/Home';
+import UserPage from './pages/Userpage';
 
-const App: React.FC = () => {
+function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <nav>
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/about">About</Link>
-          </li>
-          <li>
-            <Link to="/products">Products</Link>
-          </li>
-        </ul>
+        <Link to="/">Home</Link>
+        <Link to="/user/ivan-mel">Ivan Mel</Link>
       </nav>
+
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/products" element={<Products />} />
+        <Route path="/user/:id" element={<UserPage />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
-};
+}
 
 export default App;
