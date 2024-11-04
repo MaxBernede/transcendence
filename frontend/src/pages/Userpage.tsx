@@ -34,22 +34,30 @@ const UserPage: React.FC = () => {
   }, [id]);
 
   useEffect(() => {
-	console.log("Fetching user data for ID:", id); // Debugging line
 	if (id) {
-	  axios.get(`http://localhost:3000/api/users/${id}`)
+	  console.log("Fetching user data for ID:", id); // Debugging line
+	  axios
+		.get(`http://localhost:3000/api/users/${id}`, {
+		  headers: {
+			'Cache-Control': 'no-cache', // Prevent caching
+			'Pragma': 'no-cache',
+		  },
+		})
 		.then((response) => {
-		  console.log("Response data:", response.data); // Debugging line
+		  console.log("Received response data:", response.data); // Debugging line
 		  if (response.data) {
 			setUserData(response.data);
 			setAvatar(response.data.avatar);
 		  } else {
+			console.log("No user data found in response."); // Additional log
 			setUserData(null);
 		  }
-		  setLoading(false);
 		})
 		.catch((error) => {
 		  console.error('Error fetching user data:', error);
 		  setUserData(null);
+		})
+		.finally(() => {
 		  setLoading(false);
 		});
 	}
