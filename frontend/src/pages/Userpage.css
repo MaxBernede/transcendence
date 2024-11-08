@@ -25,9 +25,9 @@
   }
   
   .user-avatar {
-	width: 200px; /* Increased size from 150px to 200px */
-	height: 200px; /* Increased size from 150px to 200px */
-	border-radius: 50%; /* Keep circular shape */
+	width: 200px; /* Increased size */
+	height: 200px; /* Increased size */
+	border-radius: 50%; /* Circular shape */
 	border: 4px solid purple; /* Slightly thicker border for better emphasis */
 	object-fit: cover;
 	transition: transform 0.3s ease, box-shadow 0.3s ease; /* Add animation for interactions */
