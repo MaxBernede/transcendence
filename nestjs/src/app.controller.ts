@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, BadRequestException } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller() // Base controller for general and user-related routes
@@ -15,13 +15,13 @@ export class AppController {
     return this.appService.handleButtonClick();
   }
 
-  // Add a new endpoint to handle /api/users/:id
+  // Endpoint to handle fetching user data by ID
   @Get('api/users/:id')
   getUserData(@Param('id') id: string) {
     console.log("Requested User ID:", id); // Log to verify request handling
     if (id) {
       return {
-        name: `User ${id}`,
+        name: `${id}`,
         bio: `This is the profile for User ${id}`,
         avatar: null,
       };
@@ -29,4 +29,14 @@ export class AppController {
       return null; // If no user ID is provided, return null
     }
   }
+
+  @Post('api/users/:id/update-username')
+  async updateUsername(@Param('id') id: string, @Body('username') newUsername: string) {
+	console.log(`Updating username for user ID ${id} to:`, newUsername);
+	if (!newUsername || newUsername.trim().length === 0) {
+	  throw new BadRequestException('Username cannot be empty');
+	}
+	return { id, username: newUsername }; // Mock response
+  }
+  
 }
