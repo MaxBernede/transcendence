@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -9,7 +9,7 @@ import { BaseService } from 'src/base/base.service';
 export class UsersService extends BaseService<User> implements OnModuleInit {
 	constructor(
 		@InjectRepository(User)
-	private usersRepository: Repository<User>,
+		private usersRepository: Repository<User>,
 	) {
 		super(usersRepository)
 	}
@@ -86,4 +86,10 @@ export class UsersService extends BaseService<User> implements OnModuleInit {
 		user.avatar = avatarFileName; // Save the filename to the user entity
 		return this.usersRepository.save(user);
 		}
-	}
+	
+	// I didnt wanted to implement it here again but I had a strange bug to use it in auth.service
+	async findOneBy(options: any): Promise<User | undefined> {
+		return this.usersRepository.findOneBy(options); // Directly using the repository's findOneBy
+		}
+
+}
