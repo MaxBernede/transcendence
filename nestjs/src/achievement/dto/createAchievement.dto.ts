@@ -6,6 +6,9 @@ export class CreateAchievementDto {
 
 	@IsString()
 	description: string;
+
+	@IsString()
+	filename?: string;
 }
 
 export class CreateUserAchievementDto {

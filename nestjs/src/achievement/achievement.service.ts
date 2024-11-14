@@ -23,27 +23,28 @@ export class AchievementService extends BaseService<AchievementEntity> implement
 
 		// Define the picture linked for each achievments ?
 		if (achievements.length === 0){
-			const achievementsToCreate = [
+			const achievementsToCreate: CreateAchievementDto[] = [
 				{achievementName: 'UserCreated', description: 'Yay, you created your user', filename: 'null'},
 				{achievementName: 'randomAchievement', description: 'You got lucky somehow', filename: 'null'},
-				// {achievementName: 'ach1', description: 'ach1'},
-				// {achievementName: 'ach2', description: 'ach2'},
-				// {achievementName: 'ach3', description: 'ach3'},
-				// {achievementName: 'ach4', description: 'ach4'},
-				// {achievementName: 'ach5', description: 'ach5'},
+				{achievementName: 'ach1', description: 'ach1'},
+				{achievementName: 'ach2', description: 'ach2'},
+				{achievementName: 'ach3', description: 'ach3'},
+				{achievementName: 'ach4', description: 'ach4'},
+				{achievementName: 'ach5', description: 'ach5'},
 			];
 
 			//! How to create them ?
-			// for (const achievement of achievementsToCreate){
-			// 	await this.create(achievement);
-			// }
+			for (const achievement of achievementsToCreate){
+				await this.create(achievement);
+			}
 		}
 	}
 
-	// async create(createAchivementDto: CreateAchievementDto): Promise<AchievementEntity> {
-	// 	const newAch = this.achievementRepository.create(createAchivementDto);
-	// 	return this.achievementRepository.save(newAch);
-	// }
+	// Override of the base class to use the DTO to be able to create them without adding the id
+	async create(createAchivementDto: CreateAchievementDto): Promise<AchievementEntity> {
+		const newAch = this.achievementRepository.create(createAchivementDto);
+		return this.achievementRepository.save(newAch);
+	}
 
 }
 

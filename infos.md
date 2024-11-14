@@ -5,6 +5,7 @@
 	As well, you will need to download typeorm. Also docker is a need in case you work from home
 
 	```npm install react-router-dom typeorm class-validator class-transformer ```
+	```npm i express cors bcrypt jsonwebtoken lowdb```
 ## How to run the project
 	make (even if the make is finished, it takes around 1 minute for the project to but up and ready, docker ps pgadmin to check)
 	cd nestjs and npm run start:dev (npm command start dev to reload the project at every change in the code)
