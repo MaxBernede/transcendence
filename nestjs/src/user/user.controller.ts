@@ -17,6 +17,7 @@ import { User } from './user.entity';
 import { CreateUserDto } from './dto/createUser.dto';
 import { Multer } from 'multer';
 import { BaseController } from 'src/base/base.controller';
+import { Express } from 'express';
 
 
 	@Controller('users')
