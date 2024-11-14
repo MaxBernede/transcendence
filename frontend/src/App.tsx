@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import UserPage from './pages/Userpage';
 import { useEffect, useState } from 'react'
 import Login from './components/Login';
+import './App.css'
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false)
