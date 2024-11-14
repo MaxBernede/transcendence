@@ -7,8 +7,8 @@ interface LoginProps {
   setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Home: React.FC<LoginProps> = (props) => {
-  const { loggedIn, email, setLoggedIn } = props
+const Home: React.FC<LoginProps> = ({ loggedIn, email, setLoggedIn }) => {
+  // const { loggedIn, email, setLoggedIn } = props
   const navigate = useNavigate()
 
   const onButtonClick = () => {

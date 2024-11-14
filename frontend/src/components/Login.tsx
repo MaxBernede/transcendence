@@ -6,9 +6,8 @@ interface LoginProps {
   setEmail: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const Login: React.FC<LoginProps> = (props) => {
-  const { setLoggedIn } = props;
-  const [email, setEmail] = useState('')
+const Login: React.FC<LoginProps> = ({ setLoggedIn, setEmail}) => {
+  const [localEmail, setLocalEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -17,15 +16,15 @@ const Login: React.FC<LoginProps> = (props) => {
 
   const onButtonClick = () => {
     // Perform validation
-    if (email === '' || password === '') {
-      if (email === '') setEmailError('Email is required');
+    if (localEmail === '' || password === '') {
+      if (localEmail === '') setEmailError('Email is required');
       if (password === '') setPasswordError('Password is required');
       return;
     }
 
     // Update the parent state (setLoggedIn and setEmail)
     setLoggedIn(true);        // This updates the parent state in App
-    setEmail(email);          // This updates the email in parent state
+    setEmail(localEmail);          // This updates the email in parent state
 
     // Navigate to the home page or other page
     navigate('/');
@@ -39,9 +38,9 @@ const Login: React.FC<LoginProps> = (props) => {
       <br />
       <div className={'inputContainer'}>
         <input
-          value={email}
+          value={localEmail}
           placeholder="Enter your email here"
-          onChange={(ev) => setEmail(ev.target.value)}
+          onChange={(ev) => setLocalEmail(ev.target.value)}
           className={'inputBox'}
         />
         <label className="errorLabel">{emailError}</label>
