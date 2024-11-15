@@ -75,6 +75,7 @@ import { Express } from 'express';
 		@Post('auth')
 		async auth(@Body() body: { email: string }): Promise<boolean> {
 			const { email } = body;
+			console.log("auth of the backend");
 			return this.UsersService.doesUserExist(email);
 		}
 	}
