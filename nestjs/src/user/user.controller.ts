@@ -60,5 +60,11 @@ import { Express } from 'express';
 		  }
 		  return this.UsersService.updateAvatar(Number(userId), file.filename);
 		}
+
+		@Post('check-account')
+		async checkAccount(@Body() body: { email: string }): Promise<boolean> {
+			const { email } = body;
+			return this.UsersService.doesUserExist(email);
+		}
 	}
 	

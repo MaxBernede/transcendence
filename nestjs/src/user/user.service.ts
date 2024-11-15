@@ -92,4 +92,18 @@ export class UsersService extends BaseService<User> implements OnModuleInit {
 		return this.usersRepository.findOneBy(options); // Directly using the repository's findOneBy
 		}
 
+	// True or false if exist in DBB
+	async doesUserExist(email: string): Promise<boolean> {
+		if (!email) {
+			throw new Error('Email is required');
+		}
+	
+		try {
+			const user = await this.usersRepository.findOneBy({ email });
+			return !!user;
+		} catch (error) {
+			throw new Error('Error checking user existence');
+		}
+	}
+
 }
