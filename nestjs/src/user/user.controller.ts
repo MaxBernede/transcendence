@@ -61,8 +61,19 @@ import { Express } from 'express';
 		  return this.UsersService.updateAvatar(Number(userId), file.filename);
 		}
 
+		// check account with the identifier:"string" in the POST body
 		@Post('check-account')
-		async checkAccount(@Body() body: { email: string }): Promise<boolean> {
+		async checkAccount(@Body() body: { identifier: string }): Promise<boolean> {
+			const { identifier } = body;
+			if (!identifier) {
+				throw new Error('Identifier is required');
+			}
+			return this.UsersService.doesUserExist(identifier);
+		}
+
+		// TO IMPLEMENT NEXT
+		@Post('auth')
+		async auth(@Body() body: { email: string }): Promise<boolean> {
 			const { email } = body;
 			return this.UsersService.doesUserExist(email);
 		}
