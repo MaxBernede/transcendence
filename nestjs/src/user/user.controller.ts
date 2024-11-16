@@ -1,70 +1,74 @@
-import { Controller, Get, Post, Patch, Param, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UploadedFile, UseInterceptors, BadRequestException, ParseIntPipe } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserService } from './user.service';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('api/users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // Get user by ID
+  // Get user by ID or username
   @Get(':id')
   async getUser(@Param('id') id: string) {
-    const userId = parseInt(id, 10);
-    if (isNaN(userId)) {
-      throw new BadRequestException('Invalid user ID');
-    }
-    return this.userService.findOne(userId);
+	  console.log(`Requested User ID: ${id}`);
+	  const user = await this.userService.findOne(id);
+	  console.log('Returning user data:', user);
+	  return user; // Ensure `username` is included in the returned user object
+  }
+  
+
+@Patch(':id/update-username')
+async updateUsername(
+  @Param('id') id: string, // Accept both numeric and string IDs
+  @Body('username') newUsername: string,
+) {
+  console.log(`Received PATCH request for ID: ${id} with new username: ${newUsername}`);
+
+  if (!newUsername || newUsername.trim().length === 0) {
+    throw new BadRequestException('Username cannot be empty');
   }
 
-  // Create a new user
-  @Post()
-  async createUser(
-    @Body('username') username: string,
-    @Body('email') email: string,
-    @Body('password') password: string,
+  const updatedUser = await this.userService.updateUsername(id, newUsername.trim());
+  return { username: updatedUser.username }; // Return the updated username
+}
+
+  // Upload avatar
+  @Post(':id/upload-avatar')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/avatars', // Path to store uploaded files
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+          return callback(new BadRequestException('Only image files are allowed'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async uploadAvatar(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-	console.log('Received body:', { username, email, password });
-    if (!username || !email || !password) {
-      throw new BadRequestException('Username, email, and password are required');
+    if (!file) {
+      throw new BadRequestException('File is required');
     }
-    return this.userService.create(username, email, password);
-  }
-
-  @Patch(':id/update-username')
-  async updateUsername(@Param('id') id: string, @Body('username') newUsername: string) {
-	console.log('Received ID:', id);
-	console.log('Received Username:', newUsername);
-  
-	// Validate the username
-	if (!newUsername || newUsername.trim().length === 0) {
-	  throw new BadRequestException('Username cannot be empty');
-	}
-  
-	// Check for unexpected formatting
-	if (newUsername.startsWith('User ')) {
-	  throw new BadRequestException('Invalid username format');
-	}
-  
-	return this.userService.updateUsername(id, newUsername.trim());
+    const avatarPath = `http://localhost:3000/uploads/avatars/${file.filename}`;
+    return this.userService.updateAvatar(id, avatarPath);
   }
 
   // Add a friend
   @Post(':userId/add-friend/:friendId')
-  async addFriend(@Param('userId') userId: string, @Param('friendId') friendId: string) {
-    const parsedUserId = parseInt(userId, 10);
-    const parsedFriendId = parseInt(friendId, 10);
-    if (isNaN(parsedUserId) || isNaN(parsedFriendId)) {
-      throw new BadRequestException('Invalid user or friend ID');
-    }
-    return this.userService.addFriend(parsedUserId, parsedFriendId);
-  }
-
-  // Get all friends
-  @Get(':id/friends')
-  async getFriends(@Param('id') id: string) {
-    const userId = parseInt(id, 10);
-    if (isNaN(userId)) {
-      throw new BadRequestException('Invalid user ID');
-    }
-    return this.userService.getFriends(userId);
+  async addFriend(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('friendId', ParseIntPipe) friendId: number,
+  ) {
+    return this.userService.addFriend(userId, friendId);
   }
 }

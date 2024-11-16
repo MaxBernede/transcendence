@@ -10,69 +10,100 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  // Find a user by ID
-  async findOne(id: number): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id },
-      relations: ['friends'], // Include friends in the result
-    });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    return user;
-  }
-
-  // Create a new user
-  async create(username: string, email: string, password: string): Promise<User> {
-    const existingUser = await this.userRepository.findOne({ where: { username } });
-    if (existingUser) {
-      throw new BadRequestException('Username already exists');
-    }
-    const user = this.userRepository.create({ username, email, password });
-    return this.userRepository.save(user);
-  }
-
-  async updateUsername(id: string, newUsername: string): Promise<User> {
-	const userId = parseInt(id, 10); // Convert string ID to a number
-	if (isNaN(userId)) {
-	  throw new BadRequestException('Invalid user ID');
+  async findOne(idOrUsername: string | number): Promise<User> {
+	console.log(`Searching for user with ID or username: ${idOrUsername}`);
+  
+	let whereClause;
+  
+	if (typeof idOrUsername === 'number') {
+	  // If it's a number, search by ID
+	  whereClause = { id: idOrUsername };
+	  console.log(`Searching by ID: ${whereClause.id}`);
+	} else {
+	  // If it's a string, search by username
+	  whereClause = { username: idOrUsername };
+	  console.log(`Searching by username: ${whereClause.username}`);
 	}
   
-	// Find the user by ID
-	const user = await this.userRepository.findOne({ where: { id: userId } });
+	console.log(`Where clause:`, whereClause);
+  
+	// Debug: Use a raw SQL query to check if the user exists
+	const result = await this.userRepository.query(
+	  `SELECT * FROM "user" WHERE username = $1`,
+	  [idOrUsername]
+	);
+	console.log('Raw Query Result:', result);
+  
+	// Use the ORM findOne method to retrieve the user
+	const user = await this.userRepository.findOne({
+	  where: whereClause,
+	  relations: ['friends'], // Add relations if necessary
+	});
+  
 	if (!user) {
-	  throw new NotFoundException(`User with ID ${userId} not found`);
+	  console.error(`User not found for:`, whereClause);
+	  throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
+	}
+  
+	console.log(`Found user:`, user);
+	return user;
+  }
+  
+  
+  async updateUsername(idOrUsername: string | number, newUsername: string): Promise<User> {
+	console.log(`Updating username for ID or username: ${idOrUsername} to: ${newUsername}`);
+  
+	// Check if the new username is empty
+	if (!newUsername.trim()) {
+	  throw new BadRequestException('Username cannot be empty');
 	}
   
 	// Check if the new username is already taken
-	const usernameTaken = await this.userRepository.findOne({ where: { username: newUsername } });
-	if (usernameTaken && usernameTaken.id !== userId) {
-	  throw new BadRequestException('Username is already taken');
+	const existingUser = await this.userRepository.findOne({
+	  where: { username: newUsername.trim() },
+	});
+	if (existingUser) {
+	  throw new BadRequestException(`Username "${newUsername}" is already taken`);
+	}
+  
+	// Retrieve the user by ID or username
+	const user = await this.findOne(idOrUsername); // findOne already searches by username or ID
+	if (!user) {
+	  throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
 	}
   
 	// Update the username
-	user.username = newUsername;
-	return this.userRepository.save(user);
+	user.username = newUsername.trim();
+	await this.userRepository.save(user);
+  
+	console.log(`Updated user:`, user);
+	return user;
   }
   
-  
+
+  // Handle avatar updates
+  async updateAvatar(userId: number, avatarPath: string): Promise<User> {
+    const user = await this.findOne(userId);
+
+    // Update avatar path
+    user.avatar = avatarPath;
+    return this.userRepository.save(user);
+  }
+
   // Add a friend
   async addFriend(userId: number, friendId: number): Promise<User> {
     if (userId === friendId) {
       throw new BadRequestException('Cannot add yourself as a friend');
     }
+
     const user = await this.findOne(userId);
     const friend = await this.findOne(friendId);
-    if (!user.friends.find((f) => f.id === friendId)) {
-      user.friends.push(friend);
-      await this.userRepository.save(user);
-    }
-    return user;
-  }
 
-  // Get all friends for a user
-  async getFriends(id: number): Promise<User[]> {
-    const user = await this.findOne(id);
-    return user.friends;
+    if (user.friends.find((f) => f.id === friendId)) {
+      throw new BadRequestException('User is already a friend');
+    }
+
+    user.friends.push(friend);
+    return this.userRepository.save(user);
   }
 }

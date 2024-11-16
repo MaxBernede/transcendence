@@ -4,31 +4,36 @@ import Grid from '@mui/material/Grid';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-
 import bgImage from '../assets/Background_Header.jpg';
 import defaultAvatar from '../assets/Bat.jpg';
 
 export type HeaderProps = {
-  username: string | null; // The raw username (e.g., "xyz")
-  avatar: string | null; // The user's avatar
-  id: string; // The user's ID
-  handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void; // Handler for avatar change
-  setUsername: (newUsername: string) => void; // Function to update the username
+  username: string | null;
+  avatar: string | null;
+  id: string;
+  handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setUsername: (newUsername: string) => void;
 };
 
-export const Header: React.FC<HeaderProps> = ({ username, avatar, handleImageChange, setUsername }) => {
+export const Header: React.FC<HeaderProps> = ({
+  username,
+  avatar,
+  handleImageChange,
+  setUsername,
+}) => {
   const [editing, setEditing] = useState(false);
-  const [tempUsername, setTempUsername] = useState<string>(username || ''); // Raw username for editing
+  const [tempUsername, setTempUsername] = useState<string>(username || '');
 
   const handleSave = () => {
+    if (!tempUsername.trim()) {
+      alert('Username cannot be empty.');
+      return;
+    }
     setEditing(false);
-    setUsername(tempUsername.trim()); // Save only the raw username
+    setUsername(tempUsername.trim());
   };
 
-  const handleCancel = () => {
-    setEditing(false);
-    setTempUsername(username || ''); // Reset the editable username
-  };
+  console.log('Header received username:', username); // Debugging
 
   return (
     <Box component="header" position="relative">
@@ -43,8 +48,14 @@ export const Header: React.FC<HeaderProps> = ({ username, avatar, handleImageCha
         }}
       >
         <Container>
-          <Grid container item xs={12} flexDirection="column" justifyContent="center" alignItems="center">
-            {/* Avatar */}
+          <Grid
+            container
+            item
+            xs={12}
+            flexDirection="column"
+            justifyContent="center"
+            alignItems="center"
+          >
             <label htmlFor="avatar-input">
               <Avatar
                 src={avatar || defaultAvatar}
@@ -66,68 +77,22 @@ export const Header: React.FC<HeaderProps> = ({ username, avatar, handleImageCha
               onChange={handleImageChange}
               style={{ display: 'none' }}
             />
-
-            {/* Username */}
             {!editing ? (
               <>
                 <Typography variant="h2" color="white">
                   User: {username || 'Guest'}
                 </Typography>
-                <button
-                  onClick={() => setEditing(true)}
-                  style={{
-                    marginTop: '10px',
-                    padding: '5px 10px',
-                    fontSize: '16px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Edit Username
-                </button>
+                <button onClick={() => setEditing(true)}>Edit Username</button>
               </>
             ) : (
-              <div style={{ marginTop: '10px' }}>
-                <span
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    color: 'white',
-                    marginRight: '10px',
-                  }}
-                >
-                  User:
-                </span>
+              <div>
                 <input
                   type="text"
                   value={tempUsername}
                   onChange={(e) => setTempUsername(e.target.value)}
-                  style={{
-                    padding: '5px',
-                    fontSize: '18px',
-                  }}
                 />
-                <button
-                  onClick={handleSave}
-                  style={{
-                    marginLeft: '5px',
-                    padding: '5px 10px',
-                    fontSize: '16px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Save
-                </button>
-                <button
-                  onClick={handleCancel}
-                  style={{
-                    marginLeft: '5px',
-                    padding: '5px 10px',
-                    fontSize: '16px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
+                <button onClick={handleSave}>Save</button>
+                <button onClick={() => setEditing(false)}>Cancel</button>
               </div>
             )}
           </Grid>

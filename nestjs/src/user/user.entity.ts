@@ -2,49 +2,43 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 't
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+    @PrimaryGeneratedColumn()
+    id: number;
 
-  @Column({ unique: true })
-  username: string;
+    @Column({ unique: true })
+    username: string;
 
-  @Column()
-  email: string;
+    @Column()
+    email: string;
 
-  @Column({ nullable: true, default: null })
-  avatar: string;
+    @Column({ nullable: true, default: null })
+    avatar: string;
 
-  @Column()
-  password: string;
+    @Column()
+    password: string;
 
-  @Column({ nullable: true, default: null })
-  hash_key: string;
+    @Column({ nullable: true, default: null })
+    hash_key: string;
 
-  @Column({ nullable: true, default: null })
-  phone_number_2fa: number;
+    @Column({ nullable: true, default: null })
+    phone_number_2fa: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    created_at: Date;
 
-  @Column({ default: 0 })
-  wins: number;
+    @Column({ default: 0 })
+    wins: number;
 
-  @Column({ default: 0 })
-  loose: number;
+    @Column({ default: 0 })
+    loose: number;
 
-  @Column({ default: 0 })
-  ladder_level: number;
+    @Column({ default: 0 })
+    ladder_level: number;
 
-  @Column({ default: null })
-  activity_status: string;
+    @Column({ default: null })
+    activity_status: string;
 
-  @ManyToMany(() => User, (user) => user.friends)
-  @JoinTable() // Join table to connect users and their friends
-  friends: User[];
+    @ManyToMany(() => User, (user) => user.friends)
+    @JoinTable()
+    friends: User[];
 }
-
-
-// In a relational database, a many-to-many relationship is
-// used when multiple records in one table are related to multiple records in another table.
-
-// Jointable: Creates a junction table that stores relationships between users.
