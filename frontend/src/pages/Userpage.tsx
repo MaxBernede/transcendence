@@ -10,6 +10,7 @@ const UserPage: React.FC = () => {
   const [userData, setUserData] = useState<any>(null); // State for user data
   const [loading, setLoading] = useState(true); // State to handle loading
   const [avatar, setAvatar] = useState<string | null>(null); // State to store avatar URL
+  const avatarPath = avatar ? `${avatar}?t=${new Date().getTime()}` : defaultAvatar;
 
   // Fetch user data on component load
   useEffect(() => {
@@ -36,24 +37,26 @@ const UserPage: React.FC = () => {
 
   // Handle avatar upload
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      const formData = new FormData();
-      formData.append('file', file);
-
-      axios
-        .post(`http://localhost:3000/api/users/${id}/upload-avatar`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        .then((response) => {
-          console.log('Avatar uploaded:', response.data); // Debugging
-          setAvatar(`http://localhost:3000/uploads/avatars/${response.data.avatar}`); // Update avatar
-        })
-        .catch((error) => {
-          console.error('Error uploading avatar:', error); // Debugging
-        });
-    }
+	if (e.target.files && e.target.files.length > 0) {
+	  const file = e.target.files[0];
+	  const formData = new FormData();
+	  formData.append('file', file);
+  
+	  axios
+		.post(`http://localhost:3000/api/users/${id}/upload-avatar`, formData, {
+		  headers: { 'Content-Type': 'multipart/form-data' },
+		})
+		.then((response) => {
+		  console.log('Avatar uploaded:', response.data); // Log the full response
+		  setAvatar(response.data.avatar); // Update state with new avatar URL
+		  console.log('Updated avatar URL:', response.data.avatar); // Log the updated avatar URL
+		})
+		.catch((error) => {
+		  console.error('Error uploading avatar:', error);
+		});
+	}
   };
+  
 
   // Handle username updates
   const updateUsername = (newUsername: string) => {

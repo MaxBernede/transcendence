@@ -34,34 +34,43 @@ async updateUsername(
 }
 
   // Upload avatar
-  @Post(':id/upload-avatar')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/avatars', // Path to store uploaded files
-        filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, callback) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
-          return callback(new BadRequestException('Only image files are allowed'), false);
-        }
-        callback(null, true);
+// Inside your UserController
+@Post(':id/upload-avatar')
+@UseInterceptors(
+  FileInterceptor('file', {
+    storage: diskStorage({
+      destination: './uploads/avatars',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        callback(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
       },
     }),
-  )
-  async uploadAvatar(
-    @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
-    const avatarPath = `http://localhost:3000/uploads/avatars/${file.filename}`;
-    return this.userService.updateAvatar(id, avatarPath);
+    fileFilter: (req, file, callback) => {
+      if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+        return callback(new BadRequestException('Only image files are allowed'), false);
+      }
+      callback(null, true);
+    },
+  }),
+)
+async uploadAvatar(
+  @Param('id') id: string, // Accept `id` as a string
+  @UploadedFile() file: Express.Multer.File,
+) {
+  if (!file) {
+    throw new BadRequestException('File is required');
   }
+
+  const avatarPath = `http://localhost:3000/uploads/avatars/${file.filename}`;
+  console.log('Saving avatarPath:', avatarPath);
+
+  // Update the avatar in the database
+  const updatedUser = await this.userService.updateAvatar(id, avatarPath);
+  console.log('Updated user with avatar:', updatedUser);
+
+  return { avatar: avatarPath };
+}
+
 
   // Add a friend
   @Post(':userId/add-friend/:friendId')

@@ -33,7 +33,9 @@ export const Header: React.FC<HeaderProps> = ({
     setUsername(tempUsername.trim());
   };
 
-  console.log('Header received username:', username); // Debugging
+  // Add a timestamp to the avatar URL to prevent caching
+  const avatarWithTimestamp = avatar ? `${avatar}?t=${new Date().getTime()}` : defaultAvatar;
+
 
   return (
     <Box component="header" position="relative">
@@ -56,9 +58,10 @@ export const Header: React.FC<HeaderProps> = ({
             justifyContent="center"
             alignItems="center"
           >
+            {/* Avatar */}
             <label htmlFor="avatar-input">
               <Avatar
-                src={avatar || defaultAvatar}
+                src={avatarWithTimestamp}
                 alt={username || 'User Avatar'}
                 sx={{
                   width: 250,

@@ -82,13 +82,18 @@ export class UserService {
   
 
   // Handle avatar updates
-  async updateAvatar(userId: number, avatarPath: string): Promise<User> {
-    const user = await this.findOne(userId);
-
-    // Update avatar path
-    user.avatar = avatarPath;
-    return this.userRepository.save(user);
+  async updateAvatar(idOrUsername: string | number, avatarPath: string): Promise<User> {
+	console.log(`Updating avatar for ID or username: ${idOrUsername} to: ${avatarPath}`);
+  
+	const user = await this.findOne(idOrUsername); // `findOne` handles both string and number
+	if (!user) {
+	  throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
+	}
+  
+	user.avatar = avatarPath; // Update avatar path
+	return this.userRepository.save(user); // Save changes
   }
+  
 
   // Add a friend
   async addFriend(userId: number, friendId: number): Promise<User> {
