@@ -7,15 +7,16 @@ import Box from '@mui/material/Box';
 import bgImage from '../assets/Background_Header.jpg';
 import defaultAvatar from '../assets/Bat.jpg';
 
-export type HeaderProps = {
+type HeaderProps = {
+  id: string; // Add the `id` property here
   username: string | null;
   avatar: string | null;
-  id: string;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   setUsername: (newUsername: string) => void;
 };
 
 export const Header: React.FC<HeaderProps> = ({
+  id,
   username,
   avatar,
   handleImageChange,
@@ -33,19 +34,17 @@ export const Header: React.FC<HeaderProps> = ({
     setUsername(tempUsername.trim());
   };
 
-  // Add a timestamp to the avatar URL to prevent caching
-  const avatarWithTimestamp = avatar ? `${avatar}?t=${new Date().getTime()}` : defaultAvatar;
-
-
   return (
-    <Box component="header" position="relative">
+    <Box component="header" position="relative" sx={{ width: '100%' }}>
       <Box
         display="flex"
         alignItems="center"
-        minHeight="50vh"
+        justifyContent="center"
+        minHeight="60vh"
         sx={{
           backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${bgImage})`,
           backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
         }}
       >
@@ -58,10 +57,9 @@ export const Header: React.FC<HeaderProps> = ({
             justifyContent="center"
             alignItems="center"
           >
-            {/* Avatar */}
             <label htmlFor="avatar-input">
               <Avatar
-                src={avatarWithTimestamp}
+                src={avatar || defaultAvatar}
                 alt={username || 'User Avatar'}
                 sx={{
                   width: 250,

@@ -1,95 +1,60 @@
-/* UserPage.css */
-
-.user-page-container {
-	background-color: black; /* Black background */
-	color: purple; /* Purple text */
-	min-height: 100vh;
-	padding: 20px; /* Padding for consistent spacing from the edge */
+body {
+	background-color: black; /* Black background for the entire app */
+	color: white; /* Ensure text is readable */
+	margin: 0;
+	padding: 0;
+	font-family: Arial, sans-serif; /* Consistent font */
   }
   
-  .profile-container {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	background-color: #222; /* Darker background for the profile card */
+  .user-page-container {
 	padding: 20px;
-	border-radius: 10px;
-	box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
-	width: 100%; /* Set width to fill the entire container */
-	box-sizing: border-box; /* Ensure padding is included in the width */
-  }
-  
-  .avatar-container {
-	margin-right: 20px; /* Space between avatar and user information */
-	cursor: pointer;
-  }
-  
-  .user-avatar {
-	width: 200px; /* Increased size */
-	height: 200px; /* Increased size */
-	border-radius: 50%; /* Circular shape */
-	border: 4px solid purple; /* Slightly thicker border for better emphasis */
-	object-fit: cover;
-	transition: transform 0.3s ease, box-shadow 0.3s ease; /* Add animation for interactions */
-  }
-  
-  .user-avatar:hover {
-	transform: scale(1.1); /* Slightly increase the size on hover */
-	box-shadow: 0px 0px 15px 3px purple; /* Add a purple glow on hover */
-  }
-  
-  .user-info {
 	display: flex;
 	flex-direction: column;
-	justify-content: center;
+	align-items: center;
   }
   
-  .user-name {
-	font-size: 2em;
+  .content-container {
+	display: flex;
+	justify-content: space-between;
+	gap: 20px;
+	width: 100%;
+	max-width: 1200px;
+	margin-top: 20px;
+  }
+  
+  .card {
+	flex: 1;
+	background-color: #1e1e1e; /* Dark grey for contrast */
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+	overflow: hidden;
+  }
+  
+  .card h2 {
+	margin-bottom: 15px;
+	font-size: 1.5rem;
+	color: #f8f9fa; /* Light grey text */
+  }
+  
+  .card ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+  }
+  
+  .card ul li {
 	margin-bottom: 10px;
-	color: white; /* White text for username */
+	color: #dcdcdc; /* Soft white text for items */
   }
   
-  .user-bio {
-	margin-bottom: 20px;
-	color: #ccc; /* Light gray text for bio */
+  .card p {
+	margin-bottom: 10px;
+	color: #dcdcdc; /* Consistent text color for descriptions */
   }
   
-  .message-button {
-	padding: 10px 20px;
-	font-size: 1em;
-	background-color: purple;
-	color: white;
-	border: none;
-	border-radius: 5px;
-	cursor: pointer;
-	transition: background-color 0.3s ease;
-  }
-  
-  .message-button:hover {
-	background-color: #551a8b; /* Darker purple on hover */
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-	.profile-container {
-	  flex-direction: column;
-	  align-items: center;
-	  text-align: center;
-	}
-  
-	.avatar-container {
-	  margin-bottom: 20px; /* Add margin at the bottom for better spacing */
-	  margin-right: 0; /* Remove margin-right in smaller viewports */
-	}
-  
-	.user-avatar {
-	  width: 150px; /* Reduced size for smaller screens */
-	  height: 150px; /* Reduced size for smaller screens */
-	}
-  
-	.user-name {
-	  font-size: 1.5em; /* Reduce font size for better readability */
-	}
+  .card h3 {
+	margin-top: 20px;
+	color: #f8f9fa; /* Light grey for headings */
   }
   
