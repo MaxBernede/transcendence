@@ -53,7 +53,7 @@ import { Express } from 'express';
 		@UseInterceptors(FileInterceptor('file', { dest: './uploads/avatars' }))
 		async uploadAvatar(
 		  @Param('id') userId: string,
-		  @UploadedFile() file: Express.Multer.File,
+		  @UploadedFile() file: Multer.File,
 		): Promise<User> {
 		  if (!file) {
 			throw new BadRequestException('File is required');

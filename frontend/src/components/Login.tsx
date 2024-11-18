@@ -24,14 +24,8 @@ const Login: React.FC<LoginProps> = ({ setLoggedIn, setEmail}) => {
 	setErrorMessage('')
 
 	//Not empty
-	if ('' === localEmail) {
-		setEmailError('Please enter your email');
-		return;
-	}
-
-	//Regex to test the email
-	if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(localEmail)) {
-		setEmailError('Please enter a valid email');
+	if ('' === localEmail || localEmail.length < 3) {
+		setEmailError('Please enter your email or username');
 		return;
 	}
 

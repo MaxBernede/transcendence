@@ -1,123 +1,118 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../App.css'
+import axios from 'axios'
 
 interface CreationProps {
-  setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
-  setEmail: React.Dispatch<React.SetStateAction<string>>;
+	setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+	setEmail: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
-  const [username, setUsername] = useState('')
-  const [email, setEmailState] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [usernameError, setUsernameError] = useState('')
-  const [emailError, setEmailError] = useState('')
-  const [passwordError, setPasswordError] = useState('')
-  const [confirmPasswordError, setConfirmPasswordError] = useState('')
+	const [username, setUsername] = useState('')
+	const [email, setEmailState] = useState('')
+	const [password, setPassword] = useState('')
+	const [confirmPassword, setConfirmPassword] = useState('')
+	const [errors, setErrors] = useState({
+		username: '',
+		email: '',
+		password: '',
+		confirmPassword: '',
+	})
+	const [errorMessage, setErrorMessage] = useState('')
+	const navigate = useNavigate()
 
-  const navigate = useNavigate()
+	const validateInputs = (): boolean => {
+		const newErrors = { username: '', email: '', password: '', confirmPassword: '' }
 
-  const onButtonClick = () => {
-    // Clear previous errors
-    setUsernameError('')
-    setEmailError('')
-    setPasswordError('')
-    setConfirmPasswordError('')
+		if (!username) newErrors.username = 'Please enter your username'
+		if (!email) newErrors.email = 'Please enter your email'
+		if (!password) newErrors.password = 'Please enter a password'
+		else if (password.length < 7) newErrors.password = 'Password must be at least 7 characters long'
+		if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match'
 
-    // Validate fields
-    if ('' === username) {
-      setUsernameError('Please enter your username')
-      return
-    }
+		setErrors(newErrors)
+		return Object.values(newErrors).every((error) => !error)
+	}
 
-    if ('' === email) {
-      setEmailError('Please enter your email')
-      return
-    }
+	const handleAccountCreation = async (e: React.FormEvent) => {
+		e.preventDefault()
 
-    if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-      setEmailError('Please enter a valid email')
-      return
-    }
+		if (!validateInputs()) return
 
-    if ('' === password) {
-      setPasswordError('Please enter a password')
-      return
-    }
+		try {
+			// Send account creation request to the backend
+			const response = await axios.post('http://localhost:3000/users/register', {
+				email,
+				password,
+			})
 
-    if (password.length < 7) {
-      setPasswordError('The password must be at least 7 characters long')
-      return
-    }
+			if (response.status === 201) {
+				alert('Account successfully created!')
+				navigate('/login')
+			}
+		} catch (error) {
+			console.error('Account creation failed:', error)
+			setErrorMessage('Account creation failed. Please try again.')
+		}
+	}
 
-    if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match')
-      return
-    }
-
-    // Set logged in state and email
-    setLoggedIn(true)
-    setEmail(email)
-
-    // Navigate to the home page
-    navigate('/')
-  }
-
-  return (
-    <div className={'mainContainer'}>
-      <div className={'titleContainer'}>
-        <div>Create Account</div>
-      </div>
-      <br />
-      <div className={'inputContainer'}>
-        <input
-          value={username}
-          placeholder="Enter your username here"
-          onChange={(ev) => setUsername(ev.target.value)}
-          className={'inputBox'}
-        />
-        <label className="errorLabel">{usernameError}</label>
-      </div>
-      <br />
-      <div className={'inputContainer'}>
-        <input
-          value={email}
-          placeholder="Enter your email here"
-          onChange={(ev) => setEmailState(ev.target.value)}
-          className={'inputBox'}
-        />
-        <label className="errorLabel">{emailError}</label>
-      </div>
-      <br />
-      <div className={'inputContainer'}>
-        <input
-          value={password}
-          placeholder="Enter your password here"
-          onChange={(ev) => setPassword(ev.target.value)}
-          className={'inputBox'}
-          type="password"
-        />
-        <label className="errorLabel">{passwordError}</label>
-      </div>
-      <br />
-      <div className={'inputContainer'}>
-        <input
-          value={confirmPassword}
-          placeholder="Confirm your password"
-          onChange={(ev) => setConfirmPassword(ev.target.value)}
-          className={'inputBox'}
-          type="password"
-        />
-        <label className="errorLabel">{confirmPasswordError}</label>
-      </div>
-      <br />
-      <div className={'inputContainer'}>
-        <input className={'inputButton'} type="button" onClick={onButtonClick} value={'Create Account'} />
-      </div>
-    </div>
-  )
+	return (
+		<div className="mainContainer">
+			<div className="titleContainer">
+				<div>Create Account</div>
+			</div>
+			<br />
+			<form onSubmit={handleAccountCreation}>
+				<div className="inputContainer">
+					<input
+						value={username}
+						placeholder="Enter your username here"
+						onChange={(e) => setUsername(e.target.value)}
+						className="inputBox"
+					/>
+					<label className="errorLabel">{errors.username}</label>
+				</div>
+				<br />
+				<div className="inputContainer">
+					<input
+						value={email}
+						placeholder="Enter your email here"
+						onChange={(e) => setEmailState(e.target.value)}
+						className="inputBox"
+					/>
+					<label className="errorLabel">{errors.email}</label>
+				</div>
+				<br />
+				<div className="inputContainer">
+					<input
+						value={password}
+						placeholder="Enter your password here"
+						onChange={(e) => setPassword(e.target.value)}
+						className="inputBox"
+						type="password"
+					/>
+					<label className="errorLabel">{errors.password}</label>
+				</div>
+				<br />
+				<div className="inputContainer">
+					<input
+						value={confirmPassword}
+						placeholder="Confirm your password"
+						onChange={(e) => setConfirmPassword(e.target.value)}
+						className="inputBox"
+						type="password"
+					/>
+					<label className="errorLabel">{errors.confirmPassword}</label>
+				</div>
+				<br />
+				<div className={'inputContainer'}>
+          <input className={'inputButton'} type="button" onClick={handleAccountCreation} value={'Create account'} />
+				</div>
+				{errorMessage && <p className="errorLabel">{errorMessage}</p>}
+			</form>
+		</div>
+	)
 }
 
 export default Creation
