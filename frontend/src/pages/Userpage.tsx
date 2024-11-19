@@ -17,6 +17,7 @@ const UserPage: React.FC = () => {
 
   useEffect(() => {
     if (id) {
+      // Fetch user data
       axios
         .get(`http://localhost:3000/api/users/${id}`)
         .then((response) => {
@@ -29,11 +30,14 @@ const UserPage: React.FC = () => {
         })
         .catch(() => setUserData(null));
 
-      axios
-        .get(`http://localhost:3000/api/users/${id}/match-history`)
-        .then((response) => setMatchHistory(response.data))
-        .catch(() => setMatchHistory([]))
-        .finally(() => setLoading(false));
+      // Fetch match history
+	  axios
+	  .get(`http://localhost:3000/matches/user/${id}`)
+	  .then((response) => {
+		setMatchHistory(response.data);
+	  })
+	  .catch(() => setMatchHistory([]))
+	  .finally(() => setLoading(false));	
     }
   }, [id]);
 
@@ -50,12 +54,12 @@ const UserPage: React.FC = () => {
         setUsername={(newUsername) => console.log('Set username:', newUsername)}
       />
       <div className="content-container">
-	  <Stats
-  		wins={userData?.wins || 0}
-  		losses={userData?.losses || 0}
- 		ladderLevel={userData?.ladder_level || 0}
-  		achievements={userData?.achievements || []} // Default to an empty array
-/>
+        <Stats
+          wins={userData?.wins || 0}
+          losses={userData?.losses || 0}
+          ladderLevel={userData?.ladder_level || 0}
+          achievements={userData?.achievements || []} // Default to an empty array
+        />
         <MatchHistory matchHistory={matchHistory} />
       </div>
     </div>

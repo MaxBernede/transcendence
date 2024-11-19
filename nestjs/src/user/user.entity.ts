@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import { Match } from '../match/match.entity'; // Import Match entity
 
 @Entity()
 export class User {
@@ -41,4 +42,7 @@ export class User {
     @ManyToMany(() => User, (user) => user.friends)
     @JoinTable()
     friends: User[];
+
+    @OneToMany(() => Match, (match) => match.user)
+    matchHistory: Match[]; // Link to Match entity via OneToMany relationship
 }

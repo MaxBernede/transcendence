@@ -21,7 +21,7 @@ export class UserAchievementEntity {
 	@PrimaryGeneratedColumn()
 	id: number;
   
-	@Column()
+	@Column()	
 	userId: number;
   
 	@Column()

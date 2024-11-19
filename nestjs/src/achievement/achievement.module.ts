@@ -3,14 +3,13 @@ import { AchievementController, UserAchievementController } from './achievement.
 import { AchievementService, UserAchievementService } from './achievement.service';
 import { AchievementEntity, UserAchievementEntity } from './achievement.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { typeOrmConfig } from 'src/ormconfig';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot(typeOrmConfig),
-    TypeOrmModule.forFeature([AchievementEntity, UserAchievementEntity]),
+    TypeOrmModule.forFeature([AchievementEntity, UserAchievementEntity]), // Only feature entities here
   ],
   controllers: [AchievementController, UserAchievementController],
-  providers: [AchievementService, UserAchievementService]
+  providers: [AchievementService, UserAchievementService],
+  exports: [AchievementService, UserAchievementService], // Export if other modules use the services
 })
 export class AchievementModule {}
