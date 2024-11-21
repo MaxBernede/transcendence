@@ -11,7 +11,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
     password: process.env.POSTGRES_PASSWORD || 'postgres',
     database: process.env.POSTGRES_DB || 'postgresdbb',
     entities: [AchievementEntity, UserAchievementEntity, User, Match],
-    synchronize: false,
+    synchronize: true,
     migrations: ['dist/migrations/*.js'], // Specify where migrations are located
     migrationsRun: true, // Automatically run migrations on startup
 };
