@@ -13,14 +13,18 @@ const UserPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [matchHistory, setMatchHistory] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<{ id: number; achievementName: string; description: string }[]>([]);
   const avatarPath = avatar ? `${avatar}?t=${new Date().getTime()}` : defaultAvatar;
 
   useEffect(() => {
     if (id) {
+      console.log('Fetching data for user ID:', id);
+
       // Fetch user data
       axios
         .get(`http://localhost:3000/api/users/${id}`)
         .then((response) => {
+          console.log('User data fetched:', response.data);
           setUserData(response.data);
           setAvatar(
             response.data.avatar
@@ -28,16 +32,40 @@ const UserPage: React.FC = () => {
               : defaultAvatar
           );
         })
-        .catch(() => setUserData(null));
+        .catch((error) => {
+          console.error('Error fetching user data:', error);
+          setUserData(null);
+        });
 
       // Fetch match history
-	  axios
-	  .get(`http://localhost:3000/matches/user/${id}`)
-	  .then((response) => {
-		setMatchHistory(response.data);
-	  })
-	  .catch(() => setMatchHistory([]))
-	  .finally(() => setLoading(false));	
+      axios
+        .get(`http://localhost:3000/matches/user/${id}`)
+        .then((response) => {
+          console.log('Match history fetched:', response.data);
+          setMatchHistory(response.data);
+        })
+        .catch((error) => {
+          console.error('Error fetching match history:', error);
+          setMatchHistory([]);
+        });
+
+      // Fetch achievements
+      axios
+        .get(`http://localhost:3000/api/achievements`)
+        .then((response) => {
+          console.log('Achievements fetched:', response.data);
+          const transformedAchievements = response.data.map((achievement: any) => ({
+            id: achievement.id,
+            achievementName: achievement.achievementName,
+            description: achievement.description || 'No description available', // Add default description
+          }));
+          setAchievements(transformedAchievements);
+        })
+        .catch((error) => {
+          console.error('Error fetching achievements:', error);
+          setAchievements([]);
+        })
+        .finally(() => setLoading(false));
     }
   }, [id]);
 
@@ -58,7 +86,7 @@ const UserPage: React.FC = () => {
           wins={userData?.wins || 0}
           losses={userData?.losses || 0}
           ladderLevel={userData?.ladder_level || 0}
-          achievements={userData?.achievements || []} // Default to an empty array
+          achievements={achievements} // Pass transformed achievements
         />
         <MatchHistory matchHistory={matchHistory} />
       </div>

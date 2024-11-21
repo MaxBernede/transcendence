@@ -18,6 +18,8 @@ import { Controller, Get, Post, Patch, Param, Body, UploadedFile, UseInterceptor
 	async getUser(@Param('id') id: string) {
 	  console.log(`Requested User ID: ${id}`);
 	  const user = await this.userService.findOne(id);	
+	  // Fetch achievements separately if not already in the user entity
+  	const achievements = await this.userService.findAchievementsForUser(user.id);
 	  console.log('Returning user data:', user);
 	  return user; // Ensure `username` is included in the returned user object
 	}

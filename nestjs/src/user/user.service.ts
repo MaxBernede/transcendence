@@ -111,4 +111,14 @@ async findOneWithMatchHistory(idOrUsername: string): Promise<{ user: User; match
     user.friends.push(friend);
     return this.userRepository.save(user);
   }
+
+  async findAchievementsForUser(userId: number): Promise<any[]> {
+	// Assuming achievements are stored in a related table with a foreign key
+	return this.matchRepository.query(`
+	  SELECT achievementName FROM achievement_entity 
+	  WHERE id IN (
+		SELECT achievementId FROM user_achievement_entity WHERE userId = $1
+	  )
+	`, [userId]);
+  }
 }

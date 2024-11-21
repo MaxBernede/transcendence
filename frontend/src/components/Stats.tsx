@@ -4,7 +4,7 @@ type StatsProps = {
   wins: number;
   losses: number;
   ladderLevel: number;
-  achievements: string[]; // Array of achievement strings
+  achievements: { achievementName: string; description: string }[]; // Updated type
 };
 
 export const Stats: React.FC<StatsProps> = ({
@@ -23,7 +23,9 @@ export const Stats: React.FC<StatsProps> = ({
       <ul>
         {achievements.length > 0 ? (
           achievements.map((achievement, index) => (
-            <li key={index}>{achievement}</li>
+            <li key={index}>
+              <strong>{achievement.achievementName}:</strong> {achievement.description}
+            </li>
           ))
         ) : (
           <p>No achievements yet.</p>
