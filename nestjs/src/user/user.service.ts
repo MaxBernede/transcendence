@@ -13,6 +13,22 @@ export class UsersService extends BaseService<User> implements OnModuleInit {
 	) {
 		super(usersRepository)
 	}
+	private readonly users = [
+		{
+		  userId: 1,
+		  username: 'john',
+		  password: 'changeme',
+		},
+		{
+		  userId: 2,
+		  username: 'iris',
+		  password: 'guess',
+		},
+	  ];
+
+	async findOneBy(username: string): Promise<{ userId: number; username: string; password: string } | undefined> {
+		return this.users.find(user => user.username === username);
+	}
 
 	//On module init is run at the start of the project
 	async onModuleInit(){
@@ -88,7 +104,7 @@ export class UsersService extends BaseService<User> implements OnModuleInit {
 		}
 	
 	// I didnt wanted to implement it here again but I had a strange bug to use it in auth.service
-	async findOneBy(options: any): Promise<User | undefined> {
+	async findOneByOptions(options: any): Promise<User | undefined> {
 		return this.usersRepository.findOneBy(options); // Directly using the repository's findOneBy
 		}
 
