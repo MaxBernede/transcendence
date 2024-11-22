@@ -78,5 +78,26 @@ import { Express } from 'express';
 			console.log("auth of the backend");
 			return this.UsersService.doesUserExist(email);
 		}
+
+		// promise JWT token ?
+		@Post('register')
+		async register(@Body() body: CreateUserDto) {
+			const { username, email, password } = body;
+			// Check if user already exists
+			const userExists = await this.UsersService.doesUserExist(email);
+			if (userExists) {
+				throw new BadRequestException('User with this email already exists.');
+			}
+	
+			// Create and save the new user
+			const newUser = await this.UsersService.create(body);
+	
+			// Return the created user (omit sensitive information)
+			return {
+				id: newUser.id,
+				username: newUser.username,
+				email: newUser.email,
+			};
+		}
 	}
 	

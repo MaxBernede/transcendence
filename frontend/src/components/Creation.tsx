@@ -43,6 +43,7 @@ const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
 		try {
 			// Send account creation request to the backend
 			const response = await axios.post('http://localhost:3000/users/register', {
+				username,
 				email,
 				password,
 			})
@@ -107,7 +108,7 @@ const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
 				</div>
 				<br />
 				<div className={'inputContainer'}>
-          <input className={'inputButton'} type="button" onClick={handleAccountCreation} value={'Create account'} />
+          			<input className={'inputButton'} type="button" onClick={handleAccountCreation} value={'Create account'} />
 				</div>
 				{errorMessage && <p className="errorLabel">{errorMessage}</p>}
 			</form>
