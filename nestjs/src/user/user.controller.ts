@@ -18,6 +18,7 @@ import { CreateUserDto } from './dto/createUser.dto';
 import { Multer } from 'multer';
 import { BaseController } from 'src/base/base.controller';
 import { Express } from 'express';
+import { Public } from 'src/decorators/public.decorator';
 
 
 	@Controller('users')
@@ -27,6 +28,7 @@ import { Express } from 'express';
 		}
 
 		@Post()
+		@Public()
 		@UsePipes(ValidationPipe)
 		async create(@Body() createUserDto: CreateUserDto): Promise<User> {
 		try {
