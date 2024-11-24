@@ -6,11 +6,12 @@ import { User } from './user.entity';
 import { MatchModule } from '../match/match.module';
 
 @Module({
-   imports: [
-	   TypeOrmModule.forFeature([User]),
-	   MatchModule, // Import MatchModule to access MatchService
-	  ],
+  imports: [
+    TypeOrmModule.forFeature([User]), // Import User entity
+    MatchModule, // Import MatchModule if necessary
+  ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService], // Provide UserService
+  exports: [UserService], // Export UserService for other modules
 })
 export class UsersModule {}

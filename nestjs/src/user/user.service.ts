@@ -42,6 +42,7 @@ export class UserService {
     console.log(`Found user:`, user);
     return user;
   }
+  
 
 async findOneWithMatchHistory(idOrUsername: string): Promise<{ user: User; matchHistory: Match[] }> {
     const user = await this.findOne(idOrUsername);

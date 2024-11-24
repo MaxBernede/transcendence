@@ -9,13 +9,13 @@ export class User {
     @Column({ unique: true })
     username: string;
 
-    @Column()
+    @Column({ nullable: true })
     email: string;
 
     @Column({ nullable: true, default: null })
     avatar: string;
 
-    @Column()
+    @Column({ nullable: true })
     password: string;
 
     @Column({ nullable: true, default: null })
