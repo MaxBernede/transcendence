@@ -1,4 +1,7 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { AchievementEntity, UserAchievementEntity } from './achievement/achievement.entity';
+import { User } from './user/user.entity';
+import { Match } from './match/match.entity';
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
     type: 'postgres',
@@ -7,6 +10,8 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
     username: process.env.POSTGRES_USER || 'user',
     password: process.env.POSTGRES_PASSWORD || 'postgres',
     database: process.env.POSTGRES_DB || 'postgresdbb',
-    entities: [__dirname + '/**/*.entity{.ts,.js}'], // Change so only accept subfolders entities
-    synchronize: true, // Do not use in prod
+    entities: [AchievementEntity, UserAchievementEntity, User, Match],
+    synchronize: true,
+    migrations: ['dist/migrations/*.js'], // Specify where migrations are located
+    migrationsRun: true, // Automatically run migrations on startup
 };

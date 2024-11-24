@@ -1,74 +1,99 @@
-	import { 
-		Controller, 
-		Get, 
-		Post, 
-		Body, 
-		Param, 
-		Delete, 
-		UsePipes, 
-		ValidationPipe, 
-		UseInterceptors, 
-		UploadedFile, 
-		BadRequestException 
-	} from '@nestjs/common';
-	import { FileInterceptor } from '@nestjs/platform-express';
-	import { UsersService } from './user.service';
-	import { User } from './user.entity';
-	import { CreateUserDto } from './dto/createUser.dto';
-	import { Multer } from 'multer';
-	
-	@Controller('users')
-	export class UsersController {
-		constructor(private readonly usersService: UsersService) {}
-	
-		@Get()
-		async findAll(): Promise<User[]> {
-		return this.usersService.findAll();
-		}
-	
-		@Post()
-		@UsePipes(ValidationPipe)
-		async create(@Body() createUserDto: CreateUserDto): Promise<User> {
-		try {
-			const user = await this.usersService.create(createUserDto);
-			return user;
-		} catch (error) {
-			console.log("User has not been created because:", error.message);
-			throw new BadRequestException('User could not be created.');
-		}
-		}
-	
-		@Get(':id')
-		async findOne(@Param('id') id: string): Promise<User> {
-			return this.usersService.findOne(Number(id));
-		}
-		
-		@Delete(':id')
-		async remove(@Param('id') id: string): Promise<void> {
-			return this.usersService.remove(Number(id));
-		}
-		
-		@Post(':userId/add-friend/:friendId')
-		async addFriend(@Param('userId') userId: string, @Param('friendId') friendId: string): Promise<User> {
-			return this.usersService.addFriend(Number(userId), Number(friendId));
-		}
-		
-		@Get(':userId/friends')
-		async getFriends(@Param('userId') userId: string): Promise<User[]> {
-			return this.usersService.getFriends(Number(userId));
-		}
-		
-	
-		@Post('upload-avatar/:id')
-		@UseInterceptors(FileInterceptor('file', { dest: './uploads/avatars' }))
-		async uploadAvatar(
-		  @Param('id') userId: string,
-		  @UploadedFile() file: Express.Multer.File,
-		): Promise<User> {
-		  if (!file) {
-			throw new BadRequestException('File is required');
-		  }
-		  return this.usersService.updateAvatar(Number(userId), file.filename);
-		}
+import { Controller, Get, Post, Patch, Param, Body, UploadedFile, UseInterceptors, BadRequestException, ParseIntPipe 
+  } from '@nestjs/common';
+  import { FileInterceptor } from '@nestjs/platform-express';
+  import { UserService } from './user.service';
+  import { MatchService } from '../match/match.service'; // Make sure this is imported
+  import { diskStorage } from 'multer';
+  import { extname } from 'path';
+  
+  @Controller('api/users')
+  export class UserController {
+	constructor(
+	  private readonly userService: UserService,
+	  private readonly matchService: MatchService, // Inject MatchService
+	) {}
+  
+	// Get user by ID or username
+	@Get(':id')
+	async getUser(@Param('id') id: string) {
+		const isNumericId = !isNaN(Number(id));
+		const user = await this.userService.findOne(isNumericId ? +id : id);
+	  // Fetch achievements separately if not already in the user entity
+  	const achievements = await this.userService.findAchievementsForUser(user.id);
+	  console.log('Returning user data:', user);
+	  return user; // Ensure `username` is included in the returned user object
+	}
+  
+	// Endpoint to get match history
+	@Get('user/:id/match-history')
+	async getMatchHistory(@Param('id') id: number) {
+	  const matchHistory = await this.matchService.findByUser(id);
+	  return matchHistory.map((match) => ({
+		description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
+		date: new Date(match.date).toLocaleDateString('en-GB'),
+	  }));
 	}
 	
+  
+	@Patch(':id/update-username')
+	async updateUsername(
+	  @Param('id') id: string,
+	  @Body('username') newUsername: string,
+	) {
+	  console.log(`Received PATCH request for ID: ${id} with new username: ${newUsername}`);
+  
+	  if (!newUsername || newUsername.trim().length === 0) {
+		throw new BadRequestException('Username cannot be empty');
+	  }
+  
+	  const updatedUser = await this.userService.updateUsername(id, newUsername.trim());
+	  return { username: updatedUser.username }; // Return the updated username
+	}
+  
+	// Upload avatar
+	@Post(':id/upload-avatar')
+	@UseInterceptors(
+	  FileInterceptor('file', {
+		storage: diskStorage({
+		  destination: './uploads/avatars',
+		  filename: (req, file, callback) => {
+			const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+			callback(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
+		  },
+		}),
+		fileFilter: (req, file, callback) => {
+		  if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+			return callback(new BadRequestException('Only image files are allowed'), false);
+		  }
+		  callback(null, true);
+		},
+	  }),
+	)
+	async uploadAvatar(
+	  @Param('id') id: string,
+	  @UploadedFile() file: Express.Multer.File,
+	) {
+	  if (!file) {
+		throw new BadRequestException('File is required');
+	  }
+  
+	  const avatarPath = `http://localhost:3000/uploads/avatars/${file.filename}`;
+	  console.log('Saving avatarPath:', avatarPath);
+  
+	  // Update the avatar in the database
+	  const updatedUser = await this.userService.updateAvatar(id, avatarPath);
+	  console.log('Updated user with avatar:', updatedUser);
+  
+	  return { avatar: avatarPath };
+	}
+  
+	// Add a friend
+	@Post(':userId/add-friend/:friendId')
+	async addFriend(
+	  @Param('userId', ParseIntPipe) userId: number,
+	  @Param('friendId', ParseIntPipe) friendId: number,
+	) {
+	  return this.userService.addFriend(userId, friendId);
+	}
+  }
+  

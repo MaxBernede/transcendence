@@ -12,48 +12,86 @@ import { BaseService } from 'src/base/base.service';
 export class AchievementService extends BaseService<AchievementEntity> implements OnModuleInit {
 	constructor(
 		@InjectRepository(AchievementEntity)
-		private readonly achievementRepository: Repository<AchievementEntity>,
+		private readonly achievementRepository: Repository<AchievementEntity>, // Inject Achievement Repository
 	) {
-		super(achievementRepository);
+		super(achievementRepository); // Pass repository to the BaseService
 	}
 
-	async onModuleInit(){
-		console.log("On Module Init from Achievement Service called")
-		const achievements = await this.achievementRepository.find();
+	// Lifecycle hook: Runs when the module is initialized
+	async onModuleInit() {
+		console.log("On Module Init from Achievement Service called");
 
-		// Define the picture linked for each achievments ?
-		if (achievements.length === 0){
-			const achievementsToCreate = [
-				{achievementName: 'UserCreated', description: 'Yay, you created your user', filename: 'null'},
-				{achievementName: 'randomAchievement', description: 'You got lucky somehow', filename: 'null'},
-				// {achievementName: 'ach1', description: 'ach1'},
-				// {achievementName: 'ach2', description: 'ach2'},
-				// {achievementName: 'ach3', description: 'ach3'},
-				// {achievementName: 'ach4', description: 'ach4'},
-				// {achievementName: 'ach5', description: 'ach5'},
-			];
+		try {
+			// Fetch all achievements currently in the database
+			const achievements = await this.achievementRepository.find();
 
-			//! How to create them ?
-			// for (const achievement of achievementsToCreate){
-			// 	await this.create(achievement);
-			// }
+			// Define the picture linked for each achievement
+			if (achievements.length === 0) {
+				const achievementsToCreate = [
+					{
+						achievementName: 'UserCreated',
+						description: 'Yay, you created your user',
+						filename: 'user_created.jpg', // Add a relevant filename for this achievement
+					},
+					{
+						achievementName: 'LuckyUser',
+						description: 'You got lucky somehow',
+						filename: 'lucky_user.jpg', // Add a relevant filename for this achievement
+					},
+					// {achievementName: 'UserCreated', description: 'Yay, you created your user', filename: 'null'},
+					// {achievementName: 'randomAchievement', description: 'You got lucky somehow', filename: 'null'},
+					// {achievementName: 'ach1', description: 'ach1'},
+					// {achievementName: 'ach2', description: 'ach2'},
+					// {achievementName: 'ach3', description: 'ach3'},
+					// {achievementName: 'ach4', description: 'ach4'},
+					// {achievementName: 'ach5', description: 'ach5'},
+				];
+
+				// Save all achievements to the database
+				await this.achievementRepository.save(achievementsToCreate);
+				console.log('Default achievements have been initialized.');
+			} else {
+				console.log('Achievements already exist. Skipping initialization.');
+			}
+		} catch (error) {
+			console.error('Error during achievements initialization:', error.message);
+			throw error; // Optional: rethrow error to fail application startup
 		}
 	}
 
-	// async create(createAchivementDto: CreateAchievementDto): Promise<AchievementEntity> {
-	// 	const newAch = this.achievementRepository.create(createAchivementDto);
+	// Method to fetch all achievements from the database
+	async findAll(): Promise<AchievementEntity[]> {
+		try {
+			return this.achievementRepository.find(); // Fetch all achievements
+		} catch (error) {
+			console.error('Error fetching achievements:', error.message);
+			throw error;
+		}
+	}
+
+	// Method to create a new achievement if required
+	// async create(createAchievementDto: CreateAchievementDto): Promise<AchievementEntity> {
+	// 	const newAch = this.achievementRepository.create(createAchievementDto);
 	// 	return this.achievementRepository.save(newAch);
 	// }
-
 }
 
 @Injectable()
-export class UserAchievementService extends BaseService<UserAchievementEntity>{
+export class UserAchievementService extends BaseService<UserAchievementEntity> {
 	constructor(
 		@InjectRepository(UserAchievementEntity)
-		private readonly userAchievementRepository: Repository<UserAchievementEntity>,
+		private readonly userAchievementRepository: Repository<UserAchievementEntity>, // Inject UserAchievement Repository
 	) {
-		super(userAchievementRepository);
+		super(userAchievementRepository); // Pass repository to the BaseService
 	}
 
+	// Use the correct property: userAchievementRepository
+	async findAll(): Promise<UserAchievementEntity[]> {
+		try {
+			return this.userAchievementRepository.find(); // Fetch all user achievements
+		} catch (error) {
+			console.error('Error fetching user achievements:', error.message);
+			throw error;
+		}
+	}
 }

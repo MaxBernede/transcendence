@@ -2,95 +2,124 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
-import { CreateUserDto } from './dto/createUser.dto';
+import { Match } from '../match/match.entity';
 
 @Injectable()
-export class UsersService {
+export class UserService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Match)
+    private readonly matchRepository: Repository<Match>, // Add Match repository
   ) {}
 
-  // Method to get all users
-  async findAll(): Promise<User[]> {
-    return await this.usersRepository.find();
-  }
+  // Existing findOne method
+  async findOne(idOrUsername: string | number): Promise<User> {
+    console.log(`Searching for user with ID or username: ${idOrUsername}`);
 
-  // Method to create a new user
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const newUser = this.usersRepository.create(createUserDto);
-    return await this.usersRepository.save(newUser);
-  }
+    let whereClause;
 
-  // Method to find one user by ID
-  async findOne(id: number): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+    if (typeof idOrUsername === 'number') {
+      whereClause = { id: idOrUsername }; // Search by ID
+      console.log(`Searching by ID: ${whereClause.id}`);
+    } else {
+      whereClause = { username: idOrUsername }; // Search by username
+      console.log(`Searching by username: ${whereClause.username}`);
     }
+
+    console.log(`Where clause:`, whereClause);
+
+    const user = await this.userRepository.findOne({
+      where: whereClause,
+      relations: ['friends'], // Add relations if necessary
+    });
+
+    if (!user) {
+      console.error(`User not found for:`, whereClause);
+      throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
+    }
+
+    console.log(`Found user:`, user);
+    return user;
+  }
+  
+
+async findOneWithMatchHistory(idOrUsername: string): Promise<{ user: User; matchHistory: Match[] }> {
+    const user = await this.findOne(idOrUsername);
+    if (!user) throw new NotFoundException(`User not found: ${idOrUsername}`);
+
+    const matchHistory = await this.matchRepository.find({
+        where: { user: { id: user.id } },
+        relations: ['user'],
+    });
+
+    return { user, matchHistory };
+}
+
+  // Existing updateUsername method
+  async updateUsername(idOrUsername: string | number, newUsername: string): Promise<User> {
+    console.log(`Updating username for ID or username: ${idOrUsername} to: ${newUsername}`);
+
+    if (!newUsername.trim()) {
+      throw new BadRequestException('Username cannot be empty');
+    }
+
+    const existingUser = await this.userRepository.findOne({
+      where: { username: newUsername.trim() },
+    });
+    if (existingUser) {
+      throw new BadRequestException(`Username "${newUsername}" is already taken`);
+    }
+
+    const user = await this.findOne(idOrUsername);
+    if (!user) {
+      throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
+    }
+
+    user.username = newUsername.trim();
+    await this.userRepository.save(user);
+
+    console.log(`Updated user:`, user);
     return user;
   }
 
-  // Method to remove a user by ID
-  async remove(id: number): Promise<void> {
-    const result = await this.usersRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+  // Existing updateAvatar method
+  async updateAvatar(idOrUsername: string | number, avatarPath: string): Promise<User> {
+    console.log(`Updating avatar for ID or username: ${idOrUsername} to: ${avatarPath}`);
+
+    const user = await this.findOne(idOrUsername);
+    if (!user) {
+      throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
     }
+
+    user.avatar = avatarPath;
+    return this.userRepository.save(user);
   }
 
-  // Method to add a friend
+  // Existing addFriend method
   async addFriend(userId: number, friendId: number): Promise<User> {
     if (userId === friendId) {
       throw new BadRequestException('Cannot add yourself as a friend');
     }
 
-    const user = await this.usersRepository.findOne({
-      where: { id: userId },
-      relations: ['friends'],
-    });
+    const user = await this.findOne(userId);
+    const friend = await this.findOne(friendId);
 
-    const friend = await this.usersRepository.findOne({
-      where: { id: friendId },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+    if (user.friends.find((f) => f.id === friendId)) {
+      throw new BadRequestException('User is already a friend');
     }
 
-    if (!friend) {
-      throw new NotFoundException(`User with ID ${friendId} not found`);
-    }
-
-    if (!user.friends.find((existingFriend) => existingFriend.id === friendId)) {
-      user.friends.push(friend);
-      await this.usersRepository.save(user);
-    }
-
-    return user;
+    user.friends.push(friend);
+    return this.userRepository.save(user);
   }
 
-  // Method to get a user's friends
-  async getFriends(userId: number): Promise<User[]> {
-    const user = await this.usersRepository.findOne({
-      where: { id: userId },
-      relations: ['friends'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    return user.friends;
-  }
-
-  async updateAvatar(userId: number, avatarFileName: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    user.avatar = avatarFileName; // Save the filename to the user entity
-    return this.usersRepository.save(user);
+  async findAchievementsForUser(userId: number): Promise<any[]> {
+	// Assuming achievements are stored in a related table with a foreign key
+	return this.matchRepository.query(`
+	  SELECT achievementName FROM achievement_entity 
+	  WHERE id IN (
+		SELECT achievementId FROM user_achievement_entity WHERE userId = $1
+	  )
+	`, [userId]);
   }
 }

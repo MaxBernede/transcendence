@@ -5,6 +5,7 @@ import React from 'react';
 const UserPage: React.FC = () => {
 // Use useParams to get the dynamic parameter from the URL
   const { id } = useParams<{ id: string }>();
+  console.log('User ID from route:', id); // Debugging
 
   // Show a loading message if `id` is not yet available
   if (!id) return <p>Loading...</p>;
