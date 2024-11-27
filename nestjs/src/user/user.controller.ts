@@ -20,24 +20,10 @@ import { BaseController } from 'src/base/base.controller';
 import { Express } from 'express';
 import { Public } from 'src/decorators/public.decorator';
 
-
 	@Controller('users')
 	export class UsersController extends BaseController<User> {
 		constructor(private readonly UsersService: UsersService) {
 			super(UsersService)
-		}
-
-		@Post()
-		@Public()
-		@UsePipes(ValidationPipe)
-		async create(@Body() createUserDto: CreateUserDto): Promise<User> {
-		try {
-			const user = await this.UsersService.create(createUserDto);
-			return user;
-		} catch (error) {
-			console.log("User has not been created because:", error.message);
-			throw new BadRequestException('User could not be created.');
-		}
 		}
 		
 		@Post(':userId/add-friend/:friendId')
@@ -82,6 +68,7 @@ import { Public } from 'src/decorators/public.decorator';
 		}
 
 		// promise JWT token ?
+		@Public()
 		@Post('register')
 		async register(@Body() body: CreateUserDto) {
 			const { username, email, password } = body;
