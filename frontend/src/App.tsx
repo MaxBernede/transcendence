@@ -2,6 +2,7 @@ import React from 'react';
 import {BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import UserPage from './pages/Userpage';
+import LoginButton from './components/LoginIntra';
 import { useEffect, useState } from 'react'
 import Login from './components/Login';
 import Creation from './components/Creation';
@@ -14,10 +15,11 @@ function App() {
   return (
     <BrowserRouter>
       <nav>
-        <Link to="/">Home</Link>
-        <Link to="/user/ivan-mel">Ivan Mel</Link>
-        <Link to="/login">Login</Link>
-        <Link to="/creation">Creation</Link>
+        <Link to="/">Home </Link>
+        <Link to="/user/ivan-mel">Ivan Mel </Link>
+        <Link to="/login">Login </Link>
+        <Link to="/creation">Creation </Link>
+        <Link to="/loginIntra">Intra-Login </Link>
       </nav>
 
       <Routes>
@@ -25,6 +27,7 @@ function App() {
         <Route path="/user/:id" element={<UserPage />} />
         <Route path="/login" element={<Login setLoggedIn={setLoggedIn} setEmail={setEmail} />} />
         <Route path="/creation" element={<Creation setLoggedIn={setLoggedIn} setEmail={setEmail} />} />
+        <Route path="/loginIntra" element={<LoginButton />} />
       </Routes>
     </BrowserRouter>
   );

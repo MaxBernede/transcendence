@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/createUser.dto';
 import { BaseService } from 'src/base/base.service';
+import * as bcrypt from 'bcrypt'
 
 @Injectable()
 export class UsersService extends BaseService<User> implements OnModuleInit {
@@ -115,5 +116,15 @@ export class UsersService extends BaseService<User> implements OnModuleInit {
 		}
 	}
 	
-
+	// Password Protection
+	async hashPassword(password: string): Promise<string>{
+	  console.log("hashing : ", password);
+	  return await bcrypt.hash(password, 10);
+	}
+	
+	async validatePassword(enteredPassword: string, storedHash: string): Promise<boolean>{
+	  const isMatch = await bcrypt.compare(enteredPassword, storedHash);
+	  return isMatch;
+	};
+	
 }

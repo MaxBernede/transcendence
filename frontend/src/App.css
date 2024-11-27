@@ -102,3 +102,18 @@
   border: 1px solid grey;
   padding-left: 8px;
 }
+
+.errorLabel {
+	color: red;
+	font-size: 14px;
+	font-weight: bold;
+	margin-top: 4px;
+	margin-bottom: 8px;
+	text-align: left;
+	background-color: #ffe6e6; /* Light red background */
+	border: 1px solid red; /* Border matching the error color */
+	border-radius: 4px;
+	padding: 4px 8px; /* Add some padding */
+	width: 100%; /* Ensure it matches the container width */
+	box-sizing: border-box; /* Prevent overflow due to padding */
+}

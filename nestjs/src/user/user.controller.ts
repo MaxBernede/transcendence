@@ -60,6 +60,7 @@ import { Public } from 'src/decorators/public.decorator';
 		}
 
 		// TO IMPLEMENT NEXT
+		@Public()
 		@Post('auth')
 		async auth(@Body() body: { email: string }): Promise<boolean> {
 			const { email } = body;

@@ -26,9 +26,11 @@ const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
 		const newErrors = { username: '', email: '', password: '', confirmPassword: '' }
 
 		if (!username) newErrors.username = 'Please enter your username'
+		else if (username.length < 5) newErrors.username = 'Username needs to be at least 5 characters long'
 		if (!email) newErrors.email = 'Please enter your email'
+		else if (!/^.+@.+\..+$/.test(email)) newErrors.email = 'Please enter a valid email address';
 		if (!password) newErrors.password = 'Please enter a password'
-		else if (password.length < 7) newErrors.password = 'Password must be at least 7 characters long'
+		else if (password.length < 5) newErrors.password = 'Password must be at least 7 characters long'
 		if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match'
 
 		setErrors(newErrors)
@@ -72,7 +74,7 @@ const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
 						onChange={(e) => setUsername(e.target.value)}
 						className="inputBox"
 					/>
-					<label className="errorLabel">{errors.username}</label>
+					{errors.username && <label className="errorLabel">{errors.username}</label>}
 				</div>
 				<br />
 				<div className="inputContainer">
@@ -82,7 +84,7 @@ const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
 						onChange={(e) => setEmailState(e.target.value)}
 						className="inputBox"
 					/>
-					<label className="errorLabel">{errors.email}</label>
+					{errors.email && <label className="errorLabel">{errors.email}</label>}
 				</div>
 				<br />
 				<div className="inputContainer">
@@ -93,7 +95,7 @@ const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
 						className="inputBox"
 						type="password"
 					/>
-					<label className="errorLabel">{errors.password}</label>
+					{errors.password && <label className="errorLabel">{errors.password}</label>}
 				</div>
 				<br />
 				<div className="inputContainer">
@@ -104,12 +106,18 @@ const Creation: React.FC<CreationProps> = ({ setLoggedIn, setEmail }) => {
 						className="inputBox"
 						type="password"
 					/>
-					<label className="errorLabel">{errors.confirmPassword}</label>
+					{errors.confirmPassword && <label className="errorLabel">{errors.confirmPassword}</label>}
 				</div>
 				<br />
-				<div className={'inputContainer'}>
-          			<input className={'inputButton'} type="button" onClick={handleAccountCreation} value={'Create account'} />
+				<div className="inputContainer">
+					<input
+						className="inputButton"
+						type="button"
+						onClick={handleAccountCreation}
+						value="Create account"
+					/>
 				</div>
+				{/* Render global error message if it exists */}
 				{errorMessage && <p className="errorLabel">{errorMessage}</p>}
 			</form>
 		</div>
