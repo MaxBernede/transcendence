@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { Match } from '../match/match.entity';
+import { CreateUserDto } from './dto/createUser.dto';
 
 @Injectable()
 export class UserService {
@@ -12,7 +13,39 @@ export class UserService {
     @InjectRepository(Match)
     private readonly matchRepository: Repository<Match>, // Add Match repository
   ) {}
+  
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
+    const { username, email, password } = createUserDto;
 
+    // Check if username or email already exists
+    const existingUser = await this.userRepository.findOne({
+      where: [{ username }, { email }],
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Username or email already exists');
+    }
+
+    const newUser = this.userRepository.create({
+      username,
+      email,
+      password, // In production, always hash passwords!
+    });
+
+    return this.userRepository.save(newUser);
+  }
+
+  async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: +id } });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${id}" not found`);
+    }
+
+    Object.assign(user, updatedData);
+    return this.userRepository.save(user);
+  }
+  
   // Existing findOne method
   async findOne(idOrUsername: string | number): Promise<User> {
     console.log(`Searching for user with ID or username: ${idOrUsername}`);

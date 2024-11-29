@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { Match } from '../match/match.entity'; // Import Match entity
 
-@Entity()
+@Entity('user')
 export class User {
     @PrimaryGeneratedColumn()
     id: number;
