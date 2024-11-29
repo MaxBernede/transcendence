@@ -21,10 +21,14 @@ import { BaseController } from 'src/base/base.controller';
 import { Express, Response } from 'express';
 import { Public } from 'src/decorators/public.decorator';
 import { stringify } from 'querystring';
+import { ConfigService } from '@nestjs/config';
 
 	@Controller('users')
 	export class UsersController extends BaseController<User> {
-		constructor(private readonly UsersService: UsersService) {
+		constructor(
+			private readonly UsersService: UsersService,
+			private readonly configService: ConfigService,
+		) {
 			super(UsersService)
 		}
 		
@@ -95,13 +99,23 @@ import { stringify } from 'querystring';
 		@Public()
 		@Get('loginintra')
 		login(@Res() res: Response) {
+			const clientId = this.configService.get<string>('INTRA_CLIENT_ID');
+			const redirectUri = this.configService.get<string>('INTRA_REDIRECT_URI');
+			const secret = this.configService.get<string>('INTRA_CLIENT_SECRET');
+			
+			// Vérification des variables d'environnement
+			if (!clientId || !redirectUri) {
+			  console.error('Missing INTRA_CLIENT_ID or INTRA_REDIRECT_URI');
+			  return res.status(400).json({ message: 'Missing required environment variables.' });
+			}
 			const params = {
-				client_id: process.env.INTRA_CLIENT_ID, // Your 42 app's client ID
-				redirect_uri: process.env.INTRA_REDIRECT_URI, // Your backend's callback endpoint
+				client_id: clientId,
+				redirect_uri: 'http://localhost:3001',
 				response_type: 'code',
 			};
 			console.log(params);
 			const authUrl = `https://api.intra.42.fr/oauth/authorize?${stringify(params)}`;
+			console.log('Auth URL:', authUrl);
 			res.json({ url: authUrl }); // Send the URL to the frontend
 		}
 	}
