@@ -5,7 +5,7 @@ const LoginButton = () => {
 	const handleLogin = async () => {
 		try {
 			// Call the backend to initiate the 42 OAuth flow
-			const response = await axios.get('http://localhost:3000/auth/loginintra', {
+			const response = await axios.get('http://localhost:3000/users/loginintra', {
 				withCredentials: true, // Include cookies if needed
 			});
 

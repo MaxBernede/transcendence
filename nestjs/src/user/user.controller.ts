@@ -1,5 +1,6 @@
 import { 
-	Controller, 
+	Controller,
+	Res,
 	Get, 
 	Post, 
 	Body, 
@@ -17,8 +18,9 @@ import { User } from './user.entity';
 import { CreateUserDto } from './dto/createUser.dto';
 import { Multer } from 'multer';
 import { BaseController } from 'src/base/base.controller';
-import { Express } from 'express';
+import { Express, Response } from 'express';
 import { Public } from 'src/decorators/public.decorator';
+import { stringify } from 'querystring';
 
 	@Controller('users')
 	export class UsersController extends BaseController<User> {
@@ -88,6 +90,19 @@ import { Public } from 'src/decorators/public.decorator';
 				username: newUser.username,
 				email: newUser.email,
 			};
+		}
+
+		@Public()
+		@Get('loginintra')
+		login(@Res() res: Response) {
+			const params = {
+				client_id: process.env.INTRA_CLIENT_ID, // Your 42 app's client ID
+				redirect_uri: process.env.INTRA_REDIRECT_URI, // Your backend's callback endpoint
+				response_type: 'code',
+			};
+			console.log(params);
+			const authUrl = `https://api.intra.42.fr/oauth/authorize?${stringify(params)}`;
+			res.json({ url: authUrl }); // Send the URL to the frontend
 		}
 	}
 	
