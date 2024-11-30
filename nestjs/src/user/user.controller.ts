@@ -10,7 +10,8 @@ import {
 	ValidationPipe, 
 	UseInterceptors, 
 	UploadedFile, 
-	BadRequestException 
+	BadRequestException,
+	Query
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './user.service';
@@ -22,6 +23,7 @@ import { Express, Response } from 'express';
 import { Public } from 'src/decorators/public.decorator';
 import { stringify } from 'querystring';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 
 	@Controller('users')
 	export class UsersController extends BaseController<User> {
@@ -96,27 +98,53 @@ import { ConfigService } from '@nestjs/config';
 			};
 		}
 
+		// Sorry if my code sucks, trying my best rn
 		@Public()
 		@Get('loginintra')
-		login(@Res() res: Response) {
+		async login(@Res() res: Response) {
 			const clientId = this.configService.get<string>('INTRA_CLIENT_ID');
-			const redirectUri = this.configService.get<string>('INTRA_REDIRECT_URI');
-			const secret = this.configService.get<string>('INTRA_CLIENT_SECRET');
+			const redirectUri = 'http://localhost:3000/users/callback'
+			const clientSecret = this.configService.get<string>('INTRA_CLIENT_SECRET');		
 			
-			// Vérification des variables d'environnement
-			if (!clientId || !redirectUri) {
-			  console.error('Missing INTRA_CLIENT_ID or INTRA_REDIRECT_URI');
+			
+			if (!redirectUri) { // Change the check to all here
+			  console.error('Missing INTRA_REDIRECT_URI');
 			  return res.status(400).json({ message: 'Missing required environment variables.' });
 			}
 			const params = {
 				client_id: clientId,
-				redirect_uri: 'http://localhost:3001',
-				response_type: 'code',
+				secret: clientSecret,
+				redirect_uri: redirectUri,
 			};
 			console.log(params);
 			const authUrl = `https://api.intra.42.fr/oauth/authorize?${stringify(params)}`;
 			console.log('Auth URL:', authUrl);
 			res.json({ url: authUrl }); // Send the URL to the frontend
+		}
+
+		@Public()
+		@Get('callback')
+		async callback(@Query('code') jwt: string, @Res() res: Response) {
+			// If no authorization code is provided, return an error
+			if (!jwt) {
+				return res.status(400).json({ message: 'Authorization code not provided.' });
+			}
+			console.log('JWT:', jwt);
+			const userResponse = await axios.get('https://api.intra.42.fr/v2/me', {
+				headers: {
+				  Authorization: `Bearer${jwt}`,
+				  'Content-Type': 'application/json'
+				},
+			});
+			try {
+			console.log('User Info:', userResponse.data);
+
+				return res.redirect(`http://localhost:3001/loginIntra?token=${jwt}`);
+			}
+			catch (error) {
+				console.error('Error during code exchange:', error.response?.data || error);
+				return res.status(500).json({ message: 'Error during code exchange.' });
+			}
 		}
 	}
 	

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import axios from 'axios';
 
 const LoginButton = () => {
@@ -16,6 +16,21 @@ const LoginButton = () => {
 			alert('Failed to start login process');
 		}
 	};
+
+	useEffect(() => {
+		// Check if there's a token in the URL
+		const urlParams = new URLSearchParams(window.location.search);
+		const token = urlParams.get('token');
+	
+		if (token) {
+		  // Store the token
+		  localStorage.setItem('jwt', token);
+		  console.log('JWT stored:', token);
+	
+		  // Redirect to the intra call again ?
+		  window.location.href = 'http://localhost:3001'; // Or another page
+		}
+	  }, []);
 
 	return (
 		<div>
