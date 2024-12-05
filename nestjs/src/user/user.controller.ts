@@ -49,12 +49,12 @@ import axios from 'axios';
 		@UseInterceptors(FileInterceptor('file', { dest: './uploads/avatars' }))
 		async uploadAvatar(
 		  @Param('id') userId: string,
-		  @UploadedFile() file: Multer.File,
+		//   @UploadedFile() file: Express.Multer.File,
 		): Promise<User> {
-		  if (!file) {
-			throw new BadRequestException('File is required');
-		  }
-		  return this.UsersService.updateAvatar(Number(userId), file.filename);
+		//   if (!file) {
+		// 	throw new BadRequestException('File is required');
+		//   }
+		  return this.UsersService.updateAvatar(Number(userId), 'file.filename');
 		}
 
 		// check account with the identifier:"string" in the POST body

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import '../App.css'
 import axios from 'axios'
 
+// Login will redirect to loginbackend to save in the front the user and jwt
 const Login = () => {
   const navigate = useNavigate();
 
@@ -18,29 +19,6 @@ const Login = () => {
       alert('Failed to start login process');
     }
   };
-
-  useEffect(() => {
-    // Check if there's a token and user data in the URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const user = urlParams.get('user');
-
-    if (token) {
-      // Store the JWT
-      localStorage.setItem('jwt', token);
-      console.log('JWT stored:', token);
-    }
-
-    if (user) {
-      // Parse and store the user information (make sure it's an object)
-      const userData = JSON.parse(decodeURIComponent(user));
-      localStorage.setItem('user', JSON.stringify(userData));
-      console.log('User data stored:', userData);
-    }
-
-    // Optionally, redirect to another page after storing the data
-    window.location.href = 'http://localhost:3001'; // Or another route
-  }, []);
 
     return (
       <div className={'mainContainer'}>

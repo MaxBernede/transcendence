@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import cookie from 'cookie';
 
 @Injectable()
 export class AuthService {
@@ -74,12 +75,34 @@ async getUserInfosFunction(jwt: string, @Res() res: Response, access_token: stri
 				Authorization: auth,
 			}
 		});
+		// console.log('User information received:', response.data);
+		const { 
+			email,
+			first_name,
+			last_name,
+			image,
+			phone
+		 } = response.data;
+		// Encode the JWT and user data before passing in the URL
+		const encodedJwt = encodeURIComponent(jwt);
+		const encodedUser = encodeURIComponent(JSON.stringify({ email, first_name, last_name, image, phone }));
 
-		console.log('User information received:', response.data);
+		// Optionally, encode the data to send it safely in the cookie
+		const userData = JSON.stringify({ email, first_name, last_name, image, phone });
+		console.log("User infos: ", userData)
+		// Set the cookie with user data
+		// res.setHeader('Set-Cookie', [
+		//   cookie.serialize('userData', userData, { 
+		// 	httpOnly: true, // Ensures the cookie is sent only over HTTP(S), not accessible via JavaScript
+		// 	secure: process.env.NODE_ENV === 'production', // Ensures cookie is sent over HTTPS in production
+		// 	maxAge: 3600, // Cookie will expire in 1 hour
+		// 	path: '/', // Cookie is available to all routes
+		//   })
+		// ]);
 
 		// Redirect to frontend with both the JWT and user data in the URL
 		return res.redirect(
-			`http://localhost:3001/login?token=${jwt}&user=${encodeURIComponent(JSON.stringify(response.data))}`
+			`http://localhost:3001`
 		);
 		} catch (error) {
 		console.error('Failed to fetch user info:', error.response?.data || error.message);
