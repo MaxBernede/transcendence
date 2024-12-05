@@ -20,25 +20,26 @@ const Login = () => {
   };
 
   useEffect(() => {
-    // Check if there's a token in the URL
+    // Check if there's a token and user data in the URL
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
+    const user = urlParams.get('user');
 
     if (token) {
-      // Vérifiez si le token est un objet JSON (exemple pour débogage) :
-      try {
-        const parsedToken = JSON.parse(token); // If your backend sends a JSON object encoded
-        localStorage.setItem('jwt', JSON.stringify(parsedToken));
-        console.log('JWT parsed and stored:', parsedToken);
-      } catch (error) {
-        // Otherwise, store the token directly if it's a simple string
-        localStorage.setItem('jwt', token);
-        console.log('JWT stored:', token);
-      }
-
-      // Redirect to another page after storing the token
-      window.location.href = 'http://localhost:3001'; // Or another route
+      // Store the JWT
+      localStorage.setItem('jwt', token);
+      console.log('JWT stored:', token);
     }
+
+    if (user) {
+      // Parse and store the user information (make sure it's an object)
+      const userData = JSON.parse(decodeURIComponent(user));
+      localStorage.setItem('user', JSON.stringify(userData));
+      console.log('User data stored:', userData);
+    }
+
+    // Optionally, redirect to another page after storing the data
+    window.location.href = 'http://localhost:3001'; // Or another route
   }, []);
 
     return (
