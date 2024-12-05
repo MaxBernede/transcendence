@@ -2,10 +2,10 @@ import React from 'react';
 import {BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import UserPage from './pages/Userpage';
-import LoginButton from './components/LoginIntra';
 import { useEffect, useState } from 'react'
 import Login from './components/Login';
 import Creation from './components/Creation';
+import LoginSave from './components/LoginSave';
 import './App.css'
 
 function App() {
@@ -25,9 +25,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Home email={email} loggedIn={loggedIn} setLoggedIn={setLoggedIn}/>} />
         <Route path="/user/:id" element={<UserPage />} />
-        <Route path="/login" element={<Login setLoggedIn={setLoggedIn} setEmail={setEmail} />} />
+        <Route path="/login" element={<Login/>} />
+        <Route path="/loginSave" element={<LoginSave setLoggedIn={setLoggedIn} setEmail={setEmail} />} />
         <Route path="/creation" element={<Creation setLoggedIn={setLoggedIn} setEmail={setEmail} />} />
-        <Route path="/loginIntra" element={<LoginButton />} />
       </Routes>
     </BrowserRouter>
   );

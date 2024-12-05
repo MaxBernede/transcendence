@@ -6,15 +6,20 @@ import {
 	HttpStatus,
 	Post,
 	Request,
+  Res,
 	UseGuards
   } from '@nestjs/common';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { Public } from 'src/decorators/public.decorator';
+import axios from 'axios';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+  ) {}
 
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -29,4 +34,16 @@ export class AuthController {
     return req.user;
   }
 
+
+  @Public() // first step
+  @Get()
+  getAuth(@Res() res: Response) {
+    return this.authService.getAuthToken(res);
+  }
+
+  @Public() // Second step
+  @Get('getJwt')
+  getJwt(@Res() res: Response) {
+    return this.authService.getJwtToken(res);
+  }
 }
