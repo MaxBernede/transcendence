@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { Match } from '../match/match.entity';
 import { CreateUserDto } from './dto/createUser.dto';
+import { AchievementEntity } from '../achievement/achievement.entity';
 
 @Injectable()
 export class UserService {
@@ -11,13 +12,14 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Match)
-    private readonly matchRepository: Repository<Match>, // Add Match repository
+    private readonly matchRepository: Repository<Match>,
+    @InjectRepository(AchievementEntity)
+    private readonly achievementRepository: Repository<AchievementEntity>,
   ) {}
-  
+
   async createUser(createUserDto: CreateUserDto): Promise<User> {
     const { username, email, password } = createUserDto;
 
-    // Check if username or email already exists
     const existingUser = await this.userRepository.findOne({
       where: [{ username }, { email }],
     });
@@ -29,107 +31,97 @@ export class UserService {
     const newUser = this.userRepository.create({
       username,
       email,
-      password, // In production, always hash passwords!
+      password,
     });
 
     return this.userRepository.save(newUser);
   }
 
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id: +id } });
+    const user = await this.userRepository.findOne({
+        where: { id: +id },
+        relations: ['achievements', 'matchHistory', 'friends'], // Ensure relations are loaded
+    });
 
     if (!user) {
-      throw new NotFoundException(`User with ID "${id}" not found`);
+        throw new NotFoundException(`User with ID "${id}" not found`);
     }
 
-    Object.assign(user, updatedData);
+    // Handle achievements update
+    if (updatedData.achievements && Array.isArray(updatedData.achievements)) {
+        const achievementIds = updatedData.achievements.map((achievement) => {
+            if (typeof achievement === 'number') {
+                return achievement;
+            } else if (typeof achievement === 'object' && 'id' in achievement) {
+                return achievement.id;
+            } else {
+                throw new BadRequestException('Invalid achievement format');
+            }
+        });
+
+        const achievementEntities = await this.achievementRepository.findByIds(achievementIds);
+        if (achievementEntities.length !== achievementIds.length) {
+            throw new BadRequestException('Some achievements not found');
+        }
+
+        user.achievements = achievementEntities;
+    }
+
+    // Handle match history update
+    if (updatedData.matchHistory && Array.isArray(updatedData.matchHistory)) {
+        const matches = updatedData.matchHistory.map((match) => {
+            if (typeof match === 'object') {
+                return this.matchRepository.create(match);
+            }
+            throw new BadRequestException('Invalid match format');
+        });
+
+        await this.matchRepository.save(matches); // Save new matches
+        user.matchHistory = matches;
+    }
+
+    Object.assign(user, updatedData); // Update other fields
     return this.userRepository.save(user);
+}
+
+async findOneWithRelations(id: number): Promise<User> {
+	return this.userRepository.findOne({
+	  where: { id },
+	  relations: ['achievements', 'matchHistory', 'friends'],
+	});
   }
-  
-  // Existing findOne method
+
   async findOne(idOrUsername: string | number): Promise<User> {
-    console.log(`Searching for user with ID or username: ${idOrUsername}`);
-
-    let whereClause;
-
-    if (typeof idOrUsername === 'number') {
-      whereClause = { id: idOrUsername }; // Search by ID
-      console.log(`Searching by ID: ${whereClause.id}`);
-    } else {
-      whereClause = { username: idOrUsername }; // Search by username
-      console.log(`Searching by username: ${whereClause.username}`);
-    }
-
-    console.log(`Where clause:`, whereClause);
+    const whereClause =
+      typeof idOrUsername === 'number'
+        ? { id: idOrUsername }
+        : { username: idOrUsername };
 
     const user = await this.userRepository.findOne({
       where: whereClause,
-      relations: ['friends'], // Add relations if necessary
+      relations: ['friends', 'achievements', 'matchHistory'], // Include matchHistory and achievements
     });
 
     if (!user) {
-      console.error(`User not found for:`, whereClause);
       throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
     }
 
-    console.log(`Found user:`, user);
     return user;
-  }
-  
+}
 
-async findOneWithMatchHistory(idOrUsername: string): Promise<{ user: User; matchHistory: Match[] }> {
+  async findOneWithMatchHistory(
+    idOrUsername: string,
+  ): Promise<{ user: User; matchHistory: Match[] }> {
     const user = await this.findOne(idOrUsername);
-    if (!user) throw new NotFoundException(`User not found: ${idOrUsername}`);
 
     const matchHistory = await this.matchRepository.find({
-        where: { user: { id: user.id } },
-        relations: ['user'],
+      where: { user: { id: user.id } },
+      relations: ['user'],
     });
 
     return { user, matchHistory };
-}
-
-  // Existing updateUsername method
-  async updateUsername(idOrUsername: string | number, newUsername: string): Promise<User> {
-    console.log(`Updating username for ID or username: ${idOrUsername} to: ${newUsername}`);
-
-    if (!newUsername.trim()) {
-      throw new BadRequestException('Username cannot be empty');
-    }
-
-    const existingUser = await this.userRepository.findOne({
-      where: { username: newUsername.trim() },
-    });
-    if (existingUser) {
-      throw new BadRequestException(`Username "${newUsername}" is already taken`);
-    }
-
-    const user = await this.findOne(idOrUsername);
-    if (!user) {
-      throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
-    }
-
-    user.username = newUsername.trim();
-    await this.userRepository.save(user);
-
-    console.log(`Updated user:`, user);
-    return user;
   }
 
-  // Existing updateAvatar method
-  async updateAvatar(idOrUsername: string | number, avatarPath: string): Promise<User> {
-    console.log(`Updating avatar for ID or username: ${idOrUsername} to: ${avatarPath}`);
-
-    const user = await this.findOne(idOrUsername);
-    if (!user) {
-      throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
-    }
-
-    user.avatar = avatarPath;
-    return this.userRepository.save(user);
-  }
-
-  // Existing addFriend method
   async addFriend(userId: number, friendId: number): Promise<User> {
     if (userId === friendId) {
       throw new BadRequestException('Cannot add yourself as a friend');
@@ -146,13 +138,36 @@ async findOneWithMatchHistory(idOrUsername: string): Promise<{ user: User; match
     return this.userRepository.save(user);
   }
 
-  async findAchievementsForUser(userId: number): Promise<any[]> {
-	// Assuming achievements are stored in a related table with a foreign key
-	return this.matchRepository.query(`
-	  SELECT achievementName FROM achievement_entity 
-	  WHERE id IN (
-		SELECT achievementId FROM user_achievement_entity WHERE userId = $1
-	  )
-	`, [userId]);
+  async findAchievementsForUser(userId: number): Promise<AchievementEntity[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['achievements'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    return user.achievements;
   }
+  async updateAchievements(userId: number, achievementIds: number[]): Promise<User> {
+	const user = await this.userRepository.findOne({
+	  where: { id: userId },
+	  relations: ['achievements'],
+	});
+  
+	if (!user) {
+	  throw new NotFoundException(`User with ID "${userId}" not found`);
+	}
+  
+	const achievements = await this.achievementRepository.findByIds(achievementIds);
+  
+	if (achievements.length !== achievementIds.length) {
+	  throw new BadRequestException('Some achievements not found');
+	}
+  
+	user.achievements = achievements;
+	return this.userRepository.save(user);
+  }  
+  
 }

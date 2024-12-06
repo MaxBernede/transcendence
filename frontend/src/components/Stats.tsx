@@ -4,7 +4,7 @@ type StatsProps = {
   wins: number;
   losses: number;
   ladderLevel: number;
-  achievements: { achievementName: string; description: string }[]; // Updated type
+  achievements: { achievementName: string; description: string }[];
 };
 
 export const Stats: React.FC<StatsProps> = ({

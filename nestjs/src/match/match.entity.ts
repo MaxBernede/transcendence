@@ -18,10 +18,9 @@ export class Match {
   @Column()
   score: string;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   date: Date;
 
-  @ManyToOne(() => User, (user) => user.matchHistory, { nullable: false })
-  @JoinColumn({ name: 'user_id' }) // Explicitly map to the 'user_id' column in the database
-  user: User; // This sets up the foreign key
+  @ManyToOne(() => User, (user) => user.matchHistory, { onDelete: 'CASCADE' })
+  user: User; // Many-to-one relationship with user
 }

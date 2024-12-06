@@ -1,19 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
+import { User } from '../user/user.entity';
 
-//Filename for the picture ?
-@Entity()
+@Entity('achievement') // Explicit table name for clarity
 export class AchievementEntity {
-	@PrimaryGeneratedColumn()
-	id: number;
-  
-	@Column({ unique: true })
-	achievementName: string;
-  
-	@Column()
-	description: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-	@Column( { default: null })
-	filename: string;
+  @Column({ unique: true, name: 'achievement_name' })
+  achievementName: string;
+  
+
+  @Column()
+  description: string;
+
+  @Column({ default: null })
+  filename: string;
+
+  @ManyToMany(() => User, (user) => user.achievements)
+  users: User[];
 }
 
 @Entity()

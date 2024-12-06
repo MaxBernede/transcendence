@@ -12,7 +12,7 @@ const UserPage: React.FC = () => {
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [avatar, setAvatar] = useState<string>(defaultAvatar);
+	const [avatar] = useState<string>(defaultAvatar);
   const [matchHistory, setMatchHistory] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<
     { id: number; achievementName: string; description: string }[]
@@ -22,63 +22,43 @@ const UserPage: React.FC = () => {
   const [newUsername, setNewUsername] = useState<string>('');
   const [editing, setEditing] = useState(false);
 
-  useEffect(() => {
-    if (!id) {
-      setError('User ID is missing.');
-      setLoading(false);
-      return;
-    }
-
-    // Fetch user data
-    axios
-      .get(`http://localhost:3000/api/users/${id}`)
-      .then((response) => {
-        console.log('User data fetched:', response.data);
-        setUserData({
-          id: response.data.id,
-          username: response.data.username,
-          avatar: response.data.avatar || defaultAvatar,
-          wins: response.data.wins,
-          losses: response.data.loose,
-          ladderLevel: response.data.ladder_level,
-        });
-        setNewUsername(response.data.username); // Initialize editable field
-        setAvatar(response.data.avatar || defaultAvatar);
-      })
-      .catch((error) => {
-        console.error('Error fetching user data:', error);
-        setError('User not found.');
-      })
-      .finally(() => setLoading(false));
-
-    // Fetch match history
-    axios
-      .get(`http://localhost:3000/matches/user/${id}`)
-      .then((response) => {
-        console.log('Match history fetched:', response.data);
-        setMatchHistory(response.data);
-      })
-      .catch((error) => {
-        console.error('Error fetching match history:', error);
-      });
-
-    // Fetch achievements
-    axios
-      .get(`http://localhost:3000/api/achievements`)
-      .then((response) => {
-        console.log('Achievements fetched:', response.data);
-        const transformedAchievements = response.data.map((achievement: any) => ({
-          id: achievement.id,
-          achievementName: achievement.achievementName,
-          description: achievement.description || 'No description available',
-        }));
-        setAchievements(transformedAchievements);
-      })
-      .catch((error) => {
-        console.error('Error fetching achievements:', error);
-      });
+useEffect(() => {
+	if (!id) {
+	  setError('User ID is missing.');
+	  setLoading(false);
+	  return;
+	}
+  
+	// Fetch user data with relations (achievements and match history included)
+	axios
+	  .get(`http://localhost:3000/api/users/${id}/with-relations`)
+	  .then((response) => {
+		console.log('User data with relations fetched:', response.data);
+  
+		const { achievements, matchHistory, ...userData } = response.data;
+  
+		setUserData({
+		  ...userData,
+		  avatar: userData.avatar || defaultAvatar,
+		});
+  
+		setAchievements(
+		  achievements.map((achievement: any) => ({
+			id: achievement.id,
+			achievementName: achievement.achievementName,
+			description: achievement.description || 'No description available',
+		  }))
+		);
+  
+		setMatchHistory(matchHistory);
+	  })
+	  .catch((error) => {
+		console.error('Error fetching user data with relations:', error);
+		setError('User not found.');
+	  })
+	  .finally(() => setLoading(false));
   }, [id]);
-
+  
   const handleUpdateUser = () => {
     if (!newUsername.trim()) {
       setError('Username cannot be empty.');

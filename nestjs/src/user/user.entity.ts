@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToMany } from 'typeorm';
-import { Match } from '../match/match.entity'; // Import Match entity
+import { Match } from '../match/match.entity';
+import { AchievementEntity } from '../achievement/achievement.entity';
 
 @Entity('user')
 export class User {
@@ -43,6 +44,15 @@ export class User {
     @JoinTable()
     friends: User[];
 
-    @OneToMany(() => Match, (match) => match.user)
-    matchHistory: Match[]; // Link to Match entity via OneToMany relationship
+	@OneToMany(() => Match, (match) => match.user)
+  	matchHistory: Match[]; // One-to-many relationship with matches
+
+	  @ManyToMany(() => AchievementEntity, (achievement) => achievement.users, { cascade: true })
+	  @JoinTable({
+		  name: 'user_achievements',
+		  joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+		  inverseJoinColumn: { name: 'achievement_id', referencedColumnName: 'id' },
+	  })
+	  achievements: AchievementEntity[];
+	  
 }
