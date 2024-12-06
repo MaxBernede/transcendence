@@ -5,7 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import cookie from 'cookie';
+import * as cookie from 'cookie';
 
 @Injectable()
 export class AuthService {
@@ -83,22 +83,31 @@ async getUserInfosFunction(jwt: string, @Res() res: Response, access_token: stri
 			image,
 			phone
 		 } = response.data;
-		// Encode the JWT and user data before passing in the URL
-		const encodedJwt = encodeURIComponent(jwt);
-		const encodedUser = encodeURIComponent(JSON.stringify({ email, first_name, last_name, image, phone }));
+
+		const encodedUser = JSON.stringify({ email, first_name, last_name, image, phone });
 
 		// Optionally, encode the data to send it safely in the cookie
 		const userData = JSON.stringify({ email, first_name, last_name, image, phone });
 		console.log("User infos: ", userData)
 		// Set the cookie with user data
-		// res.setHeader('Set-Cookie', [
-		//   cookie.serialize('userData', userData, { 
-		// 	httpOnly: true, // Ensures the cookie is sent only over HTTP(S), not accessible via JavaScript
-		// 	secure: process.env.NODE_ENV === 'production', // Ensures cookie is sent over HTTPS in production
-		// 	maxAge: 3600, // Cookie will expire in 1 hour
-		// 	path: '/', // Cookie is available to all routes
-		//   })
-		// ]);
+		res.setHeader('Set-Cookie', [
+			// Cookie JWT
+			cookie.serialize('jwt', jwt, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'strict',
+				maxAge: 3600, // 1 heure
+				path: '/',
+			}),
+			// Cookie UserData
+			cookie.serialize('userData', encodedUser, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'strict',
+				maxAge: 3600, // 1 heure
+				path: '/',
+			}),
+		]);
 
 		// Redirect to frontend with both the JWT and user data in the URL
 		return res.redirect(
