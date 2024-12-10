@@ -6,9 +6,11 @@ import { User } from './user.entity';
 import { MatchModule } from '../match/match.module';
 import { Match } from '../match/match.entity';
 import { AchievementEntity } from '../achievement/achievement.entity';
+import { typeOrmConfig } from '../ormconfig';
 
 @Module({
   imports: [
+    TypeOrmModule.forRoot(typeOrmConfig),
     TypeOrmModule.forFeature([User, Match, AchievementEntity]), // Import User entity
     MatchModule, // Import MatchModule if necessary
   ],

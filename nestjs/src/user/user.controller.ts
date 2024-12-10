@@ -19,7 +19,7 @@ import {
   import { UpdateUserDto } from './dto/UpdateUser.dto';
   import { CreateUserDto } from './dto/createUser.dto';
   import { Match } from '../match/match.entity';
-
+import { Public } from 'src/decorators/public.decorator';
   
   @Controller('api/users')
   export class UserController {
@@ -130,4 +130,36 @@ import {
 	  return this.userService.updateAchievements(userId, achievementIds);
 	}
 	
+	// check account with the identifier:"string" in the POST body
+	@Post('check-account')
+	async checkAccount(@Body() body: { identifier: string }): Promise<boolean> {
+		const { identifier } = body;
+		if (!identifier) {
+			throw new Error('Identifier is required');
+		}
+		return this.userService.doesUserExist(identifier);
+	}
+
+	// promise JWT token ?
+	@Public()
+	@Post('register')
+	async register(@Body() body: CreateUserDto) {
+		const { username, email, password } = body;
+		// Check if user already exists
+		const userExists = await this.userService.doesUserExist(email);
+		if (userExists) {
+			throw new BadRequestException('User with this email already exists.');
+		}
+
+		// Create and save the new user
+		const newUser = await this.userService.create(body);
+
+		// Return the created user (omit sensitive information)
+		return {
+			id: newUser.id,
+			username: newUser.username,
+			email: newUser.email,
+		};
+	}
+
   }

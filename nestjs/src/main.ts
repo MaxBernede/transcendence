@@ -4,9 +4,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from './auth/auth.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
+  app.useGlobalPipes(new ValidationPipe());
+  // Apply the AuthGuard globally
+  const reflector = app.get(Reflector);
+  const jwtService = app.get(JwtService);
+  app.useGlobalGuards(new AuthGuard(jwtService, reflector));
 
   // Log all incoming requests for debugging
   app.use((req, res, next) => {
@@ -40,6 +49,7 @@ async function bootstrap() {
 
   // Enable validation globally
   app.useGlobalPipes(new ValidationPipe());
+
 
   // Log server listening port
   const port = 3000;

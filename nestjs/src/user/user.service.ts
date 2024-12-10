@@ -37,6 +37,12 @@ export class UserService {
     return this.userRepository.save(newUser);
   }
 
+	// Method to create a new user
+	async create(createUserDto: CreateUserDto): Promise<User> {
+		const newUser = this.userRepository.create(createUserDto);
+		return await this.userRepository.save(newUser);
+	}
+
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
     const user = await this.userRepository.findOne({
         where: { id: +id },
@@ -170,4 +176,35 @@ async findOneWithRelations(id: number): Promise<User> {
 	return this.userRepository.save(user);
   }  
   
+
+  	// True or false if exist in DBB
+	async doesUserExist(identifier: string): Promise<boolean> {
+		if (!identifier) {
+			throw new Error('Identifier is required');
+		}
+	
+		try {
+			// First, check if it's a username
+			let user = await this.userRepository.findOneBy({ username: identifier });
+			if (user) return true;
+	
+			// If not found, check if it's an email
+			user = await this.userRepository.findOneBy({ email: identifier });
+			return !!user; // Return true if user exists
+		} catch (error) {
+			throw new Error('Error checking user existence');
+		}
+	}
+	
+	// // Password Protection
+	// async hashPassword(password: string): Promise<string>{
+	//   console.log("hashing : ", password);
+	//   return await bcrypt.hash(password, 10);
+	// }
+	
+	// async validatePassword(enteredPassword: string, storedHash: string): Promise<boolean>{
+	//   const isMatch = await bcrypt.compare(enteredPassword, storedHash);
+	//   return isMatch;
+	// };
+	
 }
