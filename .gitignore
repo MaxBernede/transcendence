@@ -1,4 +1,4 @@
-#.env
+.env
 #.env to be added but not at the moment
 
 # Ignore node_modules folder (backend and frontend)
