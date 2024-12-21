@@ -4,8 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
 import { UserController } from './user/user.controller';
+import { DrizzleModule } from './drizzle/drizzle.module';
 
 @Module({
   imports: [
@@ -14,11 +14,9 @@ import { UserController } from './user/user.controller';
       isGlobal: true, // make module accessible everywhere to have .env access
       envFilePath: '../.env', //relative path
     }),
-    PrismaModule,
+	DrizzleModule
   ],
   controllers: [AppController, UserController],
-  providers: [
-    AppService,
-  ], // The use of APP_GUARD will protect each endpoint with a JWT
+  providers: [AppService], // The use of APP_GUARD will protect each endpoint with a JWT
 })
 export class AppModule {}

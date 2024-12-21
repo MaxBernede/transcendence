@@ -5,12 +5,8 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Request,
-  Res,
-  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Public } from 'src/decorators/public.decorator';
 import { AuthDto } from './dto';
 
 @Controller('auth')
