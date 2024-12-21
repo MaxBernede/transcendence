@@ -1,50 +1,30 @@
 import {
-	Body,
-	Controller,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Post,
-	Request,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Request,
   Res,
-	UseGuards
-  } from '@nestjs/common';
-import { AuthGuard } from './auth.guard';
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from 'src/decorators/public.decorator';
-import axios from 'axios';
-import { Response } from 'express';
+import { AuthDto } from './dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private authService: AuthService,
-  ) {}
+  constructor(private authService: AuthService) {}
 
-  // @Public()
-  // @HttpCode(HttpStatus.OK)
-  // @Post('login')
-  // signIn(@Body() signInDto: Record<string, any>) {
-  //   return this.authService.signIn(signInDto.username, signInDto.password);
-  // }
-
-  @UseGuards(AuthGuard)
-  @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  @Post('signup')
+  signup(@Body() dto: AuthDto) {
+    return this.authService.signup(dto);
   }
 
-
-  @Public() // first step
-  @Get()
-  getAuth(@Res() res: Response) {
-    return this.authService.getAuthToken(res);
+  @HttpCode(HttpStatus.OK)
+  @Post('signin')
+  signin(@Body() dto: AuthDto) {
+    return this.authService.signin(dto);
   }
-
-  @Public() // Second step
-  @Get('getJwt')
-  getJwt(@Res() res: Response) {
-    return this.authService.getJwtToken(res);
-  }
-
 }

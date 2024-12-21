@@ -6,16 +6,13 @@ import { existsSync, mkdirSync } from 'fs';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import { AuthGuard } from './auth/auth.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
-  app.useGlobalPipes(new ValidationPipe());
+
   // Apply the AuthGuard globally
   const reflector = app.get(Reflector);
   const jwtService = app.get(JwtService);
-  app.useGlobalGuards(new AuthGuard(jwtService, reflector));
 
   // Log all incoming requests for debugging
   app.use((req, res, next) => {
@@ -47,13 +44,17 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Enable validation globally
-  app.useGlobalPipes(new ValidationPipe());
-
+  // Enable validation globally with whitelist option
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Automatically strip out properties not decorated with @Is* decorators
+    }),
+  );
 
   // Log server listening port
   const port = 3000;
   await app.listen(port);
   console.log(`Server is running on http://localhost:${port}`);
 }
+
 bootstrap();

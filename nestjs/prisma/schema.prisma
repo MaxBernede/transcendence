@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model achievement {
+  id                Int                 @id(map: "PK_441339f40e8ce717525a381671e") @default(autoincrement())
+  achievement_name  String              @unique(map: "UQ_fb1bf9570b9dd4146acf300edf2") @db.VarChar
+  description       String              @db.VarChar
+  filename          String?             @db.VarChar
+  user_achievements user_achievements[]
+}
+
+model match_history {
+  id       Int      @id(map: "PK_efc236c939f8248229d873f4893") @default(autoincrement())
+  type     String   @db.VarChar
+  opponent String   @db.VarChar
+  result   String   @db.VarChar
+  score    String   @db.VarChar
+  date     DateTime @default(now()) @db.Timestamp(6)
+  userId   Int?
+  user     user?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_fab180b043d043cd669ea0fcf02")
+}
+
+model migrations {
+  id        Int    @id(map: "PK_8c82d7f526340ab734260ea46be") @default(autoincrement())
+  timestamp BigInt
+  name      String @db.VarChar
+}
+
+model user {
+  id                                                 Int                 @id(map: "PK_cace4a159ff9f2512dd42373760") @default(autoincrement())
+  username                                           String              @unique(map: "UQ_78a916df40e02a9deb1c4b75edb") @db.VarChar
+  email                                              String?             @db.VarChar
+  avatar                                             String?             @db.VarChar
+  password                                           String?             @db.VarChar
+  hash_key                                           String?             @db.VarChar
+  phone_number_2fa                                   Int?
+  created_at                                         DateTime            @default(now()) @db.Timestamp(6)
+  wins                                               Int                 @default(0)
+  loose                                              Int                 @default(0)
+  ladder_level                                       Int                 @default(0)
+  activity_status                                    String?             @db.VarChar
+  match_history                                      match_history[]
+  user_achievements                                  user_achievements[]
+  user_friends_user_user_friends_user_userId_1Touser user_friends_user[] @relation("user_friends_user_userId_1Touser")
+  user_friends_user_user_friends_user_userId_2Touser user_friends_user[] @relation("user_friends_user_userId_2Touser")
+}
+
+model user_achievement_entity {
+  id            Int @id(map: "PK_65d9719ee887e1bb20ebb9a6001") @default(autoincrement())
+  userId        Int
+  achievementId Int
+}
+
+model user_achievements {
+  user_id        Int
+  achievement_id Int
+  achievement    achievement @relation(fields: [achievement_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_36b4a912357ad1342b735d4d4c8")
+  user           user        @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "FK_c755e3741cd46fc5ae3ef06592c")
+
+  @@id([user_id, achievement_id], map: "PK_a103993b75768d942744e4b3b40")
+  @@index([achievement_id], map: "IDX_36b4a912357ad1342b735d4d4c")
+  @@index([user_id], map: "IDX_c755e3741cd46fc5ae3ef06592")
+}
+
+model user_friends_user {
+  userId_1                              Int
+  userId_2                              Int
+  user_user_friends_user_userId_1Touser user @relation("user_friends_user_userId_1Touser", fields: [userId_1], references: [id], onDelete: Cascade, map: "FK_04840fd160b733de706a3360134")
+  user_user_friends_user_userId_2Touser user @relation("user_friends_user_userId_2Touser", fields: [userId_2], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_e81f236c989f3fd54836b50a12d")
+
+  @@id([userId_1, userId_2], map: "PK_f2b5631d91f6b7fda632135932f")
+  @@index([userId_1], map: "IDX_04840fd160b733de706a336013")
+  @@index([userId_2], map: "IDX_e81f236c989f3fd54836b50a12")
+}
