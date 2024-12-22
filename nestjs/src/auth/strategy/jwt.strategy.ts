@@ -19,9 +19,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: { sub: number; username: string }) {
-	console.log('payload', payload);
-
-	console.log('payload.sub', payload.sub);
     const user = await this.drizzle
       .getDb()
       .select()
@@ -29,8 +26,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       .where(eq(users.id, payload.sub))
       .execute();
 
-
-    // return payload;
     delete user[0].password;
     return user[0];
   }

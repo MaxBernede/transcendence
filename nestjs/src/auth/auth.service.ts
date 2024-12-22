@@ -12,6 +12,13 @@ import { DrizzleService } from 'src/drizzle/drizzle.service';
 import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
+import * as Identicon from 'identicon.js';
+import * as fs from 'fs';
+
+import * as crypto from 'crypto';
+
+import { CreateUserDto } from 'src/db/dto';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -24,13 +31,21 @@ export class AuthService {
     try {
       const hash = await argon.hash(dto.password);
 
+	//   const usernameHash = crypto.createHash('sha256').update(dto.username).digest('hex');;
+	//   const identiconImage = new Identicon(usernameHash, 256).toString();
+
+	//   fs.writeFileSync('./uploads/identicon.png', identiconImage, { encoding: 'base64' });
+
+	  const userToInsert: CreateUserDto = {
+		username: dto.username,
+		password: hash,
+		avatarUrl: 'http://localhost:3000/identicon.png'
+	  };
+
       const user = await this.drizzle
         .getDb()
         .insert(users)
-        .values({
-          username: dto.username,
-          password: hash,
-        })
+		.values(userToInsert)
         .returning();
       const insertedUser = user[0];
 
@@ -44,7 +59,6 @@ export class AuthService {
   }
 
   async signin(dto: AuthDto) {
-    console.log('dto.username', dto.username);
     const user = await this.drizzle
       .getDb()
       .select()
@@ -75,8 +89,6 @@ export class AuthService {
       username: username,
     };
 
-    console.log('userID', userId);
-    console.log('username', username);
     const secret = this.config.get<string>('JWT_SECRET');
     const token = await this.jwt.signAsync(payload, {
       expiresIn: '15m',
