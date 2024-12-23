@@ -19,6 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: { sub: number; username: string }) {
+	console.log('Payload:', payload);
     const user = await this.drizzle
       .getDb()
       .select()

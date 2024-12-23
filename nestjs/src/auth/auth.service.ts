@@ -49,7 +49,8 @@ export class AuthService {
         .returning();
       const insertedUser = user[0];
 
-      return this.signToken(insertedUser.id, insertedUser.username);
+    //   return this.signToken(insertedUser.id, insertedUser.username);
+	return { message: 'Signup successful. Please log in to continue.' };
     } catch (error) {
       if (error.code === '23505') {
         throw new ForbiddenException('User already exists');
@@ -65,7 +66,7 @@ export class AuthService {
       .from(users)
       .where(eq(users.username, dto.username))
       .limit(1);
-    if (!user) {
+    if (!user || user.length === 0) {
       throw new UnauthorizedException('Invalid credentials');
     }
     const foundUser = user[0];

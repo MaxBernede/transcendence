@@ -7,15 +7,17 @@ import { UserService } from './user.service';
 @Controller('users')
 export class UserController {
 	constructor(private userService: UserService) {}
+	// database lookup happens in the JwtGuard
+	@UseGuards(JwtGuard)
+	@Get('me')
+	getMe(@GetUser() user: typeof users) {
+		console.log('User:', user);
+		return user;
+	}
 
 	@Get(':username')
 	getUser(@Param('username') username: string) {
 		return this.userService.getUser(username);
 	}
 
-	@UseGuards(JwtGuard)
-	@Get('me')
-	getMe(@GetUser() user: typeof users) {
-		return user;
-	}
 }
