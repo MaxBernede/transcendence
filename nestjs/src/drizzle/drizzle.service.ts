@@ -4,9 +4,13 @@ import { drizzle } from 'drizzle-orm/node-postgres'; // Drizzle ORM initializati
 import { Pool } from 'pg'; // PostgreSQL client
 import { users } from '../db/schema'; // Assuming this is where your schema is defined
 
+import * as schema from '../db/schema';
+
 @Injectable()
 export class DrizzleService {
   private db;
+  private db2;
+
 
   constructor(private configService: ConfigService) {
     const pool = new Pool({
@@ -22,6 +26,8 @@ export class DrizzleService {
     this.db = drizzle(pool, {
       schema: { users },
     });
+
+	this.db2 = drizzle({ client: pool});
 
     // this.testQuery();
   }
@@ -51,5 +57,9 @@ export class DrizzleService {
   // Expose the initialized db instance to be used in other parts of the app
   getDb() {
     return this.db;
+  }
+
+  getDb2() {
+	return this.db2;
   }
 }

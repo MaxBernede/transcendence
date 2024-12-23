@@ -8,6 +8,9 @@ import { UserController } from './user/user.controller';
 import { DrizzleModule } from './drizzle/drizzle.module';
 import { UserService } from './user/user.service';
 import { UserModule } from './user/user.module';
+import { FriendRequestsController } from './friend-requests/friend-requests.controller';
+import { FriendRequestsService } from './friend-requests/friend-requests.service';
+import { FriendRequestsModule } from './friend-requests/friend-requests.module';
 
 @Module({
   imports: [
@@ -17,9 +20,10 @@ import { UserModule } from './user/user.module';
       envFilePath: '../.env', //relative path
     }),
 	DrizzleModule,
-	UserModule
+	UserModule,
+	FriendRequestsModule
   ],
-  controllers: [AppController, UserController],
-  providers: [AppService, UserService], // The use of APP_GUARD will protect each endpoint with a JWT
+  controllers: [AppController, UserController, FriendRequestsController],
+  providers: [AppService, UserService, FriendRequestsService], // The use of APP_GUARD will protect each endpoint with a JWT
 })
 export class AppModule {}

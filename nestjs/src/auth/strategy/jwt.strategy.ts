@@ -5,6 +5,7 @@ import { Strategy, ExtractJwt } from 'passport-jwt';
 import { users } from 'src/db/schema';
 import { DrizzleService } from 'src/drizzle/drizzle.service';
 import { eq } from 'drizzle-orm';
+import { UUID } from 'crypto';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -18,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: { sub: number; username: string }) {
+  async validate(payload: { sub: UUID; username: string }) {
 	console.log('Payload:', payload);
     const user = await this.drizzle
       .getDb()
