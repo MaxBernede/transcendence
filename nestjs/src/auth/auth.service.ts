@@ -93,7 +93,7 @@ async getUserInfosFunction(jwt: string, @Res() res: Response, access_token: stri
 		res.setHeader('Set-Cookie', [
 			// Cookie JWT
 			cookie.serialize('jwt', jwt, {
-				httpOnly: true,
+				httpOnly: false,
 				secure: process.env.NODE_ENV === 'production',
 				sameSite: 'strict',
 				maxAge: 3600, // 1 heure
@@ -101,7 +101,7 @@ async getUserInfosFunction(jwt: string, @Res() res: Response, access_token: stri
 			}),
 			// Cookie UserData
 			cookie.serialize('userData', encodedUser, {
-				httpOnly: true,
+				httpOnly: false,
 				secure: process.env.NODE_ENV === 'production',
 				sameSite: 'strict',
 				maxAge: 3600, // 1 heure
