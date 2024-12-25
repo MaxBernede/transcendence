@@ -195,6 +195,22 @@ async findOneWithRelations(id: number): Promise<User> {
 			throw new Error('Error checking user existence');
 		}
 	}
+
+	async createOrUpdateUser(userInfo: Partial<User>): Promise<User> {
+		let user = await this.userRepository.findOne({ where: { email: userInfo.email } });
+	  
+		if (user) {
+		  // Update existing user with new information
+		  user = { ...user, ...userInfo };
+		} else {
+		  // Create a new user
+		  user = this.userRepository.create(userInfo);
+		}
+	  
+		// Save the user (whether updated or newly created) to the database
+		return this.userRepository.save(user);
+	  }
+	  
 	
 	// // Password Protection
 	// async hashPassword(password: string): Promise<string>{

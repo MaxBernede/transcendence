@@ -10,6 +10,12 @@ export class User {
     @Column({ unique: true })
     username: string;
 
+	@Column({ nullable: true, default: '' })
+	firstName: string;
+  
+	@Column({ nullable: true, default: '' })
+	lastName: string;
+
     @Column({ nullable: true })
     email: string;
 
@@ -39,6 +45,10 @@ export class User {
 
     @Column({ default: null })
     activity_status: string;
+
+
+	@Column({ nullable: true })
+	image: string;
 
     @ManyToMany(() => User, (user) => user.friends)
     @JoinTable()
