@@ -43,7 +43,7 @@ async function bootstrap() {
   app.enableCors({
     origin: 'http://localhost:3001', // Allow requests from your frontend's port
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
 

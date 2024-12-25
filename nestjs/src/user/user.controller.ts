@@ -10,6 +10,9 @@ import {
 	UseInterceptors,
 	BadRequestException,
 	ParseIntPipe,
+	Request,
+	UnauthorizedException,
+	NotFoundException,
   } from '@nestjs/common';
   import { FileInterceptor } from '@nestjs/platform-express';
   import { UserService } from './user.service';
@@ -19,7 +22,8 @@ import {
   import { UpdateUserDto } from './dto/UpdateUser.dto';
   import { CreateUserDto } from './dto/createUser.dto';
   import { Match } from '../match/match.entity';
-import { Public } from 'src/decorators/public.decorator';
+	import { Public } from 'src/decorators/public.decorator';
+	import { Logger } from '@nestjs/common';	
   
   @Controller('api/users')
   export class UserController {
@@ -46,13 +50,34 @@ import { Public } from 'src/decorators/public.decorator';
 	  return user;
 	}
 
-	@Get(':id/with-relations')
-	async getUserWithRelations(@Param('id', ParseIntPipe) id: number) {
-		return this.userService.findOneWithRelations(id);
+	@Get('me')
+	async getCurrentUser(@Request() req) {
+	  if (!req.user) {
+		throw new UnauthorizedException('User not authenticated');
+	  }
+  
+	  const userId = req.user.sub; // Extract user ID from the JWT
+	  const user = await this.userService.findOne(userId);
+  
+	  if (!user) {
+		throw new NotFoundException(`User with ID "${userId}" not found`);
+	  }
+  
+	  return user; // Return the user's profile data
+	}
+  
+	// Fetch a user's profile by their username
+	@Get(':username')
+	async getUserByUsername(@Param('username') username: string) {
+	  const user = await this.userService.findOne(username);
+  
+	  if (!user) {
+		throw new NotFoundException(`User with username "${username}" not found`);
+	  }
+  
+	  return user; // Return the user's profile data
 	}
 	
-	
-  
 	@Get('user/:id/match-history')
 	async getMatchHistory(@Param('id', ParseIntPipe) id: number) {
 	  const matchHistory = await this.matchService.findByUser(id);

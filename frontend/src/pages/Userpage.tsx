@@ -20,41 +20,83 @@ const UserPage: React.FC = () => {
   const [newUsername, setNewUsername] = useState<string>('');
   const [editing, setEditing] = useState(false);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Fetch user data from /users/me using JWT stored in cookies
-        const response = await axios.get('http://localhost:3000/users/me', {
-          withCredentials: true, // Include cookies
-        });
+//   useEffect(() => {
+//     const fetchUserData = async () => {
+//       try {
+//         // Fetch user data from /users/me using JWT stored in cookies
+//         const response = await axios.get('http://localhost:3000/api/users/me', {
+//           withCredentials: true, // Include cookies
+//         });
 
-        const user = response.data;
+//         const user = response.data;
 
-        setUserData({
-          ...user,
-          avatar: user.avatar || defaultAvatar,
-        });
+//         setUserData({
+//           ...user,
+//           avatar: user.avatar || defaultAvatar,
+//         });
 
-        setAchievements(
-          user.achievements?.map((achievement: any) => ({
-            id: achievement.id,
-            achievementName: achievement.achievementName,
-            description: achievement.description || 'No description available',
-          })) || []
-        );
+//         setAchievements(
+//           user.achievements?.map((achievement: any) => ({
+//             id: achievement.id,
+//             achievementName: achievement.achievementName,
+//             description: achievement.description || 'No description available',
+//           })) || []
+//         );
 
-        setMatchHistory(user.matchHistory || []);
-      } catch (error) {
-        console.error('Failed to fetch user data:', error);
-        setError('Authentication required. Redirecting to login...');
-        setTimeout(() => navigate('/login'), 3000); // Redirect to login after 3 seconds
-      } finally {
-        setLoading(false);
-      }
-    };
+//         setMatchHistory(user.matchHistory || []);
+//       } catch (error) {
+//         console.error('Failed to fetch user data:', error);
+//         setError('Authentication required. Redirecting to login...');
+//         setTimeout(() => navigate('/login'), 3000); // Redirect to login after 3 seconds
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
 
-    fetchUserData();
+//     fetchUserData();
+//   }, [navigate]);
+
+useEffect(() => {
+	const fetchUserData = async () => {
+	  try {
+		const response = await axios.get('http://localhost:3000/api/users/me', {
+		  withCredentials: true, // Include cookies
+		});
+  
+		const user = response.data;
+  
+		setUserData({
+		  ...user,
+		  avatar: user.avatar || defaultAvatar,
+		});
+  
+		setAchievements(
+		  user.achievements?.map((achievement: any) => ({
+			id: achievement.id,
+			achievementName: achievement.achievementName,
+			description: achievement.description || 'No description available',
+		  })) || []
+		);
+  
+		setMatchHistory(user.matchHistory || []);
+	  } catch (error) {
+		// Check if error is an AxiosError
+		if (axios.isAxiosError(error)) {
+		  console.error('Error fetching user data:', error.response?.data || error.message);
+		} else {
+		  console.error('Unexpected error:', error);
+		}
+  
+		setUserData({ username: 'Guest', avatar: defaultAvatar }); // Default fallback
+	  } finally {
+		setLoading(false);
+	  }
+	};
+  
+	fetchUserData();
   }, [navigate]);
+  
+  
 
   const handleUpdateUser = async () => {
     if (!newUsername.trim()) {

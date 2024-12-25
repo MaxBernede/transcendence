@@ -76,12 +76,12 @@ export class AuthService {
 		  httpOnly: true,
 		  secure: process.env.NODE_ENV === 'production',
 		  sameSite: 'strict',
-		  maxAge: 3600,
+		  maxAge: 3600, // 1hr
 		  path: '/',
 		}),
 	  ]);
   
-	  return res.redirect(`http://localhost:3001/userpage/${user.id}`);
+	  return res.redirect(`http://localhost:3001/user/${user.username}`);
 	} catch (error) {
 	  console.error('Failed to fetch JWT:', error.response?.data || error.message);
 	  return res.status(500).json({ message: 'Failed to fetch JWT.' });

@@ -19,8 +19,8 @@ import { ConfigModule } from '@nestjs/config';
 		AuthModule,
 		AchievementModule,
 		ConfigModule.forRoot({
-			isGlobal: true, // make module accessible everywhere to have .env access
-			envFilePath: '../.env' //relative path
+			isGlobal: true,
+			envFilePath: '../.env' 
 		})
 	],
   controllers: [AppController],
