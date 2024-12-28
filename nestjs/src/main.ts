@@ -4,18 +4,16 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
-import { AuthGuard } from './auth/auth.guard';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
+
+  // Enable validation globally
   app.useGlobalPipes(new ValidationPipe());
-  // Apply the AuthGuard globally
-  const reflector = app.get(Reflector);
-  const jwtService = app.get(JwtService);
-  app.useGlobalGuards(new AuthGuard(jwtService, reflector));
+
+  // Use cookie-parser for handling cookies
+  app.use(cookieParser());
 
   // Log all incoming requests for debugging
   app.use((req, res, next) => {
@@ -37,7 +35,7 @@ async function bootstrap() {
   app.useStaticAssets(uploadPath, {
     prefix: '/uploads/avatars/',
   });
-  console.log(`Static assets served from: ${uploadPath}`); // Debugging
+  console.log(`Static assets served from: ${uploadPath}`);
 
   // Enable CORS for frontend communication
   app.enableCors({
@@ -46,10 +44,7 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
-
-  // Enable validation globally
-  app.useGlobalPipes(new ValidationPipe());
-
+  console.log('CORS enabled for origin:', 'http://localhost:3001');
 
   // Log server listening port
   const port = 3000;

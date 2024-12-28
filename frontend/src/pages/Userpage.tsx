@@ -80,14 +80,17 @@ useEffect(() => {
   
 		setMatchHistory(user.matchHistory || []);
 	  } catch (error) {
-		// Check if error is an AxiosError
 		if (axios.isAxiosError(error)) {
+		  // Axios-specific error
 		  console.error('Error fetching user data:', error.response?.data || error.message);
+		} else if (error instanceof Error) {
+		  // General Error
+		  console.error('Unexpected error:', error.message);
 		} else {
-		  console.error('Unexpected error:', error);
+		  console.error('Unknown error:', error);
 		}
   
-		setUserData({ username: 'Guest', avatar: defaultAvatar }); // Default fallback
+		setError('Failed to fetch user data. Please log in.');
 	  } finally {
 		setLoading(false);
 	  }

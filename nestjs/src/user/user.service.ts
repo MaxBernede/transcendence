@@ -206,9 +206,15 @@ async findOneWithRelations(id: number): Promise<User> {
 		  // Create a new user
 		  user = this.userRepository.create(userInfo);
 		}
+
+		console.log('User saved:', user);
 	  
 		// Save the user (whether updated or newly created) to the database
 		return this.userRepository.save(user);
+	  }
+
+	  async findOneById(id: number): Promise<User> {
+		return this.userRepository.findOne({ where: { id } });
 	  }
 	  
 	

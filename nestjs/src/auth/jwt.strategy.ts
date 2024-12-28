@@ -1,38 +1,48 @@
-// import { Injectable, UnauthorizedException } from '@nestjs/common';
-// import { PassportStrategy } from '@nestjs/passport';
-// import { ExtractJwt, Strategy } from 'passport-jwt';
-// import { ConfigService } from '@nestjs/config';
-// import { UserService } from '../user/user.service';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
+import { UserService } from '../user/user.service';
 
-// @Injectable()
-// export class JwtStrategy extends PassportStrategy(Strategy) {
-//   constructor(
-//     private readonly configService: ConfigService,
-//     private readonly userService: UserService,
-//   ) {
-//     super({
-//       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-//       ignoreExpiration: false,
-//       secretOrKey: configService.get<string>('JWT_SECRET'),
-//     });
-//   }
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly userService: UserService,
+  ) {
+    // Extract the JWT_SECRET from the config service
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      console.warn('JWT_SECRET is not defined. Using fallback secret!');
+    }
 
-//   async validate(payload: any) {
-//     console.log('Decoded JWT Payload:', payload);
+    // Pass strategy configuration to the parent class
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // Extract JWT from Authorization header
+      ignoreExpiration: false, // Ensures JWT expiration is validated
+      secretOrKey: secret || 'fallbackSecret', // Fallback secret in case of missing env variable
+    });
 
-//     if (!payload || !payload.sub) {
-//       console.error('Invalid JWT payload:', payload);
-//       throw new UnauthorizedException('Invalid token payload');
-//     }
+    console.log('JWT_SECRET in JwtStrategy:', secret); // Debug log for the secret
+  }
 
-//     const user = await this.userService.findOneById(payload.sub);
+  async validate(payload: any) {
+    console.log('Decoded JWT Payload:', payload);
 
-//     if (!user) {
-//       console.error('User not found for token:', payload);
-//       throw new UnauthorizedException('User not found');
-//     }
+    if (!payload || !payload.sub) {
+      console.error('Invalid JWT payload:', payload);
+      throw new UnauthorizedException('Invalid token payload');
+    }
 
-//     console.log('User validated successfully:', user);
-//     return user;
-//   }
-// }
+    // Validate user based on payload.sub (assumed to be the user ID)
+    const user = await this.userService.findOne(payload.sub);
+
+    if (!user) {
+      console.error('User not found for token:', payload);
+      throw new UnauthorizedException('User not found');
+    }
+
+    console.log('User validated successfully:', user);
+    return user; // Attach the validated user to the request object
+  }
+}

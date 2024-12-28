@@ -1,19 +1,5 @@
-import {
-	Controller,
-	Get,
-	Post,
-	Patch,
-	Param,
-	Put,
-	Body,
-	UploadedFile,
-	UseInterceptors,
-	BadRequestException,
-	ParseIntPipe,
-	Request,
-	UnauthorizedException,
-	NotFoundException,
-  } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Put, Body, UploadedFile, UseInterceptors, BadRequestException, ParseIntPipe,
+		 Request, UnauthorizedException, NotFoundException, Req, UseGuards} from '@nestjs/common';
   import { FileInterceptor } from '@nestjs/platform-express';
   import { UserService } from './user.service';
   import { MatchService } from '../match/match.service';
@@ -22,8 +8,9 @@ import {
   import { UpdateUserDto } from './dto/UpdateUser.dto';
   import { CreateUserDto } from './dto/createUser.dto';
   import { Match } from '../match/match.entity';
-	import { Public } from 'src/decorators/public.decorator';
-	import { Logger } from '@nestjs/common';	
+  import { Public } from 'src/decorators/public.decorator';
+  import { Logger } from '@nestjs/common';
+  import { AuthGuard } from 'src/auth/auth.guard';
   
   @Controller('api/users')
   export class UserController {
@@ -50,20 +37,18 @@ import {
 	  return user;
 	}
 
-	@Get('me')
-	async getCurrentUser(@Request() req) {
-	  if (!req.user) {
+	@UseGuards(AuthGuard)
+	@Get('/me')
+	async getLoggedInUser(@Req() request: Request) {
+	  const user = request['user']; // Extract the authenticated user from the request
+	  if (!user || !user.sub) {
 		throw new UnauthorizedException('User not authenticated');
 	  }
-  
-	  const userId = req.user.sub; // Extract user ID from the JWT
-	  const user = await this.userService.findOne(userId);
-  
-	  if (!user) {
-		throw new NotFoundException(`User with ID "${userId}" not found`);
+	  const foundUser = await this.userService.findOne(user.sub); // Fetch user by ID (from JWT payload)
+	  if (!foundUser) {
+		throw new NotFoundException(`User with ID ${user.sub} not found`);
 	  }
-  
-	  return user; // Return the user's profile data
+	  return foundUser;
 	}
   
 	// Fetch a user's profile by their username
