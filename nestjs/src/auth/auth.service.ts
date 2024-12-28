@@ -102,7 +102,7 @@ export class AuthService {
         },
       });
 
-      const userInfo = response.data;
+      const userInfo = response.data; 
 
       // Save user info in the database
       await this.usersService.createOrUpdateUser(userInfo);
