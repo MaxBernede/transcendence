@@ -47,9 +47,9 @@ import {
 		console.log('Verified Payload:', payload); // Log the decoded payload
   
 		// Assign the payload to the request object for route handlers
-		request['user'] = payload;
+		request['user'] = payload; // this should contain the user id
 	  } catch (error) {
-		console.error('JWT verification failed:', error.message); // Log verification errors
+		console.error('JWT verification failed:', error.message);
 		throw new UnauthorizedException('Invalid or expired token.');
 	  }
   

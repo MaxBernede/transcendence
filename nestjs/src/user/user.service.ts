@@ -98,22 +98,22 @@ async findOneWithRelations(id: number): Promise<User> {
   }
 
   async findOne(idOrUsername: string | number): Promise<User> {
-    const whereClause =
-      typeof idOrUsername === 'number'
-        ? { id: idOrUsername }
-        : { username: idOrUsername };
-
-    const user = await this.userRepository.findOne({
-      where: whereClause,
-      relations: ['friends', 'achievements', 'matchHistory'], // Include matchHistory and achievements
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
-    }
-
-    return user;
-}
+	const whereClause =
+	  typeof idOrUsername === 'number'
+		? { id: idOrUsername }
+		: { username: idOrUsername };
+  
+	const user = await this.userRepository.findOne({
+	  where: whereClause,
+	  relations: ['friends', 'achievements', 'matchHistory'], // Load relations
+	});
+  
+	if (!user) {
+	  throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
+	}
+  
+	return user;
+  }  
 
   async findOneWithMatchHistory(
     idOrUsername: string,

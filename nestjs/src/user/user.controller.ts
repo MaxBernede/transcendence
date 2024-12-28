@@ -38,17 +38,13 @@ import { Controller, Get, Post, Patch, Param, Put, Body, UploadedFile, UseInterc
 	}
 
 	@UseGuards(AuthGuard)
-	@Get('/me')
+	@Get('me')
 	async getLoggedInUser(@Req() request: Request) {
-	  const user = request['user']; // Extract the authenticated user from the request
-	  if (!user || !user.sub) {
-		throw new UnauthorizedException('User not authenticated');
+	  const userId = request['user']?.sub; // Extract user ID from the validated payload
+	  if (!userId) {
+		throw new Error('Unable to determine user from token.');
 	  }
-	  const foundUser = await this.userService.findOne(user.sub); // Fetch user by ID (from JWT payload)
-	  if (!foundUser) {
-		throw new NotFoundException(`User with ID ${user.sub} not found`);
-	  }
-	  return foundUser;
+	  return this.userService.findOneById(userId);
 	}
   
 	// Fetch a user's profile by their username

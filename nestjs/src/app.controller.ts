@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, BadRequestException, NotFoundException, Req } from '@nestjs/common';
 import { AppService } from './app.service';
 import { UserService } from './user/user.service';
 
@@ -19,42 +19,76 @@ export class AppController {
     return this.appService.handleButtonClick();
   }
 
-  @Get('api/users/:id')
-  async getUser(@Param('id') id: string) {
-	console.log("Requested User ID or Username:", id); // Log to verify request handling
+//   @Get('api/users/:id')
+//   async getUser(@Param('id') id: string) {
+// 	console.log("Requested User ID or Username:", id); // Log to verify request handling
   
-	// Validate input
-	if (!id) {
-	  throw new BadRequestException('Invalid User ID: Must not be empty.');
-	}
+// 	// Validate input
+// 	if (!id) {
+// 	  throw new BadRequestException('Invalid User ID: Must not be empty.');
+// 	}
   
-	const isNumericId = !isNaN(Number(id)); // Determine if the input is numeric
-	let user;
+// 	const isNumericId = !isNaN(Number(id)); // Determine if the input is numeric
+// 	let user;
   
-	try {
-	  // Try fetching the user from the database
-	  user = await this.userService.findOne(isNumericId ? +id : id);
-	} catch (error) {
-	  console.error("Error fetching user:", error.message);
-	  user = null; // Set user to null if an error occurs
-	}
+// 	try {
+// 	  // Try fetching the user from the database
+// 	  user = await this.userService.findOne(isNumericId ? +id : id);
+// 	} catch (error) {
+// 	  console.error("Error fetching user:", error.message);
+// 	  user = null; // Set user to null if an error occurs
+// 	}
   
-	// If user exists in the database, return it
-	if (user) {
-	  return user;
-	}
+// 	// If user exists in the database, return it
+// 	if (user) {
+// 	  return user;
+// 	}
   
-	// If no user found, return a mock response
-	console.warn(`User with ID or username "${id}" not found. Returning mock data.`);
-	return {
-	  username: `${id}`, // Use the input as the username
-	  bio: `This is the profile for User ${id}`,
-	  avatar: null,
-	  wins: 0, // Default stats for mock users
-	  losses: 0,
-	  ladderLevel: 1,
-	};
-  }  
+// 	// If no user found, return a mock response
+// 	console.warn(`User with ID or username "${id}" not found. Returning mock data.`);
+// 	return {
+// 	  username: `${id}`, // Use the input as the username
+// 	  bio: `This is the profile for User ${id}`,
+// 	  avatar: null,
+// 	  wins: 0, // Default stats for mock users
+// 	  losses: 0,
+// 	  ladderLevel: 1,
+// 	};
+//   }  
+
+@Get('api/users/:id')
+async getUser(@Param('id') id: string, @Req() request: Request) {
+  console.log("Requested User ID or Username:", id); // Debug log
+  
+  if (id === 'me') {
+    // Resolve "me" to the current user's ID using AuthGuard
+    const userId = request['user']?.sub;
+    if (!userId) {
+      throw new NotFoundException('User not authenticated');
+    }
+    id = userId.toString();
+  }
+
+  // Determine if the resolved ID is numeric
+  const isNumericId = !isNaN(Number(id));
+  let user;
+
+  try {
+    // Try fetching the user from the database
+    user = await this.userService.findOne(isNumericId ? +id : id);
+  } catch (error) {
+    console.error("Error fetching user:", error.message);
+    user = null;
+  }
+
+  if (user) {
+    return user;
+  }
+
+  console.warn(`User with ID or username "${id}" not found.`);
+  throw new NotFoundException(`User with ID or username "${id}" not found.`);
+}
+
 
   @Post('api/users/:id/update-username')
   async updateUsername(@Param('id') id: string, @Body('username') newUsername: string) {
