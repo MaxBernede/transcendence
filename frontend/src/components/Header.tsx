@@ -4,11 +4,12 @@ import Grid from '@mui/material/Grid';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import bgImage from '../assets/Background_Header.jpg';
-import defaultAvatar from '../assets/Bat.jpg';
+
+const bgImage = '/assets/Background_Header.jpg';
+const defaultAvatar = '/assets/Bat.jpg';
 
 type HeaderProps = {
-  id: string; // Add the `id` property here
+  id: string;
   username: string | null;
   avatar: string | null;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -25,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [editing, setEditing] = useState(false);
   const [tempUsername, setTempUsername] = useState<string>(username || '');
 
+  console.log('Avatar URL:', avatar || defaultAvatar);
+
   const handleSave = () => {
     if (!tempUsername.trim()) {
       alert('Username cannot be empty.');
@@ -33,6 +36,10 @@ export const Header: React.FC<HeaderProps> = ({
     setEditing(false);
     setUsername(tempUsername.trim());
   };
+
+  // Log avatar URL for debugging
+  console.log('Avatar URL:', avatar || defaultAvatar);
+  
 
   return (
     <Box component="header" position="relative" sx={{ width: '100%' }}>
@@ -59,8 +66,15 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <label htmlFor="avatar-input">
               <Avatar
-                src={avatar || defaultAvatar}
+                src={
+                  avatar ||
+                  `${defaultAvatar}${(avatar || '').includes('?') ? '&' : '?'}t=${new Date().getTime()}`
+                }
                 alt={username || 'User Avatar'}
+                onError={(e) => {
+                  console.error('Failed to load avatar, falling back to default.');
+                  (e.currentTarget as HTMLImageElement).src = defaultAvatar;
+                }}
                 sx={{
                   width: 250,
                   height: 250,

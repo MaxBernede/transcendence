@@ -5,12 +5,40 @@ import './Userpage.css';
 import { Header } from '../components/Header';
 import { Stats } from '../components/Stats';
 import { MatchHistory } from '../components/MatchHistory';
-import defaultAvatar from '../assets/Bat.jpg';
+
+const defaultAvatar = '/assets/Bat.jpg';
+
+type UserData = {
+  id: string;
+  username: string;
+  avatar: string | null;
+  image?: { link?: string };
+  [key: string]: any; // Optional if there are other dynamic fields
+};
+
+const buildAvatarUrl = (avatar: string | null, imageLink?: string | null): string => {
+	// Prioritize `imageLink` if available
+	const url = imageLink || avatar || defaultAvatar;
+  
+	// If it's an external URL, return it as is
+	if (url.startsWith('http://') || url.startsWith('https://')) {
+	  return url;
+	}
+  
+	// If it already has a timestamp, return it
+	if (url.includes('?t=')) {
+	  return url;
+	}
+  
+	// Add a timestamp for local URLs to prevent caching
+	return `${url}${url.includes('?') ? '&' : '?'}t=${new Date().getTime()}`;
+  };
+  
 
 const UserPage: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>(); // Dynamic routing, if needed
-  const [userData, setUserData] = useState<any>(null);
+  const { id } = useParams<{ id: string }>();
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [matchHistory, setMatchHistory] = useState<any[]>([]);
@@ -20,56 +48,25 @@ const UserPage: React.FC = () => {
   const [newUsername, setNewUsername] = useState<string>('');
   const [editing, setEditing] = useState(false);
 
-//   useEffect(() => {
-//     const fetchUserData = async () => {
-//       try {
-//         // Fetch user data from /users/me using JWT stored in cookies
-//         const response = await axios.get('http://localhost:3000/api/users/me', {
-//           withCredentials: true, // Include cookies
-//         });
-
-//         const user = response.data;
-
-//         setUserData({
-//           ...user,
-//           avatar: user.avatar || defaultAvatar,
-//         });
-
-//         setAchievements(
-//           user.achievements?.map((achievement: any) => ({
-//             id: achievement.id,
-//             achievementName: achievement.achievementName,
-//             description: achievement.description || 'No description available',
-//           })) || []
-//         );
-
-//         setMatchHistory(user.matchHistory || []);
-//       } catch (error) {
-//         console.error('Failed to fetch user data:', error);
-//         setError('Authentication required. Redirecting to login...');
-//         setTimeout(() => navigate('/login'), 3000); // Redirect to login after 3 seconds
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUserData();
-//   }, [navigate]);
-
-useEffect(() => {
+  useEffect(() => {
+	console.log('Fetching user data...');
 	const fetchUserData = async () => {
 	  try {
 		const response = await axios.get('http://localhost:3000/api/users/me', {
-		  withCredentials: true, // Include cookies
+		  withCredentials: true,
 		});
   
 		const user = response.data;
+
+		console.log('Fetched user data:', user);
   
+		// Set user data including avatar
 		setUserData({
 		  ...user,
-		  avatar: user.avatar || defaultAvatar,
+		  avatar: buildAvatarUrl(user.avatar, user.image?.link),
 		});
   
+		// Set achievements
 		setAchievements(
 		  user.achievements?.map((achievement: any) => ({
 			id: achievement.id,
@@ -78,26 +75,48 @@ useEffect(() => {
 		  })) || []
 		);
   
+		// Set match history
 		setMatchHistory(user.matchHistory || []);
 	  } catch (error) {
 		if (axios.isAxiosError(error)) {
-		  // Axios-specific error
-		  console.error('Error fetching user data:', error.response?.data || error.message);
-		} else if (error instanceof Error) {
-		  // General Error
-		  console.error('Unexpected error:', error.message);
+		  console.error('Error fetching user data:', error.response || error.message);
+		  setError(error.response?.data?.message || 'Failed to fetch user data. Please log in.');
 		} else {
-		  console.error('Unknown error:', error);
+		  console.error('An unexpected error occurred:', error);
+		  setError('An unexpected error occurred. Please try again.');
 		}
-  
-		setError('Failed to fetch user data. Please log in.');
 	  } finally {
 		setLoading(false);
 	  }
 	};
   
 	fetchUserData();
-  }, [navigate]);
+  }, []); // No need for `navigate` as a dependency unless explicitly required
+  
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+	const file = e.target.files?.[0];
+	if (!file) return;
+  
+	try {
+	  const formData = new FormData();
+	  formData.append('file', file);
+  
+	  const response = await axios.post(
+		`http://localhost:3000/api/users/${userData?.id}/upload-avatar`,
+		formData,
+		{ withCredentials: true }
+	  );
+  
+	  // Update the user data with the new avatar URL
+	  setUserData((prev: UserData | null) => ({
+		...prev!,
+		avatar: buildAvatarUrl(response.data.avatar),
+	  }));
+	} catch (error) {
+	  console.error('Error uploading avatar:', error);
+	}
+  };	  
   
   
 
@@ -114,9 +133,11 @@ useEffect(() => {
         { withCredentials: true }
       );
 
-      console.log('User updated successfully:', response.data);
-      setUserData((prevData: any) => ({ ...prevData, username: response.data.username }));
-      setEditing(false); // Exit edit mode
+      setUserData((prevData: UserData | null) => ({
+        ...prevData!,
+        username: response.data.username,
+      }));
+      setEditing(false);
     } catch (error) {
       console.error('Error updating user data:', error);
       setError('Failed to update user.');
@@ -128,13 +149,15 @@ useEffect(() => {
 
   return (
     <div className="user-page-container">
-      <Header
-        id={userData?.id || ''}
-        username={userData?.username || ''}
-        avatar={`${userData?.avatar || defaultAvatar}?t=${new Date().getTime()}`}
-        handleImageChange={(e) => console.log('Image change')}
-        setUsername={(newUsername) => console.log('Set username:', newUsername)}
-      />
+	<Header
+	id={userData?.id || ''}
+	username={userData?.username || ''}
+	avatar={buildAvatarUrl(userData?.avatar ?? null, userData?.image?.link ?? null)}
+	handleImageChange={handleImageChange}
+	setUsername={(newUsername) =>
+		setUserData((prev: UserData | null) => ({ ...prev!, username: newUsername }))
+	}
+	/>
       <div className="content-container">
         {editing ? (
           <div className="edit-user-container">

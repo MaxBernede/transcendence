@@ -22,7 +22,7 @@ import { ConfigModule } from '@nestjs/config';
 			isGlobal: true,
 			envFilePath: '../.env' 
 		})
-	],
+	],	
   controllers: [AppController],
   providers: [
 	{

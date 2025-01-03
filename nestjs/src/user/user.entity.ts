@@ -47,8 +47,16 @@ export class User {
     activity_status: string;
 
 
-	@Column({ nullable: true })
-	image: string;
+	@Column({ type: 'json', nullable: true })
+	image: {
+	  link: string;
+	  versions?: {
+		large?: string;
+		medium?: string;
+		small?: string;
+		micro?: string;
+	  };
+	} | null;
 
     @ManyToMany(() => User, (user) => user.friends)
     @JoinTable()
