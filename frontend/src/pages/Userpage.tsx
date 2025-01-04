@@ -49,7 +49,6 @@ const UserPage: React.FC = () => {
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-	console.log('Fetching user data...');
 	const fetchUserData = async () => {
 	  try {
 		const response = await axios.get('http://localhost:3000/api/users/me', {
@@ -57,13 +56,15 @@ const UserPage: React.FC = () => {
 		});
   
 		const user = response.data;
-
+  
 		console.log('Fetched user data:', user);
   
-		// Set user data including avatar
+		// Map state properly
 		setUserData({
 		  ...user,
 		  avatar: buildAvatarUrl(user.avatar, user.image?.link),
+		  losses: user.losses || user.loose || 0,
+		  ladderLevel: user.ladderLevel || user.ladder_level || 0,
 		});
   
 		// Set achievements
@@ -91,7 +92,7 @@ const UserPage: React.FC = () => {
 	};
   
 	fetchUserData();
-  }, []); // No need for `navigate` as a dependency unless explicitly required
+  }, []);
   
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

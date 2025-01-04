@@ -42,8 +42,9 @@ import {
   
 	@Put(':id')
 	async updateUser(@Param('id') id: string, @Body() updatedData: UpdateUserDto) {
-	  return this.userService.updateUser(id, updatedData);
-	}
+    console.log('Updated Data Received:', updatedData); // Debug log
+    return this.userService.updateUser(id, updatedData);
+}
   
 	@Get(':id')
 	async getUser(@Param('id') id: string) {
