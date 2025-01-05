@@ -60,6 +60,22 @@ export class UserService {
 	return user;
   }
 
+  async getUserWithAchievements(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+        where: { id },
+        relations: ['achievements'], // Load achievements relationship
+    });
+
+    if (!user) {
+        throw new NotFoundException('User not found');
+    }
+
+    // Optionally enhance the user object
+    user.avatar = user.image?.link || user.avatar || '/assets/Bat.jpg';
+
+    return user;
+}
+
 
 
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {

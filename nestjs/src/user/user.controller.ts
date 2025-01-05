@@ -133,11 +133,22 @@ async uploadAvatar(
 	@Get('user/:id/match-history')
 	async getMatchHistory(@Param('id', ParseIntPipe) id: number) {
 	  const matchHistory = await this.matchService.findByUser(id);
+	  
+	  if (!matchHistory || matchHistory.length === 0) {
+		return []; // Ensure an empty array is returned if no matches exist
+	  }
+	  
 	  return matchHistory.map((match) => ({
+		id: match.id,
+		type: match.type,
+		opponent: match.opponent,
+		result: match.result,
+		score: match.score,
 		description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
 		date: new Date(match.date).toLocaleDateString('en-GB'),
 	  }));
 	}
+	
   
 	@Put(':id/match-history')
 	async updateMatchHistory(
@@ -154,5 +165,12 @@ async uploadAvatar(
 	) {
 	  return this.userService.updateAchievements(userId, achievementIds);
 	}
+
+	@Get(':id/achievements')
+	async getUserAchievements(@Param('id', ParseIntPipe) id: number) {
+		const user = await this.userService.getUserWithAchievements(id); 
+		return user.achievements;
+	}
+	
   }
   
