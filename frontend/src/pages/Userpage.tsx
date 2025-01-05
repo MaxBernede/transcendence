@@ -59,7 +59,6 @@ const UserPage: React.FC = () => {
   
 		console.log('Fetched user data:', user);
   
-		// Map state properly
 		setUserData({
 		  ...user,
 		  avatar: buildAvatarUrl(user.avatar, user.image?.link),
@@ -67,7 +66,6 @@ const UserPage: React.FC = () => {
 		  ladderLevel: user.ladderLevel || user.ladder_level || 0,
 		});
   
-		// Set achievements
 		setAchievements(
 		  user.achievements?.map((achievement: any) => ({
 			id: achievement.id,
@@ -76,7 +74,6 @@ const UserPage: React.FC = () => {
 		  })) || []
 		);
   
-		// Set match history
 		setMatchHistory(user.matchHistory || []);
 	  } catch (error) {
 		if (axios.isAxiosError(error)) {
@@ -108,8 +105,7 @@ const UserPage: React.FC = () => {
 		formData,
 		{ withCredentials: true }
 	  );
-  
-	  // Update the user data with the new avatar URL
+
 	  setUserData((prev: UserData | null) => ({
 		...prev!,
 		avatar: buildAvatarUrl(response.data.avatar),

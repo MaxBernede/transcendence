@@ -53,13 +53,13 @@ export class AuthController {
   }
 
 
-  @Public() // first step
+  @Public()
   @Get()
   getAuth(@Res() res: Response) {
     return this.authService.getAuthToken(res);
   }
 
-  @Public() // Second step
+  @Public() 
   @Get('getJwt')
   getJwt(@Res() res: Response) {
     return this.authService.getJwtToken(res);

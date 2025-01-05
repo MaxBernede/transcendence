@@ -34,7 +34,7 @@ export class UserService {
       username,
       email,
       password,
-      avatar: image?.link || '/assets/Bat.jpg', // Set avatar based on image or default
+      avatar: image?.link || '/assets/Bat.jpg',
       image,
     });
 
@@ -63,14 +63,13 @@ export class UserService {
   async getUserWithAchievements(id: number): Promise<User> {
     const user = await this.userRepository.findOne({
         where: { id },
-        relations: ['achievements'], // Load achievements relationship
+        relations: ['achievements'],
     });
 
     if (!user) {
         throw new NotFoundException('User not found');
     }
 
-    // Optionally enhance the user object
     user.avatar = user.image?.link || user.avatar || '/assets/Bat.jpg';
 
     return user;
@@ -91,7 +90,6 @@ export class UserService {
     console.log('Before Update:', user);
     console.log('Updated Data Received:', updatedData);
 
-    // Explicitly handle updates for stats
     if (updatedData.wins !== undefined) {
         console.log(`Updating wins from ${user.wins} to ${updatedData.wins}`);
         user.wins = updatedData.wins;
@@ -105,13 +103,11 @@ export class UserService {
         user.ladder_level = updatedData.ladder_level;
     }
 
-    // Handle avatar updates
     if (updatedData.avatar) {
         console.log('Updating avatar:', updatedData.avatar);
         user.avatar = updatedData.avatar;
     }
 
-    // Handle image updates and consistency
     if (updatedData.image) {
         console.log('Updating image:', updatedData.image);
         user.image = updatedData.image;
@@ -119,12 +115,10 @@ export class UserService {
         console.log('Updated avatar based on image:', user.avatar);
     }
 
-    // Merge any other non-critical fields
     Object.assign(user, updatedData);
 
     console.log('Final User Object before saving:', user);
 
-    // Save the updated user
     return this.userRepository.save(user);
 }
 
@@ -157,11 +151,11 @@ async updateAvatar(id: string, avatarUrl: string): Promise<User> {
         ? { id: idOrUsername }
         : { username: idOrUsername };
 
-    console.log('Finding user with:', whereClause); // Log query conditions
+
 
     const user = await this.userRepository.findOne({
       where: whereClause,
-      relations: ['friends', 'achievements', 'matchHistory'], // Load relations
+      relations: ['friends', 'achievements', 'matchHistory'],
     });
 
     if (!user) {
@@ -173,7 +167,7 @@ async updateAvatar(id: string, avatarUrl: string): Promise<User> {
       user.avatar = user.image.link;
     }
 
-    console.log('Final user data:', user); // Log the processed user data
+    console.log('Final user data:', user);
     return user;
   }
 

@@ -42,13 +42,13 @@ import {
   
 	@Put(':id')
 	async updateUser(@Param('id') id: string, @Body() updatedData: UpdateUserDto) {
-    console.log('Updated Data Received:', updatedData); // Debug log
+    console.log('Updated Data Received:', updatedData);
     return this.userService.updateUser(id, updatedData);
 }
   
 	@Get(':id')
 	async getUser(@Param('id') id: string) {
-	  return this.userService.getUser(id); // Delegate the logic to the service
+	  return this.userService.getUser(id); 
 	}
   
 	@UseGuards(AuthGuard)

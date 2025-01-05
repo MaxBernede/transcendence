@@ -15,7 +15,7 @@ import {
 	constructor(
 	  private jwtService: JwtService,
 	  private reflector: Reflector,
-	  private configService: ConfigService, // Inject ConfigService
+	  private configService: ConfigService, 
 	) {}
   
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -32,19 +32,19 @@ import {
 	  const request = context.switchToHttp().getRequest<Request>();
 	  const token = this.extractTokenFromRequest(request);
   
-	  console.log('AuthGuard Token:', token); // Log the token for debugging
+	  console.log('AuthGuard Token:', token);
   
 	  if (!token) {
-		console.error('Token not found in the request'); // Log when the token is missing
+		console.error('Token not found in the request');
 		throw new UnauthorizedException('Token not found in request.');
 	  }
   
 	  try {
 		const payload = await this.jwtService.verifyAsync(token, {
-		  secret: this.configService.get<string>('JWT_SECRET'), // Use dynamic secret
+		  secret: this.configService.get<string>('JWT_SECRET'),
 		});
   
-		console.log('Verified Payload:', payload); // Log the decoded payload
+		console.log('Verified Payload:', payload); 
   
 		// Assign the payload to the request object for route handlers
 		request['user'] = payload; // this should contain the user id

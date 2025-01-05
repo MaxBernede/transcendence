@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 
-@Entity('match_history') // Ensure this matches your table name in the database
+@Entity('match_history')
 export class Match {
   @PrimaryGeneratedColumn()
   id: number;
@@ -22,5 +22,5 @@ export class Match {
   date: Date;
 
   @ManyToOne(() => User, (user) => user.matchHistory, { onDelete: 'CASCADE' })
-  user: User; // Many-to-one relationship with user
+  user: User;
 }

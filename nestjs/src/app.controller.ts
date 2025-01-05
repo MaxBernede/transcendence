@@ -96,7 +96,7 @@ async getUser(@Param('id') id: string, @Req() request: Request) {
 	if (!newUsername || newUsername.trim().length === 0) {
 	  throw new BadRequestException('Username cannot be empty');
 	}
-	return { id, username: newUsername }; // Mock response
+	return { id, username: newUsername };
   }
   
 }

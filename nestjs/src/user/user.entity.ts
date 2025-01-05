@@ -63,7 +63,7 @@ export class User {
     friends: User[];
 
 	@OneToMany(() => Match, (match) => match.user)
-  	matchHistory: Match[]; // One-to-many relationship with matches
+  	matchHistory: Match[]; 
 
 	  @ManyToMany(() => AchievementEntity, (achievement) => achievement.users, { cascade: true })
 	  @JoinTable({

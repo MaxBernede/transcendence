@@ -55,7 +55,7 @@ export class AchievementService extends BaseService<AchievementEntity> implement
 			}
 		} catch (error) {
 			console.error('Error during achievements initialization:', error.message);
-			throw error; // Optional: rethrow error to fail application startup
+			throw error; 
 		}
 	}
 

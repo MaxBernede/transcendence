@@ -34,7 +34,7 @@ export class UserAchievementController extends BaseController<UserAchievementEnt
 }
 
 // API Controller for Fetching Achievements
-@Controller('api/achievements') // Clear route for fetching achievements
+@Controller('api/achievements')
 export class AchievementAPIController {
   constructor(private readonly achievementService: AchievementService) {}
 

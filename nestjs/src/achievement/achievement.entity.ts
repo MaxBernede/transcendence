@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
 import { User } from '../user/user.entity';
 
-@Entity('achievement') // Explicit table name for clarity
+@Entity('achievement') 
 export class AchievementEntity {
   @PrimaryGeneratedColumn()
   id: number;

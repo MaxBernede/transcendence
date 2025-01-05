@@ -12,13 +12,13 @@ import { AuthModule } from '../auth/auth.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeOrmConfig),
-    TypeOrmModule.forFeature([User, Match, AchievementEntity]), // Import User entity
-    MatchModule, // Import MatchModule if necessary
-    forwardRef(() => AuthModule), // Resolve circular dependency
+    TypeOrmModule.forFeature([User, Match, AchievementEntity]), 
+    MatchModule, 
+    forwardRef(() => AuthModule), 
   ],
   controllers: [UserController],
-  providers: [UserService], // Provide UserService
-  exports: [UserService], // Export UserService for other modules
+  providers: [UserService], 
+  exports: [UserService], 
 })
 export class UsersModule {}
 	
