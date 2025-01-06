@@ -1,11 +1,38 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Local env files
 .env
-#.env to be added but not at the moment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Ignore node_modules folder (backend and frontend)
-node_modules/
+# Testing
+coverage
 
-# Ignore NestJS build output
-dist/
+# Turbo
+.turbo
 
-# Ignore system files
+# Vercel
+.vercel
+
+# Build Outputs
+.next/
+out/
+build
+dist
+
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Misc
 .DS_Store
+*.pem
