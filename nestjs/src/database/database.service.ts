@@ -5,16 +5,16 @@ import { Database } from './database.entity';
 
 @Injectable()
 export class DatabasesService {
-	constructor(
-		@InjectRepository(Database)
-		private readonly databaseRepository: Repository<Database>,
-	) {}
+  constructor(
+    @InjectRepository(Database)
+    private readonly databaseRepository: Repository<Database>,
+  ) {}
 
-	async findAll(): Promise<Database[]> {
-		return this.databaseRepository.find();
-	}
+  async findAll(): Promise<Database[]> {
+    return this.databaseRepository.find();
+  }
 
-	async create(database: Database): Promise<Database> {
-		return this.databaseRepository.save(database);
-	}
+  async create(database: Database): Promise<Database> {
+    return this.databaseRepository.save(database);
+  }
 }

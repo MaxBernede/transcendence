@@ -19,14 +19,22 @@ export class MatchService {
     });
   }
 
-  async updateMatchHistory(userId: number, matchUpdates: Partial<Match>[]): Promise<Match[]> {
+  async updateMatchHistory(
+    userId: number,
+    matchUpdates: Partial<Match>[],
+  ): Promise<Match[]> {
+    console.log('Match updates received:', matchUpdates);
+
     const matches = matchUpdates.map((matchData) => {
+      console.log('Creating match:', matchData);
       return this.matchRepository.create({
         ...matchData,
         user: { id: userId } as User, // Link the match to the user
       });
     });
 
-    return this.matchRepository.save(matches);
+    const savedMatches = await this.matchRepository.save(matches);
+    console.log('Saved matches:', savedMatches);
+    return savedMatches;
   }
 }

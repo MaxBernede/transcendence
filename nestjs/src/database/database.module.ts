@@ -6,11 +6,11 @@ import { Database } from './database.entity';
 import { typeOrmConfig } from 'src/ormconfig';
 
 @Module({
-	imports: [
-		TypeOrmModule.forRoot(typeOrmConfig),
-		TypeOrmModule.forFeature([Database]),
-	],
-	providers: [DatabasesService],
-	controllers: [DatabasesController],
+  imports: [
+    TypeOrmModule.forRoot(typeOrmConfig),
+    TypeOrmModule.forFeature([Database]),
+  ],
+  providers: [DatabasesService],
+  controllers: [DatabasesController],
 })
 export class DatabasesModule {}

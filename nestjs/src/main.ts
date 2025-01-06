@@ -4,27 +4,36 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
-import { AuthGuard } from './auth/auth.guard';
+import * as cookieParser from 'cookie-parser';
+import * as express from 'express';
+import * as path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
+
+  // Enable validation globally
   app.useGlobalPipes(new ValidationPipe());
-  // Apply the AuthGuard globally
-  const reflector = app.get(Reflector);
-  const jwtService = app.get(JwtService);
-  app.useGlobalGuards(new AuthGuard(jwtService, reflector));
+
+  // Use cookie-parser for handling cookies
+  app.use(cookieParser());
 
   // Log all incoming requests for debugging
   app.use((req, res, next) => {
-    console.log(`Incoming Request: ${req.method} ${req.url}`);
+    const token = req.cookies?.jwt; // Retrieve JWT from cookies
+    if (token) {
+      res.cookie('jwt', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        sameSite: 'Strict', // Or 'None' if cross-origin is required
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+      });
+    }
     next();
   });
 
   // Ensure the "uploads/avatars" folder exists
-  const uploadPath = join(__dirname, '..', 'uploads', 'avatars'); // Adjusted path
+
+  const uploadPath = join(__dirname, '..', 'uploads', 'avatars');
   console.log(`Checking directory: ${uploadPath}`);
   if (!existsSync(uploadPath)) {
     mkdirSync(uploadPath, { recursive: true });
@@ -34,22 +43,37 @@ async function bootstrap() {
   }
 
   // Serve static files for uploaded avatars
-  app.useStaticAssets(uploadPath, {
-    prefix: '/uploads/avatars/',
-  });
-  console.log(`Static assets served from: ${uploadPath}`); // Debugging
+  //   app.useStaticAssets(uploadPath, {
+  //     prefix: '/uploads/avatars/',
+  //   });
+
+  // app.use('/uploads', express.static(uploadPath));
+  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+  const publicAssetsPath = join(
+    __dirname,
+    '..',
+    '..',
+    'frontend',
+    'public',
+    'assets',
+  );
+  console.log(`Serving static public assets from: ${publicAssetsPath}`);
+  app.use('/assets', express.static(publicAssetsPath));
+
+  console.log(`Static assets served from: ${uploadPath}`);
+  console.log(
+    `Static public assets served from: ${join(__dirname, '..', 'frontend', 'public', 'assets')}`,
+  );
 
   // Enable CORS for frontend communication
   app.enableCors({
     origin: 'http://localhost:3001', // Allow requests from your frontend's port
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
-
-  // Enable validation globally
-  app.useGlobalPipes(new ValidationPipe());
-
+  console.log('CORS enabled for origin:', 'http://localhost:3001');
 
   // Log server listening port
   const port = 3000;

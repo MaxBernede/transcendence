@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Body, Param, Delete, UsePipes, ValidationPipe, BadRequestException } from '@nestjs/common';
-import { AchievementService, UserAchievementService } from './achievement.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UsePipes,
+  ValidationPipe,
+  BadRequestException,
+} from '@nestjs/common';
+import {
+  AchievementService,
+  UserAchievementService,
+} from './achievement.service';
 import { AchievementEntity, UserAchievementEntity } from './achievement.entity';
-import { CreateAchievementDto, CreateUserAchievementDto } from './dto/createAchievement.dto';
+import {
+  CreateAchievementDto,
+  CreateUserAchievementDto,
+} from './dto/createAchievement.dto';
 import { BaseController } from 'src/base/base.controller';
 
 // Base Achievement Controller
@@ -34,7 +50,7 @@ export class UserAchievementController extends BaseController<UserAchievementEnt
 }
 
 // API Controller for Fetching Achievements
-@Controller('api/achievements') // Clear route for fetching achievements
+@Controller('api/achievements')
 export class AchievementAPIController {
   constructor(private readonly achievementService: AchievementService) {}
 

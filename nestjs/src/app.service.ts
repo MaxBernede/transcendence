@@ -36,6 +36,6 @@ export class AppService {
   }
 
   handleButtonClick(): { message: string } {
-		return { message: 'Button was clicked!' };
-	}
+    return { message: 'Button was clicked!' };
+  }
 }

@@ -1,17 +1,17 @@
-import { IsString, IsNumber} from "class-validator";
+import { IsString, IsNumber } from 'class-validator';
 
 export class CreateAchievementDto {
-	@IsString()
-	achievementName: string;
+  @IsString()
+  achievementName: string;
 
-	@IsString()
-	description: string;
+  @IsString()
+  description: string;
 }
 
 export class CreateUserAchievementDto {
-	@IsNumber()
-	userId: number;
+  @IsNumber()
+  userId: number;
 
-	@IsNumber()
-	achievementId: number;
+  @IsNumber()
+  achievementId: number;
 }

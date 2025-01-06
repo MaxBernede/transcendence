@@ -10,26 +10,22 @@ import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
 import { ConfigModule } from '@nestjs/config';
+import { User } from './user/user.entity';
 
 @Module({
-	imports: [
-		TypeOrmModule.forRoot(typeOrmConfig),
-		DatabasesModule,
-		UsersModule,
-		AuthModule,
-		AchievementModule,
-		ConfigModule.forRoot({
-			isGlobal: true, // make module accessible everywhere to have .env access
-			envFilePath: '../.env' //relative path
-		})
-	],
+  imports: [
+    TypeOrmModule.forRoot(typeOrmConfig),
+    TypeOrmModule.forFeature([User]),
+    DatabasesModule,
+    UsersModule,
+    AuthModule,
+    AchievementModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '../.env',
+    }),
+  ],
   controllers: [AppController],
-  providers: [
-	{
-		provide: APP_GUARD,
-		useClass: AuthGuard,
-	},
-	AppService
-	], // The use of APP_GUARD will protect each endpoint with a JWT
+  providers: [AppService],
 })
 export class AppModule {}

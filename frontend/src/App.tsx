@@ -16,7 +16,8 @@ function App() {
     <BrowserRouter>
       <nav style={{ padding: '10px', borderBottom: '1px solid #ccc' }}>
         <Link to="/" style={{ marginRight: '10px' }}>Home</Link>
-        <Link to="/user/ivan-mel">Ivan Mel</Link>
+        {/* <Link to="/user/ivan-mel">Ivan Mel</Link> */}
+        <Link to="/user/me">Me  </Link>
         <Link to="/login">Login </Link>
         <Link to="/creation">Creation </Link>
         <Link to="/loginIntra">Intra-Login </Link> 
