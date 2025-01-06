@@ -9,53 +9,74 @@ type User = {
   avatarUrl: string;
 };
 
+type Friend = {
+  friend_id: number;
+  username: string;
+};
+
 const Dashboard = () => {
   const router = useRouter();
-  const [loading, setLoading] = useState(true); // Show a loading state
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch the user data when the component mounts
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:3000/users/me", {
+        // Fetch user data
+        const userResponse = await fetch("http://localhost:3000/users/me", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${localStorage.getItem("jwt")}`,
           },
         });
 
-        console.log(response);
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData); // Save user details to state
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUser(userData);
         } else {
-          router.push("/auth/login"); // Redirect if not authenticated
+          router.push("/auth/login");
         }
+
+        // Fetch friends list
+        // const friendsResponse = await fetch(
+        //   "http://localhost:3000/users/me/friends",
+        //   {
+        //     method: "GET",
+        //     headers: {
+        //       Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+        //     },
+        //   }
+        // );
+
+        // if (friendsResponse.ok) {
+        //   const friendsData: Friend[] = await friendsResponse.json();
+        //   setFriends(friendsData); // Set friends data
+        // } else {
+        //   setError("Failed to load friends list.");
+        // }
       } catch (error) {
-        console.error("Error fetching user:", error);
-        router.push("/auth/login"); // Redirect on error
+        setError("Failed to load data.");
       } finally {
-        setLoading(false); // Stop loading state
+        setLoading(false);
+        // setFriendsLoading(false);
       }
     };
 
-    fetchUser();
+    fetchData();
   }, [router]);
 
-  // Logout function to clear JWT and redirect to login
   const logout = () => {
-    localStorage.removeItem("jwt"); // Remove JWT from local storage
-    router.push("/auth/login"); // Redirect to login page
+    localStorage.removeItem("jwt");
+    router.push("/auth/login");
   };
 
-  // Loading state
   if (loading) {
     return <p>Loading...</p>;
   }
 
-  // If user data isn't available, do not render
   if (!user) {
     return null;
   }
@@ -64,18 +85,46 @@ const Dashboard = () => {
     <div>
       <h1>Welcome to the Dashboard</h1>
       <div>
-        {/* Dynamically render each user field */}
         {Object.entries(user).map(([key, value]) => (
           <div key={key}>
             <strong>{key}:</strong>{" "}
-            {typeof value === "string" || typeof value === "number"
-              ? value
-              : JSON.stringify(value)}
+            {key === "avatarUrl" ? (
+              <img
+                src={value as string}
+                alt="User Avatar"
+                className="w-16 h-16 rounded-full"
+              />
+            ) : typeof value === "string" || typeof value === "number" ? (
+              value
+            ) : (
+              JSON.stringify(value)
+            )}
           </div>
         ))}
       </div>
 
-      {/* Logout button */}
+      <div>
+        <h2>Your Friends</h2>
+        {friendsLoading ? (
+          <p>Loading friends...</p>
+        ) : error ? (
+          <p>Error loading friends: {error}</p>
+        ) : friends.length === 0 ? (
+          <p>You have no friends yet.</p>
+        ) : (
+          <ul>
+            {friends.map((friend) => (
+              <li key={friend.friend_id}>
+                <div>
+                  <h3>Friend Name: {friend.username}</h3>
+                </div>
+                {/* Optionally, you can add an avatar or an action button like 'remove friend' */}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <button
         onClick={logout}
         className="bg-red-500 text-white py-2 px-4 rounded mt-4"

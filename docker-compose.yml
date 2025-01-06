@@ -1,20 +1,11 @@
-version: '3.8'
+version: '3.7'
+
 services:
-  db:
+  postgres:
     image: postgres
-    restart: always
-    container_name: postgres
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: user
-      POSTGRES_DB: postgresdbb
     ports:
       - "5432:5432"
-    networks:
-    - backend
-
-networks:
-  backend:
-    driver: bridge
-
-
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: nestjs-drizzle
