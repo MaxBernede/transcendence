@@ -92,7 +92,7 @@
 
 	{
 	"wins": 10,
-	"losses": 5,
+	"loose": 5,
 	"ladder_level": 3
 	}
 

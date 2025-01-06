@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Body, Param, Delete, UsePipes, ValidationPipe, BadRequestException } from '@nestjs/common';
-import { AchievementService, UserAchievementService } from './achievement.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UsePipes,
+  ValidationPipe,
+  BadRequestException,
+} from '@nestjs/common';
+import {
+  AchievementService,
+  UserAchievementService,
+} from './achievement.service';
 import { AchievementEntity, UserAchievementEntity } from './achievement.entity';
-import { CreateAchievementDto, CreateUserAchievementDto } from './dto/createAchievement.dto';
+import {
+  CreateAchievementDto,
+  CreateUserAchievementDto,
+} from './dto/createAchievement.dto';
 import { BaseController } from 'src/base/base.controller';
 
 // Base Achievement Controller

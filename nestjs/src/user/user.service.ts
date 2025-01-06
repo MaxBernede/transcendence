@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -47,72 +51,75 @@ export class UserService {
   }
 
   async getUser(id: string): Promise<User> {
-	const user = await this.userRepository.findOne({ where: { id: +id } });
-  
-	if (!user) {
-	  throw new NotFoundException('User not found');
-	}
-  
-	// Prioritize `image.link`, then `avatar`, and finally the default avatar
-	user.avatar = user.image?.link || user.avatar || '/assets/Bat.jpg';
-  
-	console.log('Final Avatar Returned:', user.avatar);
-	return user;
+    const user = await this.userRepository.findOne({ where: { id: +id } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Prioritize `image.link`, then `avatar`, and finally the default avatar
+    user.avatar = user.image?.link || user.avatar || '/assets/Bat.jpg';
+
+    console.log('Final Avatar Returned:', user.avatar);
+    return user;
   }
 
   async getUserWithAchievements(id: number): Promise<User> {
     const user = await this.userRepository.findOne({
-        where: { id },
-        relations: ['achievements'],
+      where: { id },
+      relations: ['achievements'],
     });
 
     if (!user) {
-        throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     user.avatar = user.image?.link || user.avatar || '/assets/Bat.jpg';
 
     return user;
-}
-
-
+  }
 
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
     const user = await this.userRepository.findOne({
-        where: { id: +id },
-        relations: ['achievements', 'matchHistory', 'friends'],
+      where: { id: +id },
+      relations: ['achievements', 'matchHistory', 'friends'],
     });
 
     if (!user) {
-        throw new NotFoundException(`User with ID "${id}" not found`);
+      throw new NotFoundException(`User with ID "${id}" not found`);
     }
 
     console.log('Before Update:', user);
     console.log('Updated Data Received:', updatedData);
 
     if (updatedData.wins !== undefined) {
-        console.log(`Updating wins from ${user.wins} to ${updatedData.wins}`);
-        user.wins = updatedData.wins;
+      console.log(`Updating wins from ${user.wins} to ${updatedData.wins}`);
+      user.wins = updatedData.wins;
     }
     if (updatedData.loose !== undefined) {
-        console.log(`Updating losses from ${user.loose} to ${updatedData.loose}`);
-        user.loose = updatedData.loose;
+      console.log(`Updating losses from ${user.loose} to ${updatedData.loose}`);
+      user.loose = updatedData.loose;
     }
     if (updatedData.ladder_level !== undefined) {
-        console.log(`Updating ladder level from ${user.ladder_level} to ${updatedData.ladder_level}`);
-        user.ladder_level = updatedData.ladder_level;
+      console.log(
+        `Updating ladder level from ${user.ladder_level} to ${updatedData.ladder_level}`,
+      );
+      user.ladder_level = updatedData.ladder_level;
     }
 
     if (updatedData.avatar) {
-        console.log('Updating avatar:', updatedData.avatar);
-        user.avatar = updatedData.avatar;
+      console.log('Updating avatar:', updatedData.avatar);
+      user.avatar = updatedData.avatar;
     }
 
     if (updatedData.image) {
-        console.log('Updating image:', updatedData.image);
-        user.image = updatedData.image;
-        user.avatar = updatedData.image.link || updatedData.image.versions?.large || '/assets/Bat.jpg';
-        console.log('Updated avatar based on image:', user.avatar);
+      console.log('Updating image:', updatedData.image);
+      user.image = updatedData.image;
+      user.avatar =
+        updatedData.image.link ||
+        updatedData.image.versions?.large ||
+        '/assets/Bat.jpg';
+      console.log('Updated avatar based on image:', user.avatar);
     }
 
     Object.assign(user, updatedData);
@@ -120,30 +127,33 @@ export class UserService {
     console.log('Final User Object before saving:', user);
 
     return this.userRepository.save(user);
-}
+  }
 
-
-
-async updateAvatar(id: string, avatarUrl: string): Promise<User> {
+  async updateAvatar(id: string, avatarUrl: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: +id } });
 
     if (!user) {
-        throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found');
     }
 
-    if (user.avatar && user.avatar.startsWith('http://localhost:3000/uploads/avatars/')) {
-        // Remove the old file if it's a local file
-        const oldFilePath = path.join(__dirname, '../../uploads/avatars', path.basename(user.avatar));
-        if (fs.existsSync(oldFilePath)) {
-            fs.unlinkSync(oldFilePath);
-        }
+    if (
+      user.avatar &&
+      user.avatar.startsWith('http://localhost:3000/uploads/avatars/')
+    ) {
+      // Remove the old file if it's a local file
+      const oldFilePath = path.join(
+        __dirname,
+        '../../uploads/avatars',
+        path.basename(user.avatar),
+      );
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
     }
 
     user.avatar = avatarUrl; // Set new avatar URL
     return this.userRepository.save(user);
-}
-
-
+  }
 
   async findOne(idOrUsername: string | number): Promise<User> {
     const whereClause =
@@ -151,15 +161,15 @@ async updateAvatar(id: string, avatarUrl: string): Promise<User> {
         ? { id: idOrUsername }
         : { username: idOrUsername };
 
-
-
     const user = await this.userRepository.findOne({
       where: whereClause,
       relations: ['friends', 'achievements', 'matchHistory'],
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID or username "${idOrUsername}" not found`);
+      throw new NotFoundException(
+        `User with ID or username "${idOrUsername}" not found`,
+      );
     }
 
     // Ensure the avatar is set
@@ -213,7 +223,10 @@ async updateAvatar(id: string, avatarUrl: string): Promise<User> {
     return user.achievements;
   }
 
-  async updateAchievements(userId: number, achievementIds: number[]): Promise<User> {
+  async updateAchievements(
+    userId: number,
+    achievementIds: number[],
+  ): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['achievements'],
@@ -223,7 +236,8 @@ async updateAvatar(id: string, avatarUrl: string): Promise<User> {
       throw new NotFoundException(`User with ID "${userId}" not found`);
     }
 
-    const achievements = await this.achievementRepository.findByIds(achievementIds);
+    const achievements =
+      await this.achievementRepository.findByIds(achievementIds);
 
     if (achievements.length !== achievementIds.length) {
       throw new BadRequestException('Some achievements not found');
@@ -250,7 +264,9 @@ async updateAvatar(id: string, avatarUrl: string): Promise<User> {
   }
 
   async createOrUpdateUser(userInfo: Partial<User>): Promise<User> {
-    let user = await this.userRepository.findOne({ where: { email: userInfo.email } });
+    let user = await this.userRepository.findOne({
+      where: { email: userInfo.email },
+    });
 
     if (user) {
       user = { ...user, ...userInfo };

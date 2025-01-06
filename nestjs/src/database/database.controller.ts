@@ -4,16 +4,16 @@ import { Database } from './database.entity';
 
 @Controller('databases')
 export class DatabasesController {
-	constructor(private readonly databasesService: DatabasesService) {}
+  constructor(private readonly databasesService: DatabasesService) {}
 
-	@Get()
-	async findAll(): Promise<Database[]> {
-		// return [{ id: 1, name: 'John Doe', email: 't@test.com'}];
-		return this.databasesService.findAll();
-	}
+  @Get()
+  async findAll(): Promise<Database[]> {
+    // return [{ id: 1, name: 'John Doe', email: 't@test.com'}];
+    return this.databasesService.findAll();
+  }
 
-	@Post()
-	async create(@Body() database: Database): Promise<Database> {
-		return this.databasesService.create(database);
-	}
+  @Post()
+  async create(@Body() database: Database): Promise<Database> {
+    return this.databasesService.create(database);
+  }
 }

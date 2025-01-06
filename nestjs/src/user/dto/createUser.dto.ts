@@ -1,4 +1,10 @@
-import { IsString, IsEmail, Length, IsOptional, IsObject } from "class-validator";
+import {
+  IsString,
+  IsEmail,
+  Length,
+  IsOptional,
+  IsObject,
+} from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -25,16 +31,15 @@ export class CreateUserDto {
   };
 }
 
-
 export class authDto {
-	@IsString()
-	@Length(3, 20)
-	username: string;
+  @IsString()
+  @Length(3, 20)
+  username: string;
 
-	@IsEmail()
-	email: string;
+  @IsEmail()
+  email: string;
 
-	@IsString()
-	@Length(6, 20)
-	password: string;
+  @IsString()
+  @Length(6, 20)
+  password: string;
 }

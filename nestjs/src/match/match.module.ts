@@ -8,6 +8,6 @@ import { MatchController } from './match.controller';
   imports: [TypeOrmModule.forFeature([Match])],
   controllers: [MatchController],
   providers: [MatchService],
-  exports: [MatchService, TypeOrmModule], 
+  exports: [MatchService, TypeOrmModule],
 })
 export class MatchModule {}

@@ -92,6 +92,7 @@ const UserPage: React.FC = () => {
   }, []);
   
 
+
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 	const file = e.target.files?.[0];
 	if (!file) return;
@@ -133,7 +134,9 @@ const UserPage: React.FC = () => {
       setUserData((prevData: UserData | null) => ({
         ...prevData!,
         username: response.data.username,
-      }));
+	}));
+	
+	// console.log("response data username: ", response.data.username);
       setEditing(false);
     } catch (error) {
       console.error('Error updating user data:', error);

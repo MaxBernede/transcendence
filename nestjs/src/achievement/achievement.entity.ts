@@ -1,14 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
 import { User } from '../user/user.entity';
 
-@Entity('achievement') 
+@Entity('achievement')
 export class AchievementEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ unique: true, name: 'achievement_name' })
   achievementName: string;
-  
 
   @Column()
   description: string;
@@ -22,12 +21,12 @@ export class AchievementEntity {
 
 @Entity()
 export class UserAchievementEntity {
-	@PrimaryGeneratedColumn()
-	id: number;
-  
-	@Column()	
-	userId: number;
-  
-	@Column()
-	achievementId: number;
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  userId: number;
+
+  @Column()
+  achievementId: number;
 }
