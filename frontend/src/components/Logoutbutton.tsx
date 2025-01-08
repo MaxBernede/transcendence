@@ -9,7 +9,7 @@ const LogoutButton: React.FC = () => {
 			// Make a request to the server to clear the cookie
 			await axios.post('http://localhost:3000/auth/logout', {}, { withCredentials: true });
 	
-			// Optionally, refresh the page
+			// Go to the home page
 			window.location.href = '/';
 		} catch (error) {
 			console.error('Error during logout:', error);

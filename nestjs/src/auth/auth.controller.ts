@@ -5,20 +5,25 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Request,
   Res,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { Public } from 'src/decorators/public.decorator';
 import axios from 'axios';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import * as cookie from 'cookie';
+import * as jwt from 'jsonwebtoken'; // Or your preferred JWT library
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
   // @Public()
   // @HttpCode(HttpStatus.OK)
@@ -51,10 +56,10 @@ export class AuthController {
   }
 
   //   @UseGuards(AuthGuard)
-  @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
-  }
+  // @Get('profile')
+  // getProfile(@Request() req) {
+  //   return req.user;
+  // }
 
   @Public()
   @Get()
@@ -82,5 +87,24 @@ export class AuthController {
 
     // Send a response after clearing the cookie
     res.send({ message: 'Logged out successfully' });
+  }
+  
+  // @UseGuards(AuthGuard)
+  @Get('verify')
+  async verifyToken(@Req() req: Request, @Res() res: Response) {
+    const token = req.cookies['jwt']; // Get JWT from cookies
+
+    if (!token) {
+      return res.status(401).json({ authenticated: false });
+    }
+
+    try {
+      // Verify the token
+      jwt.verify(token, this.configService.get<string>('JWT_SECRET')); // Use your secret or key here
+      return res.json({ authenticated: true });
+    } catch (error) {
+      console.log("Wrong token used to check the jwt");
+      return res.status(401).json({ authenticated: false });
+    }
   }
 }
