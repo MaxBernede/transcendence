@@ -8,6 +8,7 @@ import LoginSave from './components/LoginSave';
 import './App.css'
 import Loginbackend from './components/Loginbackend';
 import { useEffect, useState } from 'react'
+import PongPage from './game/PongPage';
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false)
@@ -21,6 +22,7 @@ function App() {
         <Link to="/login">Login </Link>
         <Link to="/creation">Creation </Link>
         <Link to="/loginIntra">Intra-Login </Link> 
+		<Link to="/pong">Pong Game</Link> 
       </nav>
 
       <Routes>
@@ -29,6 +31,9 @@ function App() {
         
         {/* User Page Route */}
         <Route path="/user/:id" element={<UserPage />} />
+
+		 {/* Pong Game Page Route */}
+		 <Route path="/pong" element={<PongPage />} /> 
         
         {/* Catch-all Route for 404 */}
         <Route
