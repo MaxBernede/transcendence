@@ -36,7 +36,9 @@ export class AuthService {
   // Step 2: Exchange code for JWT
   async getJwtToken(@Res() res: Response) {
     const clientId = this.configService.getOrThrow<string>('INTRA_CLIENT_ID');
-    const clientSecret = this.configService.getOrThrow<string>('INTRA_CLIENT_SECRET');
+    const clientSecret = this.configService.getOrThrow<string>(
+      'INTRA_CLIENT_SECRET',
+    );
     const redirectUri = 'http://localhost:3000/auth/getJwt';
     const code = res.req.query.code;
 
@@ -103,7 +105,8 @@ export class AuthService {
       console.log('JWT set in cookies:', jwt);
 
       // Redirect to the specific user page
-      return res.redirect(`http://localhost:3001/user/${user.username}`);
+      //   return res.redirect(`http://localhost:3001/user/${user.username}`);
+      return res.redirect(`http://localhost:3002/profile`);
     } catch (error) {
       console.error(
         'Failed to fetch JWT:',

@@ -15,7 +15,7 @@ import { AppService } from './app.service';
 import { UserService } from './user/user.service';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { GetUserPayload } from './test.decorator';
-import { JwtAuthGuard } from './temp-jwt.guard';
+import { JwtAuthGuard } from './auth/jwt.guard';
 import { TokenPayload } from './auth/dto/token-payload';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user/user.entity';
@@ -48,43 +48,6 @@ export class AppController {
   handleClick(): { message: string } {
     return this.appService.handleButtonClick();
   }
-
-  //   @Get('api/users/:id')
-  //   async getUser(@Param('id') id: string) {
-  // 	console.log("Requested User ID or Username:", id); // Log to verify request handling
-
-  // 	// Validate input
-  // 	if (!id) {
-  // 	  throw new BadRequestException('Invalid User ID: Must not be empty.');
-  // 	}
-
-  // 	const isNumericId = !isNaN(Number(id)); // Determine if the input is numeric
-  // 	let user;
-
-  // 	try {
-  // 	  // Try fetching the user from the database
-  // 	  user = await this.userService.findOne(isNumericId ? +id : id);
-  // 	} catch (error) {
-  // 	  console.error("Error fetching user:", error.message);
-  // 	  user = null; // Set user to null if an error occurs
-  // 	}
-
-  // 	// If user exists in the database, return it
-  // 	if (user) {
-  // 	  return user;
-  // 	}
-
-  // 	// If no user found, return a mock response
-  // 	console.warn(`User with ID or username "${id}" not found. Returning mock data.`);
-  // 	return {
-  // 	  username: `${id}`, // Use the input as the username
-  // 	  bio: `This is the profile for User ${id}`,
-  // 	  avatar: null,
-  // 	  wins: 0, // Default stats for mock users
-  // 	  losses: 0,
-  // 	  ladderLevel: 1,
-  // 	};
-  //   }
 
   @Get('auth/getJwt')
   async intraJwt(@Res() res: Response) {
@@ -150,8 +113,7 @@ export class AppController {
 		if (!userr) {
 			throw new InternalServerErrorException;
 		}
-  
-  
+
 		// Generate a JWT token with username
 		//   const payload = { sub: user.id, email: user.email, username: user.username };
 		const payload = typeof TokenPayload;
@@ -176,7 +138,8 @@ export class AppController {
 		console.log('JWT set in cookies:', jwt);
   
 		// Redirect to the specific user page
-		return res.redirect(`http://localhost:3001/user/me`);
+		// return res.redirect(`http://localhost:3001/user/me`);
+		return res.redirect(`http://localhost:3002/profile`);
 	  } catch (error) {
 		console.error(
 		  'Failed to fetch JWT:',
