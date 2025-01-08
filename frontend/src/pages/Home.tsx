@@ -2,6 +2,7 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
+import LoginButton from '../components/Loginbutton';
 
 const Home: React.FC = () => {
   return (
@@ -16,20 +17,12 @@ const Home: React.FC = () => {
       }}
     >
       <Typography variant="h3" color="primary" gutterBottom>
-        Welcome to the Home Page
+        Welcome to our Transcendence project!
       </Typography>
       <Typography variant="body1" color="textSecondary" sx={{ textAlign: 'center', maxWidth: '400px' }}>
-        This is a placeholder for the home page. You can add content, links, or other components here as your project grows.
+        Feel free to login using your intra. Have fun playing our game
       </Typography>
-      <Button
-        variant="contained"
-        color="primary"
-        component={Link}
-        to="/user/ivan-mel"
-        sx={{ marginTop: '20px' }}
-      >
-        Go to Ivan Mel's Profile
-      </Button>
+      <LoginButton></LoginButton>
     </Box>
   );
 };
