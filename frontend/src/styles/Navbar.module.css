@@ -1,0 +1,17 @@
+.navbar {
+	padding: 20px;
+	border-bottom: 2px solid #ccc; 
+	font-size: 1.2rem;
+	background-color: #20232a;
+}
+
+.navLink {
+	margin-right: 15px;
+	text-decoration: none;
+	color: #FFFFFF;
+}
+
+.navLink:hover {
+	color: #61dafb;
+	font-weight: bold;
+}
