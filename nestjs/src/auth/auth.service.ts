@@ -72,6 +72,7 @@ export class AuthService {
       // IF ALREADY EXIST USE NEW USER DATAS
       // Save user to the database
       const user = await this.usersService.createOrUpdateUser({
+        intraId: userInfo.id,
         email: userInfo.email,
         firstName: userInfo.first_name,
         lastName: userInfo.last_name,

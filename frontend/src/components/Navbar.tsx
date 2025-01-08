@@ -26,8 +26,11 @@ const Navbar: React.FC = () => {
 		<nav className={styles.navbar}>
 			<Link to="/" className={styles.navLink}>Home</Link>
 			<Link to="/creation" className={styles.navLink}>Creation</Link>
-			<Link to="/user/me" className={`${styles.navLink} ${styles.navLinkRight}`}>My Profile</Link>
-		</nav>
+			<div className={styles.navRight}>
+				<Link to="/user/profileupdate" className={styles.navLink}>⚙️ Edit</Link>
+				<Link to="/user/me" className={styles.navLink}>My Profile</Link>
+			</div>
+	</nav>
 	);
 };
 

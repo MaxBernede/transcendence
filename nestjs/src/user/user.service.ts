@@ -265,11 +265,12 @@ export class UserService {
 
   async createOrUpdateUser(userInfo: Partial<User>): Promise<User> {
     let user = await this.userRepository.findOne({
-      where: { email: userInfo.email },
+      where: { intraId: userInfo.intraId },
     });
 
     if (user) {
-      user = { ...user, ...userInfo };
+      // user = { ...user, ...userInfo };
+      console.log("user already exist, not overwriting informations");
     } else {
       user = this.userRepository.create(userInfo);
     }

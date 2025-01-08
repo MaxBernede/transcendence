@@ -6,6 +6,7 @@ import Creation from './components/Creation';
 import './styles/App.css'
 import { useEffect, useState } from 'react'
 import Navbar from './components/Navbar';
+import ProfileUpdate from './pages/user/ProfileUpdate';
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false)
@@ -16,6 +17,7 @@ function App() {
 			<Routes>
 				<Route path="/" element={<Home />} />
 				<Route path="/user/:id" element={<UserPage />} />
+				<Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
 				<Route
 					path="/creation"
 					element={<Creation setLoggedIn={setLoggedIn} setEmail={setEmail} />}
