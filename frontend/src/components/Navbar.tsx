@@ -6,8 +6,8 @@ const Navbar = () => {
 	return (
 		<nav className={styles.navbar}>
 			<Link to="/" className={styles.navLink}>Home</Link>
-			<Link to="/user/me" className={styles.navLink}>Me</Link>
 			<Link to="/creation" className={styles.navLink}>Creation</Link>
+			<Link to="/user/me" className={`${styles.navLink} ${styles.navLinkRight}`}>My Profile</Link>
 		</nav>
 	);
 };

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Userpage.css';
+import '../styles/Userpage.css';
 import { Header } from '../components/Header';
 import { Stats } from '../components/Stats';
 import { MatchHistory } from '../components/MatchHistory';
+import LogoutButton from '../components/Logoutbutton';
 
 const defaultAvatar = '/assets/Bat.jpg';
 
@@ -174,6 +175,7 @@ const UserPage: React.FC = () => {
           <div className="user-info">
             <h2>{userData?.username}</h2>
             <button onClick={() => setEditing(true)}>Edit Username</button>
+			<LogoutButton></LogoutButton>
           </div>
         )}
 

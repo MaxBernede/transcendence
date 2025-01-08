@@ -1,17 +1,25 @@
 .navbar {
-	padding: 20px;
-	border-bottom: 2px solid #ccc; 
-	font-size: 1.2rem;
+	display: flex;
+	align-items: center;
 	background-color: #20232a;
+	padding: 20px;
+	border-bottom: 2px solid #ccc;
+	font-size: 1.1rem;
 }
 
 .navLink {
 	margin-right: 15px;
 	text-decoration: none;
-	color: #FFFFFF;
+	color: #61dafb;
 }
 
 .navLink:hover {
-	color: #61dafb;
+	color: #ffffff;
 	font-weight: bold;
+}
+
+/* only on "Me" */
+.navLinkRight {
+	margin-left: auto; /* push it to the right*/
+	margin-right: 0; /* remove the margin right */
 }

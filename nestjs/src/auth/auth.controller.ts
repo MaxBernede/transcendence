@@ -67,4 +67,20 @@ export class AuthController {
   getJwt(@Res() res: Response) {
     return this.authService.getJwtToken(res);
   }
+
+  @Public()
+  @Post('logout')
+  logOut(@Res() res: Response) {
+    // Ensure the path is exactly the same as when the cookie was set
+    res.clearCookie('jwt', { 
+      path: '/',   // Same path as when the cookie was set
+      domain: 'localhost', // Optional: Set the same domain if used
+      httpOnly: true, // Match the same HttpOnly flag used when setting the cookie
+      secure: false, // Ensure it matches the secure flag (use true if on HTTPS)
+      sameSite: 'strict', // SameSite attribute should match as well
+    });
+
+    // Send a response after clearing the cookie
+    res.send({ message: 'Logged out successfully' });
+  }
 }

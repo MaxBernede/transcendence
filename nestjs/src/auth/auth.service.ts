@@ -69,7 +69,7 @@ export class AuthService {
 
       const userInfo = userResponse.data;
 
-      // I ALREADY EXIST USE NEW USER DATAS
+      // IF ALREADY EXIST USE NEW USER DATAS
       // Save user to the database
       const user = await this.usersService.createOrUpdateUser({
         email: userInfo.email,
@@ -143,12 +143,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid username or password');
     }
-
-    // Optionally, validate the password here if using password-based auth
-    // if (!(await bcrypt.compare(password, user.password))) {
-    //   throw new UnauthorizedException('Invalid username or password');
-    // }
-
+    
     // Generate JWT token
     const payload = { sub: user.id, email: user.email };
     return this.jwtService.sign(payload);
