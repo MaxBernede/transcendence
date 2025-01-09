@@ -148,16 +148,16 @@ export class UserController {
       return []; // Ensure an empty array is returned if no matches exist
     }
 
-    return matchHistory.map((match) => ({
-      id: match.id,
-      type: match.type,
-      opponent: match.opponent,
-      result: match.result,
-      score: match.score,
-      description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
-      date: new Date(match.date).toLocaleDateString('en-GB'),
-    }));
-  }
+    // commented because match database changed
+    return [];
+      // id: match.id,
+      // type: match.type,
+      // opponent: match.opponent,
+      // result: match.result,
+      // score: match.score,
+      // description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
+      // date: new Date(match.date).toLocaleDateString('en-GB'),
+    };
 
   @Put(':id/match-history')
   async updateMatchHistory(

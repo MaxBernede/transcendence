@@ -42,7 +42,7 @@ export class User {
   double_auth_active: boolean;
 
   @Column({ nullable: true, default: null })
-  phone_number: number;
+  phone: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

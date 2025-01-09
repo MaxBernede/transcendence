@@ -36,7 +36,7 @@ const UserPage: React.FC = () => {
       />
       <div className="content-container">
         <div className="user-info">
-          <h2>{userData?.username}</h2>
+          <p>userId: {userData?.intraId}</p>
           <LogoutButton />
         </div>
         <Stats

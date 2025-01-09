@@ -1,55 +1,70 @@
-import React, { useEffect, useState } from 'react';
+// UserPage.tsx
+import React, { useContext } from 'react';
+import { UserContext } from '../../App';
+import EditableFieldButton from '../../utils/EditButton';
+import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/auth/me';
+const UserPage: React.FC = () => {
+  const { userData, setUserData, loading, error } = useContext(UserContext);
 
-interface User {
-	id: number;
-	firstName: string;
-	lastName: string;
-	email: string;
-	double_auth_active : boolean;
-	phone_number : number;
-	username: string;
-}
+  const handleChange = async (field: string, value: string) => {
+    if (userData?.id) {
+      try {
+        const token = localStorage.getItem('jwt');  // JWT token from localStorage
+        const response = await axios.put(
+          `http://localhost:3000/api/users/${userData.id}`,
+          { [field]: value },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-export default function Profile() {
-	const [user, setUser] = useState<User | null>(null);
-	const [error, setError] = useState('');
+        // Dynamically update the field in userData
+        setUserData({ ...userData, [field]: value });
+        console.log(`${field} updated:`, response.data);
+      } catch (err) {
+        console.error(`Error updating ${field}`, err);
+      }
+    }
+  };
 
-	useEffect(() => {
-		const token = localStorage.getItem('jwt_token'); // Récupérer le token depuis le stockage local
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
 
-		if (token) {
-			fetch(API_URL, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${token}`, // Inclure le token dans l'en-tête
-				},
-			})
-				.then((response) => {
-					if (!response.ok) {
-						throw new Error('Failed to fetch user info');
-					}
-					return response.json();
-				})
-				.then((data) => setUser(data))
-				.catch((err) => setError(err.message));
-		} else {
-			setError('User not logged in');
-		}
-	}, []);
+  return (
+    <div>
+      <h1>User Profile</h1>
 
-	if (error) {
-		return <div>Error: {error}</div>;
-	}
+      {/* Editable username */}
+      <EditableFieldButton
+        field="username"
+        currentValue={userData?.username || ''}
+        onSave={handleChange}
+      />
 
-	if (!user) {
-		return <div>Loading...</div>;
-	}
+      {/* Editable avatar */}
+      <EditableFieldButton
+        field="avatar"
+        currentValue={userData?.avatar || ''}
+        onSave={handleChange}
+      />
 
-	return (
-		<div>
-			<p>Email: {user.email}</p>
-		</div>
-	);
-}
+		<EditableFieldButton
+        field="phone"
+        currentValue={userData?.phone || 'no phone registered yet'}
+        onSave={handleChange}
+      />
+
+      {/* Other user fields */}
+      <div>
+        <p>Wins: {userData?.wins}</p>
+        <p>Losses: {userData?.losses}</p>
+        <p>Ladder Level: {userData?.ladderLevel}</p>
+      </div>
+    </div>
+  );
+};
+
+export default UserPage;

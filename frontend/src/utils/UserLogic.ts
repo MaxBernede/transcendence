@@ -25,7 +25,7 @@ export const fetchUserData = async (
 	  const response = await axios.get('http://localhost:3000/api/users/me', {
 		withCredentials: true,
 	  });
-  
+	  console.log(response);
 	  const user = response.data;
 	  console.log('Fetched user data:', user);
   

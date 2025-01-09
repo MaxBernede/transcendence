@@ -186,14 +186,16 @@ export class AppController {
 	  }
   }
 
+  // This endpoint already exist in the API, conflict
+  // changed the check to email because username change
   @UseGuards(JwtAuthGuard)
   @Get('api/users/me')
   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-    // console.log(request);
+    console.log(request);
     // console.log('cookies', request.headers['cookie']);
     // console.log('user');
     const existingUser = await this.userRepository.findOne({
-      where: { username: payload.username },
+      where: { email: payload.email },
     });
     return existingUser;
   }
