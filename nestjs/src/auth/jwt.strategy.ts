@@ -61,7 +61,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request) => {
           // Log cookies
-          console.log('Incoming cookies:', request?.cookies);
+          // console.log('Incoming cookies:', request?.cookies);
 
           // Extract token from cookies
           return request?.cookies?.jwt || null;
@@ -73,7 +73,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: TokenPayload) {
-    console.log('Validated payload:', payload);
+    // console.log('Validated payload:', payload);
     return payload; // Attach user payload to the request object
   }
 }

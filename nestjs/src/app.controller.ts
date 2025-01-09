@@ -173,7 +173,7 @@ export class AppController {
 		  }),
 		]);
   
-		console.log('JWT set in cookies:', jwt);
+		// console.log('JWT set in cookies:', jwt);
   
 		// Redirect to the specific user page
 		return res.redirect(`http://localhost:3001/user/me`);
@@ -190,8 +190,8 @@ export class AppController {
   @Get('api/users/me')
   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     // console.log(request);
-    console.log('cookies', request.headers['cookie']);
-    console.log('user');
+    // console.log('cookies', request.headers['cookie']);
+    // console.log('user');
     const existingUser = await this.userRepository.findOne({
       where: { username: payload.username },
     });

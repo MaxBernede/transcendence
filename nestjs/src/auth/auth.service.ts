@@ -101,7 +101,7 @@ export class AuthService {
         }),
       ]);
 
-      console.log('JWT set in cookies:', jwt);
+      // console.log('JWT set in cookies:', jwt);
 
       // Redirect to the specific user page
       return res.redirect(`http://localhost:3001/user/${user.username}`);
