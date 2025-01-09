@@ -38,8 +38,11 @@ export class User {
   @Column({ nullable: true, default: null })
   hash_key: string;
 
+  @Column({ default: false })
+  double_auth_active: boolean;
+
   @Column({ nullable: true, default: null })
-  phone_number_2fa: number;
+  phone_number: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

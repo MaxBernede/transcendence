@@ -6,8 +6,8 @@ import { Header } from '../components/Header';
 import { Stats } from '../components/Stats';
 import { MatchHistory } from '../components/MatchHistory';
 import LogoutButton from '../components/Logoutbutton';
-
-const defaultAvatar = '/assets/Bat.jpg';
+import { updateUser, updateUserAvatar, buildAvatarUrl } from '../utils/UserUtils';
+import { handleImageChange } from '../utils/UserHandlers';
 
 type UserData = {
   id: string;
@@ -17,24 +17,6 @@ type UserData = {
   [key: string]: any; // Optional if there are other dynamic fields
 };
 
-const buildAvatarUrl = (avatar: string | null, imageLink?: string | null): string => {
-	// Prioritize `imageLink` if available
-	const url = imageLink || avatar || defaultAvatar;
-  
-	// If it's an external URL, return it as is
-	if (url.startsWith('http://') || url.startsWith('https://')) {
-	  return url;
-	}
-  
-	// If it already has a timestamp, return it
-	if (url.includes('?t=')) {
-	  return url;
-	}
-  
-	// Add a timestamp for local URLs to prevent caching
-	return `${url}${url.includes('?') ? '&' : '?'}t=${new Date().getTime()}`;
-  };
-  
 
 const UserPage: React.FC = () => {
   const navigate = useNavigate();
@@ -91,93 +73,28 @@ const UserPage: React.FC = () => {
   
 	fetchUserData();
   }, []);
-  
-
-
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-	const file = e.target.files?.[0];
-	if (!file) return;
-  
-	try {
-	  const formData = new FormData();
-	  formData.append('file', file);
-  
-	  const response = await axios.post(
-		`http://localhost:3000/api/users/${userData?.id}/upload-avatar`,
-		formData,
-		{ withCredentials: true }
-	  );
-
-	  setUserData((prev: UserData | null) => ({
-		...prev!,
-		avatar: buildAvatarUrl(response.data.avatar),
-	  }));
-	} catch (error) {
-	  console.error('Error uploading avatar:', error);
-	}
-  };	  
-  
-  
-
-  const handleUpdateUser = async () => {
-    if (!newUsername.trim()) {
-      setError('Username cannot be empty.');
-      return;
-    }
-
-    try {
-      const response = await axios.put(
-        `http://localhost:3000/api/users/${id || userData?.id}`,
-        { username: newUsername },
-        { withCredentials: true }
-      );
-
-      setUserData((prevData: UserData | null) => ({
-        ...prevData!,
-        username: response.data.username,
-	}));
-	
-	// console.log("response data username: ", response.data.username);
-      setEditing(false);
-    } catch (error) {
-      console.error('Error updating user data:', error);
-      setError('Failed to update user.');
-    }
-  };
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
 
   return (
     <div className="user-page-container">
-	<Header
-	id={userData?.id || ''}
-	username={userData?.username || ''}
-	avatar={buildAvatarUrl(userData?.avatar ?? null, userData?.image?.link ?? null)}
-	handleImageChange={handleImageChange}
-	setUsername={(newUsername) =>
-		setUserData((prev: UserData | null) => ({ ...prev!, username: newUsername }))
-	}
-	/>
-      <div className="content-container">
-        {editing ? (
-          <div className="edit-user-container">
-            <input
-              type="text"
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              placeholder="Enter new username"
-            />
-            <button onClick={handleUpdateUser}>Save</button>
-            <button onClick={() => setEditing(false)}>Cancel</button>
-          </div>
-        ) : (
-          <div className="user-info">
-            <h2>{userData?.username}</h2>
-            <button onClick={() => setEditing(true)}>Edit Username</button>
-			<LogoutButton></LogoutButton>
-          </div>
-        )}
+		<Header
+			id={userData?.id || ''}
+			username={userData?.username || ''}
+			avatar={buildAvatarUrl(userData?.avatar ?? null, userData?.image?.link ?? null)}
+			handleImageChange={(e) =>
+				handleImageChange(e, userData?.id || '', setUserData)
+			}
+			setUsername={(newUsername) =>
+				setUserData((prev: UserData | null) => ({ ...prev!, username: newUsername }))
+			}
+		/>
+      	<div className="content-container">
+			<div className="user-info">
+				<h2>{userData?.username}</h2>
+			<LogoutButton />
+		</div>
 
         <Stats
           wins={userData?.wins || 0}
