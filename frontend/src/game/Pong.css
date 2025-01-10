@@ -76,10 +76,8 @@
 	width: 20px;
 	height: 20px;
 	background-color: #ff3385;
-	border-radius: 50%; /* Circular shape for the ball */
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	transition: transform 0.016s linear; 
   }
   
   /* Center Line */
