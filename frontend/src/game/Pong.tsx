@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./Pong.css";
+import Paddle from "./Paddle"; // Import Paddle component
+import Ball from "./Ball"; // Import Ball component
+import Scoreboard from "./Scoreboard"; // Import Scoreboard component
 
 const Pong = () => {
   const [paddle1Y, setPaddle1Y] = useState<number | null>(null);
   const [paddle2Y, setPaddle2Y] = useState<number | null>(null);
   const [courtHeight, setCourtHeight] = useState(600);
+  const [isResetting, setIsResetting] = useState(false);
+
   const paddleHeight = 100;
   const paddleSpeed = 20;
   const gameContainerRef = useRef<HTMLDivElement>(null);
@@ -104,6 +109,10 @@ const handleScore = (player: number) => {
   
   useEffect(() => {
 	const interval = setInterval(() => {
+		if (isResetting) {
+            console.log("Skipping ball updates during reset.");
+            return;
+        }
 	  if (gameContainerRef.current) {
 		const rect = gameContainerRef.current.getBoundingClientRect();
 		const courtWidth = rect.width;
@@ -181,59 +190,104 @@ const handleScore = (player: number) => {
 	return () => clearInterval(interval);
   }, [ballVX, ballVY, ballY, paddle1Y, paddle2Y, collisionHandled, isScoring]);
 
+//   const resetBall = () => {
+//     console.log("Resetting ball position...");
+// 	setIsResetting(true);
+
+//     const initialX = 390;
+//     const initialY = 294;
+//     const paddleMiddlePosition = courtHeight / 2 - paddleHeight / 2;
+	
+//     setBallX(initialX);
+// 	console.log(`setting ball to X: ${initialX}`);
+//     setBallY(initialY);
+// 	console.log(`setting ball to Y: ${initialY}`);
+//     setBallVX(0);
+//     setBallVY(0);
+//     setPaused(true);
+
+//     // Update paddle positions
+//     setPaddle1Y(paddleMiddlePosition);
+//     setPaddle2Y(paddleMiddlePosition);
+
+//     // Force re-render by temporarily setting paddles to null and back to the middle position
+//     setTimeout(() => {
+// 		setIsResetting(false);
+//         setPaddle1Y(null);
+//         setPaddle2Y(null);
+//         setTimeout(() => {
+//             setPaddle1Y(paddleMiddlePosition);
+//             setPaddle2Y(paddleMiddlePosition);
+//             console.log(`Paddle 1 final position: ${paddleMiddlePosition}`);
+//             console.log(`Paddle 2 final position: ${paddleMiddlePosition}`);
+//         }, 10);
+//     }, 10);
+
+//     console.log(`Paddles resetting to middle: ${paddleMiddlePosition}`);
+// };
+
 const resetBall = () => {
     console.log("Resetting ball position...");
-    
-    // Use fixed initial positions
-    const initialX = 390;
-    const initialY = 294;
-    
+    setIsResetting(true);
 
-    
-    setBallX(initialX); // Set ball's X position
-    setBallY(initialY); // Set ball's Y position
-    setBallVX(0);       // Stop ball's horizontal motion
-    setBallVY(0);       // Stop ball's vertical motion
-    setPaused(true);    // Pause the game
-
-    // Reset paddle positions
+    const initialX = 390; // Target middle X position
+    const initialY = 294; // Target middle Y position
     const paddleMiddlePosition = courtHeight / 2 - paddleHeight / 2;
+
+    console.log(`Calculated middle X: ${initialX}, Y: ${initialY}`);
+    console.log(`Calculated paddle middle position: ${paddleMiddlePosition}`);
+
+    setBallX(initialX);
+    setBallY(initialY);
+    setBallVX(0);
+    setBallVY(0);
+    setPaused(true);
+
+    // Log ball position immediately after setting
+    setTimeout(() => {
+        console.log(`Ball X after reset: ${ballX}, Ball Y after reset: ${ballY}`);
+    }, 10);
+
+    // Update paddle positions
     setPaddle1Y(paddleMiddlePosition);
     setPaddle2Y(paddleMiddlePosition);
+
+    // Force re-render to ensure paddles reset properly
+    setTimeout(() => {
+        setIsResetting(false);
+        setPaddle1Y(null);
+        setPaddle2Y(null);
+
+        setTimeout(() => {
+            setPaddle1Y(paddleMiddlePosition);
+            setPaddle2Y(paddleMiddlePosition);
+            console.log(`Paddle 1 final position: ${paddleMiddlePosition}`);
+            console.log(`Paddle 2 final position: ${paddleMiddlePosition}`);
+        }, 10);
+    }, 10);
+
+    console.log(`Paddles resetting to middle: ${paddleMiddlePosition}`);
 };
 
 
-
-  return (
-    <div className="pong-wrapper">
-      <div className="pong-scoreboard">
-        <div className="pong-score pong-score-left">
-          <div className="pong-score-name">🎀 PLAYER 1 🎀</div>
-          <div className="pong-score-number">{score1}</div>
-        </div>
-        <div className="pong-score pong-score-right">
-          <div className="pong-score-name">🌸 PLAYER 2 🌸</div>
-          <div className="pong-score-number">{score2}</div>
-        </div>
-      </div>
-
-      <div ref={gameContainerRef} className="pong-game-container">
-        <div className="pong-center-line"></div>
-        <div
-          className="pong-paddle pong-paddle-left"
-          style={{ top: `${paddle1Y ?? 0}px` }}
-        ></div>
-        <div
-          className="pong-paddle pong-paddle-right"
-          style={{ top: `${paddle2Y ?? 0}px` }}
-        ></div>
-        <div
-          className="pong-ball"
-          style={{ left: `${ballX}px`, top: `${ballY}px` }}
-        ></div>
-      </div>
-    </div>
+return (
+	<div className="pong-wrapper">
+	  {/* Use Scoreboard component */}
+	  <Scoreboard score1={score1} score2={score2} /> 
+  
+	  <div ref={gameContainerRef} className="pong-game-container">
+		<div className="pong-center-line"></div>
+  
+		{/* Use Paddle components for left and right paddles */}
+		<Paddle position="left" top={paddle1Y ?? 0} />
+		<Paddle position="right" top={paddle2Y ?? 0} />
+  
+		{/* Use Ball component for the ball */}
+		<Ball x={ballX} y={ballY} />
+	  </div>
+	</div>
   );
 };
+  
 
 export default Pong;
