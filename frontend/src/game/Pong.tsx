@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import "./Pong.css";
 
 const Pong = () => {
-  // Paddle position
   const [paddle1Y, setPaddle1Y] = useState<number | null>(null);
   const [paddle2Y, setPaddle2Y] = useState<number | null>(null);
   const [courtHeight, setCourtHeight] = useState(600);
@@ -10,22 +9,24 @@ const Pong = () => {
   const paddleSpeed = 15;
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
-  // Ball position
-  const [ballX, setBallX] = useState(400);
-  const [ballY, setBallY] = useState(300);
+  const [ballX, setBallX] = useState(390);
+  const [ballY, setBallY] = useState(294);
   const [ballVX, setBallVX] = useState(0); // Start stationary
   const [ballVY, setBallVY] = useState(0); // Start stationary
-  const [paused, setPaused] = useState(true); // Game starts paused
+  const [paused, setPaused] = useState(true);
 
-  // Scores
   const [score1, setScore1] = useState(0);
   const [score2, setScore2] = useState(0);
 
-  // Update paddle positions based on game container
+  const [isScoring, setIsScoring] = useState(false);
+  const [collisionHandled, setCollisionHandled] = useState(false);
+
   useEffect(() => {
     const updateContainerMetrics = () => {
       if (gameContainerRef.current) {
         const rect = gameContainerRef.current.getBoundingClientRect();
+		console.log("Game Screen Width:", rect.width);
+		console.log("Game Screen Height:", rect.height);
         setCourtHeight(rect.height);
 
         const paddleMiddlePosition = rect.height / 2 - paddleHeight / 2;
@@ -41,15 +42,14 @@ const Pong = () => {
     };
   }, [paddle1Y, paddle2Y]);
 
-  // Paddle movement
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (paddle1Y !== null && paddle2Y !== null) {
         if (paused) {
-          console.log("Game resumed!");
-          setPaused(false); // Resume game on any key press
-          setBallVX(3); // Start ball with a default velocity
+          setPaused(false);
+          setBallVX(3);
           setBallVY(3);
+          console.log("Game resumed!");
         }
 
         switch (event.key) {
@@ -79,110 +79,149 @@ const Pong = () => {
     };
   }, [courtHeight, paddle1Y, paddle2Y, paused]);
 
-  // Ball movement
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (gameContainerRef.current) {
-        const rect = gameContainerRef.current.getBoundingClientRect();
-        const courtWidth = rect.width;
-        const courtHeight = rect.height;
+	const interval = setInterval(() => {
+	  if (gameContainerRef.current) {
+		const rect = gameContainerRef.current.getBoundingClientRect();
+		console.log("Game container metrics on reset:", rect);
+		const courtWidth = rect.width;
+		const courtHeight = rect.height;
 
-        const paddle1Top = paddle1Y ?? 0;
-        const paddle1Bottom = paddle1Top + paddleHeight;
-        const paddle2Top = paddle2Y ?? 0;
-        const paddle2Bottom = paddle2Top + paddleHeight;
-
+		console.log("Current Ball Position:", { ballX, ballY });
+		console.log("Current Velocity:", { ballVX, ballVY });
+  
+		const paddle1Top = paddle1Y ?? 0;
+		const paddle1Bottom = paddle1Top + paddleHeight;
+		const paddle2Top = paddle2Y ?? 0;
+		const paddle2Bottom = paddle2Top + paddleHeight;
+  
 		setBallX((prevX) => {
-			const newX = prevX + ballVX;
-		  
-			// Collision with Player 1's paddle
-			if (newX <= 30 && ballY + 20 >= paddle1Top && ballY <= paddle1Bottom) {
-			  console.log("Collision with Player 1 paddle");
-			  const paddleCenter = paddle1Top + paddleHeight / 2;
-			  const collisionOffset = (ballY + 10) - paddleCenter;
-			  const maxOffset = paddleHeight / 2;
-		  
-			  setBallVX(Math.abs(ballVX));
-			  setBallVY((collisionOffset / maxOffset) * 5);
-			  return 31;
-			}
-		  
-			// Collision with Player 2's paddle
-			if (newX >= courtWidth - 50 && ballY + 20 >= paddle2Top && ballY <= paddle2Bottom) {
-			  console.log("Collision with Player 2 paddle");
-			  const paddleCenter = paddle2Top + paddleHeight / 2;
-			  const collisionOffset = (ballY + 10) - paddleCenter;
-			  const maxOffset = paddleHeight / 2;
-		  
-			  setBallVX(-Math.abs(ballVX));
-			  setBallVY((collisionOffset / maxOffset) * 5);
-			  return courtWidth - 51;
-			}
-		  
-			// Scoring logic
-			if (newX <= 0 && !paused) {
-			  console.log("Player 2 scores!");
-			  setPaused(true); // Pause the game
-			  setScore2((prevScore) => {
-				const newScore = prevScore + 1;
-				console.log("Updated Score Player 2:", newScore);
-				return newScore;
-			  });
-			  setTimeout(() => resetBall(courtWidth, courtHeight), 0); // Ensure reset after all updates
-			  return courtWidth / 2 - 10;
-			} else if (newX >= courtWidth - 20 && !paused) {
-			  console.log("Player 1 scores!");
-			  setPaused(true); // Pause the game
-			  setScore1((prevScore) => {
-				const newScore = prevScore + 1;
-				console.log("Updated Score Player 1:", newScore);
-				return newScore;
-			  });
-			  setTimeout(() => resetBall(courtWidth, courtHeight), 0); // Ensure reset after all updates
-			  return courtWidth / 2 - 10;
-			}
-		  
-			return newX;
-		  });		  
-		  
+		  const newX = prevX + ballVX;
+  
+		  // Predict next Y position for better collision handling
+		  const predictedBallY = ballY + ballVY;
+  
+		  // Player 1 Paddle Collision
+		  if (
+			!collisionHandled &&
+			newX <= 30 &&
+			predictedBallY + 20 >= paddle1Top &&
+			predictedBallY <= paddle1Bottom
+		  ) {
+			console.log("Collision with Player 1 paddle");
+			setBallVX(Math.abs(ballVX)); // Reverse horizontal direction
+			setCollisionHandled(true);
+			setTimeout(() => setCollisionHandled(false), 50);
+			return 31; // Ensure the ball doesn't stick
+		  }
+  
+		  // Player 2 Paddle Collision
+		  if (
+			!collisionHandled &&
+			newX >= courtWidth - 50 &&
+			predictedBallY + 20 >= paddle2Top &&
+			predictedBallY <= paddle2Bottom
+		  ) {
+			console.log("Collision with Player 2 paddle");
+			setBallVX(-Math.abs(ballVX)); // Reverse horizontal direction
+			setCollisionHandled(true);
+			setTimeout(() => setCollisionHandled(false), 50);
+			return courtWidth - 51; // Ensure the ball doesn't stick
+		  }
+  
+		  // Scoring logic for Player 2
+		  if (newX <= 0 && !isScoring) {
+			console.log("Player 2 scores!");
+			setIsScoring(true);
+			setScore2((prevScore) => {
+			  const newScore = prevScore + 1;
+			  console.log("Updated Score Player 2:", newScore);
+			  return newScore;
+			});
+			resetBall();
+			setTimeout(() => setIsScoring(false), 100);
+			return courtWidth / 2 - 10; // Reset to center
+		  }
+  
+		  // Scoring logic for Player 1
+		  if (newX >= courtWidth - 20 && !isScoring) {
+			console.log("Player 1 scores!");
+			setIsScoring(true);
+			setScore1((prevScore) => {
+			  const newScore = prevScore + 1;
+			  console.log("Updated Score Player 1:", newScore);
+			  return newScore;
+			});
+			resetBall();
+			setTimeout(() => setIsScoring(false), 100);
+			return courtWidth / 2 - 10; // Reset to center
+		  }
+  
+		  return newX;
+		});
+  
+		setBallY((prevY) => {
+		  const newY = prevY + ballVY;
+  
+		  if (newY <= 0) {
+			console.log("Ball bounces off the top wall");
+			setBallVY(Math.abs(ballVY));
+			return 0;
+		  }
+  
+		  if (newY >= courtHeight - 20) {
+			console.log("Ball bounces off the bottom wall");
+			setBallVY(-Math.abs(ballVY));
+			return courtHeight - 20;
+		  }
+  
+		  return newY;
+		});
+	  }
+	}, 16);
+  
+	return () => clearInterval(interval);
+  }, [ballVX, ballVY, ballY, paddle1Y, paddle2Y, paddleHeight, isScoring, collisionHandled]);
+  
 
-        setBallY((prevY) => {
-          const newY = prevY + ballVY;
+//   const resetBall = (courtWidth: number, courtHeight: number) => {
+//     console.log("Resetting ball position...");
+//     setBallX(courtWidth / 2 - 10);
+//     setBallY(courtHeight / 2 - 10);
+//     setBallVX(0);
+//     setBallVY(0);
+//     setPaused(true);
 
-          if (newY <= 0) {
-            console.log("Ball bounces off the top wall");
-            setBallVY(Math.abs(ballVY));
-            setBallVX((prevVX) => prevVX + (Math.random() - 0.5) * 0.5);
-            return 0;
-          }
+//     const paddleMiddlePosition = courtHeight / 2 - paddleHeight / 2;
+//     setPaddle1Y(paddleMiddlePosition);
+//     setPaddle2Y(paddleMiddlePosition);
+//   };
 
-          if (newY >= courtHeight - 20) {
-            console.log("Ball bounces off the bottom wall");
-            setBallVY(-Math.abs(ballVY));
-            setBallVX((prevVX) => prevVX + (Math.random() - 0.5) * 0.5);
-            return courtHeight - 20;
-          }
-
-          return newY;
-        });
-      }
-    }, 16);
-
-    return () => clearInterval(interval);
-  }, [ballVX, ballVY, paddle1Y, paddle2Y, paddleHeight, paused]);
-
-  // Reset ball position and pause
-  const resetBall = (courtWidth: number, courtHeight: number) => {
+const resetBall = () => {
     console.log("Resetting ball position...");
-    setBallX(courtWidth / 2 - 10); // Center X
-    setBallY(courtHeight / 2 - 10); // Center Y
-    setBallVX(0); // Stop ball movement
-    setBallVY(0); // Stop ball movement
-  };
+    
+    // Use fixed initial positions
+    const initialX = 390;
+    const initialY = 294;
+    
+    console.log("Reset to PositionX:", initialX);
+    console.log("Reset to PositionY:", initialY);
+    
+    setBallX(initialX); // Set ball's X position
+    setBallY(initialY); // Set ball's Y position
+    setBallVX(0);       // Stop ball's horizontal motion
+    setBallVY(0);       // Stop ball's vertical motion
+    setPaused(true);    // Pause the game
+
+    // Reset paddle positions
+    const paddleMiddlePosition = courtHeight / 2 - paddleHeight / 2;
+    setPaddle1Y(paddleMiddlePosition);
+    setPaddle2Y(paddleMiddlePosition);
+};
+
 
   return (
     <div className="pong-wrapper">
-      {/* Scoreboard */}
       <div className="pong-scoreboard">
         <div className="pong-score pong-score-left">
           <div className="pong-score-name">🎀 PLAYER 1 🎀</div>
@@ -194,7 +233,6 @@ const Pong = () => {
         </div>
       </div>
 
-      {/* Game Container */}
       <div ref={gameContainerRef} className="pong-game-container">
         <div className="pong-center-line"></div>
         <div
