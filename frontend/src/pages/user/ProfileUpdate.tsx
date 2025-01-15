@@ -3,6 +3,7 @@ import React, { useContext } from 'react';
 import { UserContext } from '../../App';
 import EditableFieldButton from '../../utils/EditButton';
 import axios from 'axios';
+import Component from '../../components/LinkButton';
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -51,11 +52,11 @@ const UserPage: React.FC = () => {
         onSave={handleChange}
       />
 
-		<EditableFieldButton
+		{/* <EditableFieldButton
         field="phone"
         currentValue={userData?.phone || 'no phone registered yet'}
         onSave={handleChange}
-      />
+      /> */}
 
       {/* Other user fields */}
       <div>
@@ -63,6 +64,7 @@ const UserPage: React.FC = () => {
         <p>Losses: {userData?.losses}</p>
         <p>Ladder Level: {userData?.ladderLevel}</p>
       </div>
+      <Component></Component>
     </div>
   );
 };

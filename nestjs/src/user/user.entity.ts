@@ -20,9 +20,11 @@ export class User {
   @Column({ unique: true, nullable: true })
   username: string;
 
+  // not needed ?
   @Column({ nullable: true, default: '' })
   firstName: string;
 
+  // not needed ?
   @Column({ nullable: true, default: '' })
   lastName: string;
 
@@ -35,14 +37,12 @@ export class User {
   @Column({ nullable: true })
   password: string;
 
+  // not needed ?
   @Column({ nullable: true, default: null })
   hash_key: string;
 
-  @Column({ default: false })
-  double_auth_active: boolean;
-
   @Column({ nullable: true, default: null })
-  phone: string;
+  secret_2fa: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

@@ -7,6 +7,8 @@ import './styles/App.css'
 import Navbar from './components/Navbar';
 import ProfileUpdate from './pages/user/ProfileUpdate';
 import { fetchUserData, UserData } from './utils/UserLogic';
+import TwoFactorAuth from './components/2FA';
+import TwoFA from './pages/TwoFA';
 
 export const UserContext = createContext<{
 	userData: UserData | null;
@@ -58,6 +60,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/user/:id" element={<UserPage />} />
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
+          <Route path="/2FA" element={<TwoFactorAuth />} />
+          <Route path="/TwoFA" element={<TwoFA />} />
           <Route
             path="*"
             element={<p style={{ padding: '20px', color: 'red' }}>404 - Page Not Found</p>}

@@ -8,6 +8,8 @@ import LogoutButton from '../components/Logoutbutton';
 import { handleImageChange } from '../utils/UserHandlers';
 import { updateUserUsername, UserData, fetchUserData } from '../utils/UserLogic';
 import { UserContext } from '../App'; // Import UserContext
+import { Link } from 'react-router-dom';
+import Component from '../components/LinkButton';
 
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

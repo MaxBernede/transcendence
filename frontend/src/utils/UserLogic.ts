@@ -4,6 +4,7 @@ import { buildAvatarUrl } from './UserUtils';
 export type UserData = {
 	id: string;
 	username: string;
+	secret_2fa: string;
 	avatar: string | null;
 	wins: number;
 	losses: number;

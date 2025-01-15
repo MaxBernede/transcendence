@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
 import { ConfigModule } from '@nestjs/config';
 import { User } from './user/user.entity';
+import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { User } from './user/user.entity';
     UsersModule,
     AuthModule,
     AchievementModule,
+    TwoFactorAuthModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../.env',
