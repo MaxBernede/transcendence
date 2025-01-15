@@ -6,7 +6,7 @@ import * as QRCode from 'qrcode';
 export class TwoFactorAuthService {
 	generateSecret() {
 		const secret = speakeasy.generateSecret({
-			name: 'MyNestApp', // Replace with your app name
+			name: 'Our Transcendence App', // Replace with your app name
 		});
 		return secret;
 	}

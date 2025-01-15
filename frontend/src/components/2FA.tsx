@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import useAuth from '../utils/useAuth';
-
+import { UserContext } from '../App';
+import { fetchUserData } from '../utils/UserLogic';
 // Show the QR with a random generated secret
 // If QR is validated : save it in the DBB for the user
 // If not, refuse the login and ask again until it works
@@ -29,6 +30,14 @@ const TwoFactorAuth = () => {
 	const [secret, setSecret] = useState('');
 	const [otp, setOtp] = useState('');
 	const [isValid, setIsValid] = useState(null);
+	const { userData, setUserData, loading, error, achievements, setAchievements, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
+
+	useEffect(() => {
+		if (!userData) {
+		// If userData is not available, fetch it
+		fetchUserData(setUserData, setAchievements, setMatchHistory, () => {}, () => {});
+		}
+	}, [userData, setUserData, setAchievements, setMatchHistory]);
 
 	//! make it so no access if not logged in
 	const { isAuthenticated, isLoading } = useAuth();
@@ -56,7 +65,7 @@ const TwoFactorAuth = () => {
 			const response = await fetch('http://localhost:3000/2fa/verify', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ secret, token: otp }),
+				body: JSON.stringify({ secret, token: otp, intraId: userData?.id}),
 			});
 			const data = await response.json();
 			setIsValid(data.isValid);
