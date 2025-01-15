@@ -10,7 +10,7 @@ const Component = () => {
 				variant="contained"
 				color="primary"
 				sx={{ marginTop: '20px' }}
-				onClick={() => navigate('/2FA')}
+				onClick={() => navigate('/TwoFA')}
 			>
 				Enable 2FA
 			</Button>

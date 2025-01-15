@@ -16,11 +16,15 @@ const TwoFA: React.FC = () => {
   }, [userData, setUserData, setAchievements, setMatchHistory]);
 
   return (
-	<Box>
+	<div>
 		<TwoFactorAuth></TwoFactorAuth>
 		{/* Below to check if the usercontext work */}
-		<p>userId: {userData?.intraId}</p>
-	</Box>
+		{userData?.secret_2fa ? (
+			<h2>✅ Activated: Secret2FA: {userData?.secret_2fa}</h2>
+		) : (
+			<h2>❌ Disabled: 2FA not enabled yet</h2>
+		)}
+	</div>
   );
 };
 

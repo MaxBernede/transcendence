@@ -4,6 +4,8 @@ import { UserContext } from '../../App';
 import EditableFieldButton from '../../utils/EditButton';
 import axios from 'axios';
 import Component from '../../components/LinkButton';
+import TwoFA from '../TwoFA';
+import Remove2FAButton from '../../components/2FARemove';
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -64,7 +66,9 @@ const UserPage: React.FC = () => {
         <p>Losses: {userData?.losses}</p>
         <p>Ladder Level: {userData?.ladderLevel}</p>
       </div>
-      <Component></Component>
+      {/* <Component></Component> */}
+      <TwoFA></TwoFA>
+      <Remove2FAButton></Remove2FAButton>
     </div>
   );
 };
