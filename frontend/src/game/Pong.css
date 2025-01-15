@@ -50,7 +50,6 @@
   }
   
   
-  /* Paddles */
  /* Paddles */
 .pong-paddle {
 	position: absolute;
@@ -58,10 +57,11 @@
 	height: 100px;
 	background-color: #ff66b2;
 	border-radius: 5px;
-	transition: top 0.1s ease;
+	/* transition: top 0.1s ease; */
   }
   
   .pong-paddle-left {
+	
 	left: 15px;
   }
   
