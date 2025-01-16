@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { usePowerUp } from "./usePowerUp";
+import { useShrinkPaddle } from "./useShrinkPaddle";
 
 export const usePongGame = () => {
   const [paddle1Y, setPaddle1Y] = useState<number>(250);
@@ -10,8 +11,8 @@ export const usePongGame = () => {
 
   const [ballX, setBallX] = useState(390);
   const [ballY, setBallY] = useState(294);
-  const [ballVX, setBallVX] = useState(0);
-  const [ballVY, setBallVY] = useState(0);
+  const [ballVX, setBallVX] = useState(5);
+  const [ballVY, setBallVY] = useState(5);
 
   const [paused, setPaused] = useState(true);
   const [score1, setScore1] = useState(0);
@@ -25,52 +26,86 @@ export const usePongGame = () => {
 
   const paddleSpeed = 20;
   const courtHeight = 600;
+  const targetBallSpeed = 5; // Desired constant ball speed
 
-  const updatePaddleSize = (player: number) => {
-    if (player === 1) {
-      setPaddleHeight1((prev) => prev + 50);
-      setTimeout(() => setPaddleHeight1(paddleHeightBase), 10000);
-    } else if (player === 2) {
-      setPaddleHeight2((prev) => prev + 50);
-      setTimeout(() => setPaddleHeight2(paddleHeightBase), 10000);
-    }
+  // Function to normalize ball velocity to maintain consistent speed
+  const normalizeSpeed = (vx: number, vy: number, targetSpeed: number) => {
+    const currentSpeed = Math.sqrt(vx ** 2 + vy ** 2);
+    if (currentSpeed === 0) return { vx: targetSpeed, vy: 0 }; // Prevent divide-by-zero
+    const scale = targetSpeed / currentSpeed;
+    return { vx: vx * scale, vy: vy * scale };
   };
 
-  const { powerUpX, powerUpY, isPowerUpActive, handlePowerUpCollision } = usePowerUp(
+  // Integrate the shrink paddle hook
+  const { shrinkPaddle } = useShrinkPaddle(
+    paddleHeightBase,
+    setPaddleHeight1,
+    setPaddleHeight2
+  );
+
+  // Integrate the power-up hook
+  const { powerUpX, powerUpY, powerUpType, isPowerUpActive, handlePowerUpCollision } = usePowerUp(
     gameContainerRef,
-    updatePaddleSize,
-    updatePaddleSize,
+    (player, type) => {
+      if (type === "shrinkOpponent") {
+        console.log(`Power-up collected by Player ${player}. Shrinking opponent's paddle.`);
+        if (player === 1) shrinkPaddle(2);
+        else if (player === 2) shrinkPaddle(1);
+      } else if (type === "speedBoost") {
+        console.log(`Player ${player} collected speed boost.`);
+        const boostMultiplier = 1.2;
+        setBallVX((prev) => prev * boostMultiplier);
+        setBallVY((prev) => prev * boostMultiplier);
+
+        setTimeout(() => {
+          const { vx, vy } = normalizeSpeed(ballVX, ballVY, targetBallSpeed);
+          setBallVX(vx);
+          setBallVY(vy);
+        }, 5000);
+      } else if (type === "enlargePaddle") {
+        console.log(`Power-up collected by Player ${player}. Enlarging their paddle.`);
+        if (player === 1) setPaddleHeight1((prev) => prev + 50);
+        else if (player === 2) setPaddleHeight2((prev) => prev + 50);
+
+        setTimeout(() => {
+          if (player === 1) setPaddleHeight1(paddleHeightBase);
+          else if (player === 2) setPaddleHeight2(paddleHeightBase);
+        }, 5000);
+      }
+    },
     true
   );
 
+  // Reset ball and paddles
   const resetBallAndPaddles = () => {
     console.log("Resetting ball and paddles...");
 
     if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
 
     resetTimerRef.current = setTimeout(() => {
-      // Reset ball, paddles, and unlock scoring
       setBallX(390);
       setBallY(294);
-      setBallVX(0);
-      setBallVY(0);
-      setPaused(true);
+      const { vx, vy } = normalizeSpeed(0, 0, targetBallSpeed); // Reset with zero velocity
+      setBallVX(vx);
+      setBallVY(vy);
+      setPaused(true); // Pause the game until a key is pressed
 
       setPaddle1Y(250);
       setPaddle2Y(250);
 
       isScoringRef.current = false;
       console.log("Reset complete.");
-    }, 100); // Ensure this timeout prevents overlapping resets
+    }, 100);
   };
 
+  // Handle scoring
   const handleScore = (player: number) => {
     if (isScoringRef.current) {
       console.warn(`Scoring blocked for Player ${player}`);
       return;
     }
 
-    isScoringRef.current = true; // Lock scoring
+    isScoringRef.current = true;
     console.log(`Player ${player} scores! BallX: ${ballX}`);
 
     if (player === 1) {
@@ -82,12 +117,14 @@ export const usePongGame = () => {
     resetBallAndPaddles();
   };
 
+  // Handle key presses
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (paused) {
         setPaused(false);
-        setBallVX(5);
-        setBallVY(5);
+        const { vx, vy } = normalizeSpeed(5, 5, targetBallSpeed); // Ensure normalized speed
+        setBallVX(vx);
+        setBallVY(vy);
       }
 
       switch (event.key) {
@@ -110,9 +147,12 @@ export const usePongGame = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [paused, courtHeight, paddleHeight1, paddleHeight2]);
 
+  // Ball movement and collision logic
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (gameContainerRef.current) {
+    let animationFrameId: number;
+
+    const update = () => {
+      if (gameContainerRef.current && !paused) {
         const rect = gameContainerRef.current.getBoundingClientRect();
         const courtWidth = rect.width;
 
@@ -162,16 +202,13 @@ export const usePongGame = () => {
           return Math.max(0, Math.min(newY, rect.height - 20));
         });
       }
-    }, 16);
-
-    return () => clearInterval(interval);
-  }, [ballVX, ballVY, ballY, paddle1Y, paddle2Y, collisionHandled]);
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      animationFrameId = requestAnimationFrame(update);
     };
-  }, []);
+
+    animationFrameId = requestAnimationFrame(update);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [ballVX, ballVY, ballY, paddle1Y, paddle2Y, collisionHandled, paused]);
 
   return {
     gameContainerRef,
@@ -183,6 +220,7 @@ export const usePongGame = () => {
     ballY,
     powerUpX,
     powerUpY,
+    powerUpType,
     isPowerUpActive,
     score1,
     score2,

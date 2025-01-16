@@ -89,5 +89,40 @@
 	left: 50%;
 	transform: translateX(-50%);
 	opacity: 0.8;
+
+	/* Power-Ups */
+.power-up {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	position: absolute;
+  }
+  
+  .power-up.shrinkOpponent {
+	background-color: red;
+	border: 3px dashed darkred;
+  }
+  
+  .power-up.speedBoost {
+	background-color: blue;
+	border: 3px dashed darkblue;
+  }
+
+  @keyframes pulse {
+	0% {
+	  transform: scale(1);
+	  opacity: 1;
+	}
+	50% {
+	  transform: scale(1.2);
+	  opacity: 0.8;
+	}
+	100% {
+	  transform: scale(1);
+	  opacity: 1;
+	}
+  }  
+  
+  
   }
   

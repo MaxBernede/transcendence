@@ -20,6 +20,7 @@ const Pong = () => {
     powerUpX,
     powerUpY,
     isPowerUpActive,
+    powerUpType, // Added to handle power-up types
   } = usePongGame();
 
   return (
@@ -30,7 +31,14 @@ const Pong = () => {
         <Paddle position="left" top={paddle1Y ?? 0} height={paddleHeight1} />
         <Paddle position="right" top={paddle2Y ?? 0} height={paddleHeight2} />
         <Ball x={ballX} y={ballY} />
-        <PowerUp x={powerUpX ?? 0} y={powerUpY ?? 0} isActive={isPowerUpActive} />
+        {isPowerUpActive && powerUpType && (
+          <PowerUp
+            x={powerUpX ?? 0}
+            y={powerUpY ?? 0}
+            isActive={isPowerUpActive}
+            type={powerUpType as "shrinkOpponent" | "speedBoost"} // Ensure TypeScript knows the type is valid
+          />
+        )}
       </div>
     </div>
   );

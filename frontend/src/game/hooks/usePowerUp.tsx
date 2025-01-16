@@ -1,155 +1,120 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+
+type UsePowerUpReturn = {
+  powerUpX: number | null;
+  powerUpY: number | null;
+  powerUpType: "shrinkOpponent" | "speedBoost" | "enlargePaddle" | null;
+  isPowerUpActive: boolean;
+  handlePowerUpCollision: (
+    paddle1Top: number,
+    paddle1Bottom: number,
+    paddle2Top: number,
+    paddle2Bottom: number
+  ) => void;
+};
 
 export const usePowerUp = (
   gameContainerRef: React.RefObject<HTMLDivElement>,
-  onPowerUpHit: (player: number) => void,
-  updatePaddleSize: (player: number) => void,
-  enablePowerUps = true
-) => {
-  const powerUpSize = 20;
-  const [powerUp, setPowerUp] = useState({
-    x: null as number | null,
-    y: null as number | null,
-    vx: 2,
-    vy: 2,
-    isActive: false,
-  });
+  onPowerUpCollected: (player: number, type: "shrinkOpponent" | "speedBoost" | "enlargePaddle") => void,
+  enableMovement: boolean = true
+): UsePowerUpReturn => {
+  const [powerUpX, setPowerUpX] = useState<number | null>(null);
+  const [powerUpY, setPowerUpY] = useState<number | null>(null);
+  const [powerUpType, setPowerUpType] = useState<"shrinkOpponent" | "speedBoost" | "enlargePaddle" | null>(null);
+  const [isPowerUpActive, setIsPowerUpActive] = useState(false);
+  const [powerUpVX, setPowerUpVX] = useState(3);
+  const [powerUpVY, setPowerUpVY] = useState(2);
 
-  // Function to spawn a power-up
-  const spawnPowerUp = useCallback(() => {
-    if (!enablePowerUps || powerUp.isActive) return;
+  useEffect(() => {
+    const spawnPowerUp = () => {
+      if (!gameContainerRef.current) return;
 
-    const rect = gameContainerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      const rect = gameContainerRef.current.getBoundingClientRect();
+      const x = Math.random() * (rect.width - 30);
+      const y = Math.random() * (rect.height - 30);
 
-    const spawnX = Math.random() * (rect.width - powerUpSize);
-    const spawnY = Math.random() * (rect.height - powerUpSize);
+      setPowerUpX(x);
+      setPowerUpY(y);
 
-    setPowerUp({
-      x: spawnX,
-      y: spawnY,
-      vx: (Math.random() > 0.5 ? 1 : -1) * 2,
-      vy: (Math.random() > 0.5 ? 1 : -1) * 2,
-      isActive: true,
-    });
+      const randomType = Math.random();
+      if (randomType < 0.33) setPowerUpType("shrinkOpponent");
+      else if (randomType < 0.66) setPowerUpType("speedBoost");
+      else setPowerUpType("enlargePaddle");
 
-    // Power-up disappears after 10 seconds if not collected
-    setTimeout(() => {
-      setPowerUp((prev) => ({ ...prev, isActive: false }));
+      setIsPowerUpActive(true);
+    };
+
+    const interval = setInterval(() => {
+      if (!isPowerUpActive) spawnPowerUp();
     }, 10000);
-  }, [enablePowerUps, powerUp.isActive, gameContainerRef]);
 
-  // Spawn power-ups periodically
-  useEffect(() => {
-    const interval = setInterval(spawnPowerUp, 15000); // Spawn every 15 seconds
     return () => clearInterval(interval);
-  }, [spawnPowerUp]);
+  }, [isPowerUpActive, gameContainerRef]);
 
-  // Move the power-up
   useEffect(() => {
-    if (!powerUp.isActive || powerUp.x === null || powerUp.y === null) return;
+    if (!enableMovement || !isPowerUpActive) return;
 
     const movePowerUp = () => {
-      const rect = gameContainerRef.current?.getBoundingClientRect();
-      if (!rect) return;
+      setPowerUpX((prevX) => {
+        if (prevX === null || !gameContainerRef.current) return prevX;
 
-      setPowerUp((prev) => {
-        if (prev.x === null || prev.y === null) return prev;
+        const rect = gameContainerRef.current.getBoundingClientRect();
+        const nextX = prevX + powerUpVX;
 
-        let newX = prev.x + prev.vx;
-        let newY = prev.y + prev.vy;
-        let newVX = prev.vx;
-        let newVY = prev.vy;
-
-        // Bounce off the walls
-        if (newX <= 0 || newX >= rect.width - powerUpSize) {
-          newVX = -newVX;
-          newX = Math.max(0, Math.min(rect.width - powerUpSize, newX));
-        }
-        if (newY <= 0 || newY >= rect.height - powerUpSize) {
-          newVY = -newVY;
-          newY = Math.max(0, Math.min(rect.height - powerUpSize, newY));
+        if (nextX <= 0 || nextX >= rect.width - 30) {
+          setPowerUpVX(-powerUpVX);
         }
 
-        return { ...prev, x: newX, y: newY, vx: newVX, vy: newVY };
+        return Math.max(0, Math.min(nextX, rect.width - 30));
+      });
+
+      setPowerUpY((prevY) => {
+        if (prevY === null || !gameContainerRef.current) return prevY;
+
+        const rect = gameContainerRef.current.getBoundingClientRect();
+        const nextY = prevY + powerUpVY;
+
+        if (nextY <= 0 || nextY >= rect.height - 30) {
+          setPowerUpVY(-powerUpVY);
+        }
+
+        return Math.max(0, Math.min(nextY, rect.height - 30));
       });
     };
 
-    const animationFrame = requestAnimationFrame(movePowerUp);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [powerUp.isActive, powerUp.x, powerUp.y, gameContainerRef]);
+    const interval = setInterval(movePowerUp, 16);
+    return () => clearInterval(interval);
+  }, [enableMovement, isPowerUpActive, powerUpVX, powerUpVY, gameContainerRef]);
 
-  // Handle collision with paddles
-  const handlePowerUpCollision = useCallback(
-	(
-	  paddle1Top: number,
-	  paddle1Bottom: number,
-	  paddle2Top: number,
-	  paddle2Bottom: number
-	) => {
-	  if (!powerUp.isActive || powerUp.x === null || powerUp.y === null) return;
-  
-	  console.log("Collision check initiated for power-up");
-  
-	  const rect = gameContainerRef.current?.getBoundingClientRect();
-	  if (!rect) return;
-  
-	  const paddle1Left = 0;
-	  const paddle1Right = 30;
-	  const paddle2Left = rect.width - 50;
-	  const paddle2Right = rect.width;
-  
-	  const checkCollision = (
-		powerUpX: number,
-		powerUpY: number,
-		paddleLeft: number,
-		paddleRight: number,
-		paddleTop: number,
-		paddleBottom: number
-	  ) =>
-		powerUpX + powerUpSize >= paddleLeft &&
-		powerUpX <= paddleRight &&
-		powerUpY + powerUpSize >= paddleTop &&
-		powerUpY <= paddleBottom;
-  
-	  if (
-		checkCollision(
-		  powerUp.x,
-		  powerUp.y,
-		  paddle1Left,
-		  paddle1Right,
-		  paddle1Top,
-		  paddle1Bottom
-		)
-	  ) {
-		console.log("Power-up collected by Player 1");
-		onPowerUpHit(1);
-		updatePaddleSize(1);
-		setPowerUp((prev) => ({ ...prev, isActive: false }));
-	  } else if (
-		checkCollision(
-		  powerUp.x,
-		  powerUp.y,
-		  paddle2Left,
-		  paddle2Right,
-		  paddle2Top,
-		  paddle2Bottom
-		)
-	  ) {
-		console.log("Power-up collected by Player 2");
-		onPowerUpHit(2);
-		updatePaddleSize(2);
-		setPowerUp((prev) => ({ ...prev, isActive: false }));
-	  }
-	},
-	[powerUp, onPowerUpHit, updatePaddleSize, gameContainerRef]
-  );  
-  
+  const handlePowerUpCollision = (
+    paddle1Top: number,
+    paddle1Bottom: number,
+    paddle2Top: number,
+    paddle2Bottom: number
+  ) => {
+    if (!isPowerUpActive || powerUpX === null || powerUpY === null) return;
+
+    if (powerUpX <= 30 && powerUpY >= paddle1Top && powerUpY <= paddle1Bottom) {
+      onPowerUpCollected(1, powerUpType!);
+      setIsPowerUpActive(false);
+      return;
+    }
+
+    if (
+      powerUpX >= gameContainerRef.current!.getBoundingClientRect().width - 50 &&
+      powerUpY >= paddle2Top &&
+      powerUpY <= paddle2Bottom
+    ) {
+      onPowerUpCollected(2, powerUpType!);
+      setIsPowerUpActive(false);
+    }
+  };
 
   return {
-    powerUpX: powerUp.x,
-    powerUpY: powerUp.y,
-    isPowerUpActive: powerUp.isActive,
+    powerUpX,
+    powerUpY,
+    powerUpType,
+    isPowerUpActive,
     handlePowerUpCollision,
   };
 };
