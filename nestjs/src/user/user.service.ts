@@ -283,4 +283,5 @@ export class UserService {
   async findOneById(id: number): Promise<User> {
     return this.userRepository.findOne({ where: { id } });
   }
+  
 }

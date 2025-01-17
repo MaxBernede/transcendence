@@ -27,6 +27,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import axios from 'axios';
 import { Response } from 'express';
 import * as fs from 'fs';
+import * as cookie from 'cookie';
 
 @Controller('api/users')
 export class UserController {
@@ -66,6 +67,38 @@ export class UserController {
     }
     return this.userService.findOneById(userId);
   }
+
+  //Last part of the login after the 2FA
+  async endLogin(@Req() request: any, @Res() res: Response) {
+    const userId = request.user?.sub;
+    if (!userId) {
+      throw new BadRequestException('Unable to determine user from token.');
+    }
+  
+    const user = await this.userService.findOneById(userId);
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+  
+    // Set JWT in cookies
+    res.setHeader('Set-Cookie', [
+      cookie.serialize('jwt', user.tempJWT, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 3600, // 1hr
+      path: '/',
+      }),
+    ]);
+
+    const tempJWT = { tempJWT: null };
+    await this.userService.updateUser(user.id.toString(), tempJWT);
+    return res.redirect(`http://localhost:3001/user/${user.id}`);
+  }
+  
+
+  
+
 
   @Post(':id/upload-avatar')
   @UseInterceptors(

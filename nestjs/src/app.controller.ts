@@ -166,9 +166,10 @@ export class AppController {
     const tempJWT = { tempJWT: jwt };
     await this.userService.updateUser(userr.id.toString(), tempJWT); // store JWT in DBB to add it to res later
     
-    if (userr.secret_2fa){
-      return res.redirect(`http://localhost:3001/user/${userr.intraId}`);
-    }
+    //need to add this check for later to validate the OTP
+    // if (userr.secret_2fa){
+    //   return res.redirect(`http://localhost:3001/user/${userr.intraId}`);
+    // }
 
 
 		// Set JWT in cookies
@@ -186,9 +187,9 @@ export class AppController {
   
 		// Redirect to the specific user page //! MAX REDIRECT HERE
 		return res.redirect(`http://localhost:3001/user/${userr.id}`);
-	  } catch (error) {
-		console.error(
-		);
+	  } 
+    catch (error) {
+		console.error();
 		return res.status(500).json({ message: 'Failed to fetch JWT.' });
 	  }
   }
