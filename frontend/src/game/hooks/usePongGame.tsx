@@ -21,29 +21,27 @@ export const usePongGame = () => {
   const [collisionHandled, setCollisionHandled] = useState(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
-  const isScoringRef = useRef(false); // Prevents duplicate scoring
+  const isScoringRef = useRef(false);
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const paddleSpeed = 20;
   const courtHeight = 600;
-  const targetBallSpeed = 5; // Desired constant ball speed
+  const targetBallSpeed = 6; // Target constant speed
 
-  // Function to normalize ball velocity to maintain consistent speed
+  // Normalize ball velocity to maintain consistent speed
   const normalizeSpeed = (vx: number, vy: number, targetSpeed: number) => {
     const currentSpeed = Math.sqrt(vx ** 2 + vy ** 2);
-    if (currentSpeed === 0) return { vx: targetSpeed, vy: 0 }; // Prevent divide-by-zero
+    if (currentSpeed === 0) return { vx: targetSpeed, vy: 0 };
     const scale = targetSpeed / currentSpeed;
     return { vx: vx * scale, vy: vy * scale };
   };
 
-  // Integrate the shrink paddle hook
   const { shrinkPaddle } = useShrinkPaddle(
     paddleHeightBase,
     setPaddleHeight1,
     setPaddleHeight2
   );
 
-  // Integrate the power-up hook
   const { powerUpX, powerUpY, powerUpType, isPowerUpActive, handlePowerUpCollision } = usePowerUp(
     gameContainerRef,
     (player, type) => {
@@ -76,29 +74,44 @@ export const usePongGame = () => {
     true
   );
 
-  // Reset ball and paddles
   const resetBallAndPaddles = () => {
-    console.log("Resetting ball and paddles...");
-
-    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-
-    resetTimerRef.current = setTimeout(() => {
-      setBallX(390);
-      setBallY(294);
-      const { vx, vy } = normalizeSpeed(0, 0, targetBallSpeed); // Reset with zero velocity
-      setBallVX(vx);
-      setBallVY(vy);
-      setPaused(true); // Pause the game until a key is pressed
-
-      setPaddle1Y(250);
-      setPaddle2Y(250);
-
-      isScoringRef.current = false;
-      console.log("Reset complete.");
-    }, 100);
+	console.log("Resetting ball and paddles...");
+  
+	if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+  
+	resetTimerRef.current = setTimeout(() => {
+	  setBallX(390);
+	  setBallY(294);
+  
+	  // Generate random angle ensuring it avoids near-vertical and near-horizontal directions
+	  let angle: number;
+	  do {
+		angle = Math.random() * 2 * Math.PI; // Full circle: 0 to 2π radians
+	  } while (
+		(Math.abs(Math.cos(angle)) < 0.4 && Math.abs(Math.sin(angle)) > 0.9) || // Avoid near-vertical
+		(Math.abs(Math.sin(angle)) < 0.4 && Math.abs(Math.cos(angle)) > 0.9)    // Avoid near-horizontal
+	  );
+  
+	  const randomSpeed = targetBallSpeed;
+	  const vx = Math.cos(angle) * randomSpeed;
+	  const vy = Math.sin(angle) * randomSpeed;
+  
+	  setBallVX(vx);
+	  setBallVY(vy);
+  
+	  console.log("Randomized ball velocity (DEBUG):", { vx, vy, angle });
+  
+	  setPaused(true); // Pause the game until a key is pressed
+	  setPaddle1Y(250);
+	  setPaddle2Y(250);
+  
+	  isScoringRef.current = false;
+	  console.log("Reset complete. Ball velocity set to:", { vx, vy });
+	}, 100);
   };
+  
+  
 
-  // Handle scoring
   const handleScore = (player: number) => {
     if (isScoringRef.current) {
       console.warn(`Scoring blocked for Player ${player}`);
@@ -117,12 +130,11 @@ export const usePongGame = () => {
     resetBallAndPaddles();
   };
 
-  // Handle key presses
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (paused) {
         setPaused(false);
-        const { vx, vy } = normalizeSpeed(5, 5, targetBallSpeed); // Ensure normalized speed
+        const { vx, vy } = normalizeSpeed(ballVX, ballVY, targetBallSpeed);
         setBallVX(vx);
         setBallVY(vy);
       }
@@ -147,7 +159,6 @@ export const usePongGame = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [paused, courtHeight, paddleHeight1, paddleHeight2]);
 
-  // Ball movement and collision logic
   useEffect(() => {
     let animationFrameId: number;
 
