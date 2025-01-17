@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
-import useAuth from '../utils/useAuth';
-import { UserContext } from '../App';
-import { fetchUserData } from '../utils/UserLogic';
+import useAuth from '../../utils/useAuth';
+import { UserContext } from '../../App';
+import { fetchUserData } from '../../utils/UserLogic';
 // Show the QR with a random generated secret
 // If QR is validated : save it in the DBB for the user
 // If not, refuse the login and ask again until it works
@@ -69,7 +69,13 @@ const TwoFactorAuth = () => {
 			});
 			const data = await response.json();
 			setIsValid(data.isValid);
-		} catch (error) {
+			if (data.isValid){
+				{setTimeout(() => { // reload to show the key in the frontend
+					window.location.reload();
+				}, 2000)}
+			}
+		} 
+		catch (error) {
 			console.error('Error verifying 2FA:', error);
 		}
 	};
@@ -83,7 +89,7 @@ const TwoFactorAuth = () => {
 
 			{qrCode && (
 				<div>
-					<h2>Scan this QR Code</h2>
+					<h3>Scan this QR Code to add or change your user 2FA secret</h3>
 					<img src={qrCode} alt="QR Code" style={{ border: '1px solid #ddd', padding: '10px' }} />
 					{/* Remove the secret after, just for debugging */}
 					<p>Secret: <strong>{secret}</strong></p>
@@ -105,7 +111,6 @@ const TwoFactorAuth = () => {
 					</button>
 				</div>
 			)}
-
 			{isValid !== null && (
 				<div style={{ marginTop: '20px' }}>
 					<h3>{isValid ? '✅ OTP is valid!' : '❌ OTP is invalid.'}</h3>

@@ -151,7 +151,6 @@ export class AppController {
 			throw new InternalServerErrorException;
 		}
   
-  
 		// Generate a JWT token with username
 		//   const payload = { sub: user.id, email: user.email, username: user.username };
 		const payload = typeof TokenPayload;
@@ -161,7 +160,17 @@ export class AppController {
 		  email: userr.email,
 		};
 		const jwt = this.jwtService.sign(p);
-  
+    
+    // ADD CHECK 2FA HERE, redirect to page with just userid,
+    // if validated, redirect to the corect page with the res added. otherwise nothing
+    const tempJWT = { tempJWT: jwt };
+    await this.userService.updateUser(userr.id.toString(), tempJWT); // store JWT in DBB to add it to res later
+    
+    if (userr.secret_2fa){
+      return res.redirect(`http://localhost:3001/user/${userr.intraId}`);
+    }
+
+
 		// Set JWT in cookies
 		res.setHeader('Set-Cookie', [
 		  cookie.serialize('jwt', jwt, {
@@ -175,12 +184,10 @@ export class AppController {
   
 		// console.log('JWT set in cookies:', jwt);
   
-		// Redirect to the specific user page
-		return res.redirect(`http://localhost:3001/user/me`);
+		// Redirect to the specific user page //! MAX REDIRECT HERE
+		return res.redirect(`http://localhost:3001/user/${userr.id}`);
 	  } catch (error) {
 		console.error(
-		  'Failed to fetch JWT:',
-		  error.response?.data || error.message,
 		);
 		return res.status(500).json({ message: 'Failed to fetch JWT.' });
 	  }

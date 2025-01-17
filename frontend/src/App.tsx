@@ -7,7 +7,7 @@ import './styles/App.css'
 import Navbar from './components/Navbar';
 import ProfileUpdate from './pages/user/ProfileUpdate';
 import { fetchUserData, UserData } from './utils/UserLogic';
-import TwoFactorAuth from './components/2FA';
+import TwoFactorAuth from './components/2FA/2FA';
 import TwoFA from './pages/TwoFA';
 
 export const UserContext = createContext<{

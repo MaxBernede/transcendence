@@ -1,8 +1,9 @@
 import React, { useContext, useEffect } from 'react';
-import TwoFactorAuth from '../components/2FA';
+import TwoFactorAuth from '../components/2FA/2FA';
 import { UserContext } from '../App'; // Import UserContext
 import { fetchUserData } from '../utils/UserLogic';
 import { Box, Typography, Button } from '@mui/material';
+import TwoFactorAuthLogin from '../components/2FA/2FALogin';
 
 const TwoFA: React.FC = () => {
 
@@ -18,12 +19,8 @@ const TwoFA: React.FC = () => {
   return (
 	<div>
 		<TwoFactorAuth></TwoFactorAuth>
+		<TwoFactorAuthLogin></TwoFactorAuthLogin>
 		{/* Below to check if the usercontext work */}
-		{userData?.secret_2fa ? (
-			<h2>✅ Activated: Secret2FA: {userData?.secret_2fa}</h2>
-		) : (
-			<h2>❌ Disabled: 2FA not enabled yet</h2>
-		)}
 	</div>
   );
 };

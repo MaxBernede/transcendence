@@ -104,7 +104,7 @@ export class AuthService {
       // console.log('JWT set in cookies:', jwt);
 
       // Redirect to the specific user page
-      return res.redirect(`http://localhost:3001/user/${user.username}`);
+      return res.redirect(`http://localhost:3001/user/${user.id}`);
     } catch (error) {
       console.error(
         'Failed to fetch JWT:',

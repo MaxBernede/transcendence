@@ -5,7 +5,7 @@ import EditableFieldButton from '../../utils/EditButton';
 import axios from 'axios';
 import Component from '../../components/LinkButton';
 import TwoFA from '../TwoFA';
-import Remove2FAButton from '../../components/2FARemove';
+import Remove2FAButton from '../../components/2FA/2FARemove';
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -66,9 +66,15 @@ const UserPage: React.FC = () => {
         <p>Losses: {userData?.losses}</p>
         <p>Ladder Level: {userData?.ladderLevel}</p>
       </div>
+      <h2> Two Factor Authentication</h2>
+      {userData?.secret_2fa ? (
+			<div>✅ Activated: {userData?.secret_2fa}</div>
+		) : (
+			<div>❌ Disabled: 2FA not enabled yet</div>
+		)}
+      <Remove2FAButton></Remove2FAButton>
       {/* <Component></Component> */}
       <TwoFA></TwoFA>
-      <Remove2FAButton></Remove2FAButton>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import axios from 'axios';
-import { UserContext } from '../App'; // Import UserContext
+import { UserContext } from '../../App'; // Import UserContext
+import { Button } from '@mui/material';
 
 interface Remove2FAButtonProps {
   className?: string;
@@ -37,9 +38,19 @@ const Remove2FAButton: React.FC<Remove2FAButtonProps> = ({ className }) => {
   }
 
   return (
-    <button onClick={handleRemove2FA} className={className || 'btn btn-danger'}>
-      Remove 2FA
-    </button>
+    <div className={'mainContainer'}>
+			<br />
+			<div className={'inputContainer'}>
+				<Button
+					variant="contained"
+					color="error"  // button color red for error
+					sx={{ marginTop: '20px' }}
+					onClick={handleRemove2FA}
+				>
+					Deactivate the 2FA
+				</Button>
+			</div>
+		</div>
   );
 };
 

@@ -37,9 +37,9 @@ export class User {
   @Column({ nullable: true })
   password: string;
 
-  // not needed ?
+  // to store the jwt in case of a 2FA, then switch it back to null when logged in
   @Column({ nullable: true, default: null })
-  hash_key: string;
+  tempJWT: string;
 
   @Column({ nullable: true, default: null })
   secret_2fa: string;

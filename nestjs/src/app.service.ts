@@ -38,4 +38,8 @@ export class AppService {
   handleButtonClick(): { message: string } {
     return { message: 'Button was clicked!' };
   }
+
+  endLogin(): { message: string } {
+    return { message: 'Button was clicked!' };
+  }
 }
