@@ -6,64 +6,56 @@
 	background-color: #ffe6f1; /* Light pink background for the entire page */
 	min-height: 100vh; /* Full viewport height */
 	padding: 20px;
-  }
+	transition: background-color 0.3s ease; /* Smooth transition for background color */
+}
 
-  .toggle-power-ups-button {
-	margin-top: 20px;
-	padding: 10px 20px;
-	font-size: 16px;
-	font-weight: bold;
-	color: white;
-	background-color: #ff69b4; /* Nice pink color */
-	border: none;
-	border-radius: 10px;
-	cursor: pointer;
-	transition: background-color 0.3s;
-  }
-  
-  .toggle-power-ups-button:hover {
-	background-color: #ff85c5; /* Lighter pink on hover */
-  }
-  
-  .toggle-power-ups-button:active {
-	background-color: #ff4a92; /* Darker pink on click */
-  }
-  
-  
+.pong-wrapper.dark-mode {
+	background-color: #2c2c2c; /* Dark background */
+}
+
 /* Scoreboard */
 .pong-scoreboard {
 	display: flex;
 	justify-content: space-between;
 	width: 800px; /* Match the game container width */
 	margin-bottom: 20px;
-  }
-  
-  .pong-score {
+	transition: color 0.3s ease;
+}
+
+.pong-scoreboard.dark-mode {
+	color: #cccccc; /* Light gray for dark mode */
+}
+
+.pong-score {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
 	align-items: center; /* Center-align name and score */
 	color: #ff3385; /* Pink theme */
 	font-family: 'Arial', sans-serif;
-  }
-  
-  .pong-score div {
+}
+
+.pong-score.dark-mode {
+	color: #cccccc; /* Light gray for dark mode */
+}
+
+.pong-score div {
 	margin: 5px 0;
-  }
-  
-  .pong-score-number {
+}
+
+.pong-score-number {
 	font-size: 2rem; /* Larger font for the score */
 	font-weight: bold;
-  }
-  
-  .pong-score-name {
+}
+
+.pong-score-name {
 	font-size: 1.8rem; /* Larger font for Player 1 and Player 2 labels */
 	font-weight: bold;
 	text-transform: uppercase; /* Optional: Make the labels uppercase */
-  }  
-  
-  /* Game Container (the Court) */
-  .pong-game-container {
+}
+
+/* Game Container (the Court) */
+.pong-game-container {
 	position: relative;
 	margin: 0 auto;
 	padding: 0;
@@ -74,41 +66,52 @@
 	border-radius: 8px; /* Rounded corners */
 	overflow: hidden; /* Prevent elements from overflowing */
 	box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
-  }
-  
-  
- /* Paddles */
+	transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.pong-game-container.dark-mode {
+	background-color: #444444; /* Dark shade for the game court */
+	border-color: #666666; /* Darker border for dark mode */
+}
+
+/* Paddles */
 .pong-paddle {
 	position: absolute;
 	width: 15px;
 	height: 100px;
 	background-color: #ff66b2;
 	border-radius: 5px;
-	/* transition: top 0.1s ease; */
-  }
-  
-  .pong-paddle-left {
-	
+	transition: background-color 0.3s ease;
+}
+
+.pong-paddle.dark-mode {
+	background-color: #555555; /* Dark paddle color */
+}
+
+.pong-paddle-left {
 	left: 15px;
-  }
-  
-  .pong-paddle-right {
+}
+
+.pong-paddle-right {
 	right: 15px;
-  }
-  
-  
-  /* Ball */
-  .pong-ball {
+}
+
+/* Ball */
+.pong-ball {
 	position: absolute;
 	width: 20px;
 	height: 20px;
 	background-color: #ff3385;
 	border-radius: 50%;
-	transition: transform 0.016s linear; 
-  }
-  
-  /* Center Line */
-  .pong-center-line {
+	transition: background-color 0.3s ease;
+}
+
+.pong-ball.dark-mode {
+	background-color: #666666; /* Dark ball color */
+}
+
+/* Center Line */
+.pong-center-line {
 	position: absolute;
 	width: 4px;
 	height: 100%;
@@ -116,40 +119,107 @@
 	left: 50%;
 	transform: translateX(-50%);
 	opacity: 0.8;
+	transition: background-color 0.3s ease;
+}
 
-	/* Power-Ups */
+.pong-center-line.dark-mode {
+	background-color: #777777; /* Darker center line */
+}
+
+/* Power-Ups */
 .power-up {
 	width: 30px;
 	height: 30px;
 	border-radius: 50%;
 	position: absolute;
-  }
-  
-  .power-up.shrinkOpponent {
+}
+
+.power-up.shrinkOpponent {
 	background-color: red;
 	border: 3px dashed darkred;
-  }
-  
-  .power-up.speedBoost {
+}
+
+.power-up.speedBoost {
 	background-color: blue;
 	border: 3px dashed darkblue;
+}
+
+/* Buttons Container */
+.pong-buttons {
+	display: flex;
+	justify-content: center; /* Center-align the buttons */
+	gap: 30px; /* Space between the buttons */
+	margin-top: 50px; /* Add spacing between buttons and the game screen */
+}
+
+/* Buttons */
+.toggle-button {
+	padding: 10px 20px;
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	background-color: #ff69b4; /* Pink */
+	border: none;
+	border-radius: 10px; /* Rounded corners */
+	cursor: pointer;
+	transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth hover and click */
+}
+
+.toggle-button:hover {
+	background-color: #ff85c5; /* Lighter pink */
+}
+
+.toggle-button:active {
+	background-color: #ff4a92; /* Darker pink */
+	transform: scale(0.95); /* Shrink slightly when clicked */
+}
+
+.toggle-button.dark-mode {
+	background-color: #444444; /* Dark button for dark mode */
+	color: #ffffff; /* White text for contrast */
+}
+
+.toggle-button.dark-mode:hover {
+	background-color: #666666; /* Slightly lighter hover effect */
+}
+
+.toggle-button.dark-mode:active {
+	background-color: #222222; /* Darker active effect */
+	transform: scale(0.95);
+}
+
+/* Dark Mode Styles */
+
+/* Wrapper */
+.pong-wrapper.dark-mode {
+	background-color: #2c2c2c; /* Dark background */
+  }
+  
+  /* Scoreboard */
+  .pong-scoreboard.dark-mode .pong-score {
+	color: #cccccc; /* Light gray for dark mode */
+  }
+  
+  /* Buttons */
+  .toggle-button.dark-mode {
+	background-color: #444444; /* Dark button background */
+	color: #ffffff; /* White text for contrast */
+  }
+  
+  .toggle-button.dark-mode:hover {
+	background-color: #666666; /* Slightly lighter on hover */
+  }
+  
+  .toggle-button.dark-mode:active {
+	background-color: #222222; /* Darker when active */
   }
 
-  @keyframes pulse {
-	0% {
-	  transform: scale(1);
-	  opacity: 1;
-	}
-	50% {
-	  transform: scale(1.2);
-	  opacity: 0.8;
-	}
-	100% {
-	  transform: scale(1);
-	  opacity: 1;
-	}
-  }  
+  /* Dark Mode for Scoreboard */
+.pong-scoreboard.dark-mode .pong-score-name {
+	color: #cccccc; /* Light gray for dark mode text */
+  }
   
-  
+  .pong-scoreboard.dark-mode .pong-score-number {
+	color: #ffffff; /* White text for scores in dark mode */
   }
   

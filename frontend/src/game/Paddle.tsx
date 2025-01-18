@@ -4,9 +4,10 @@ interface PaddleProps {
   position: "left" | "right"; // Determines paddle alignment
   top: number; // Distance from the top of the container
   height: number; // Height of the paddle
+  color: string; // Color of the paddle
 }
 
-const Paddle: React.FC<PaddleProps> = ({ position, top, height }) => {
+const Paddle: React.FC<PaddleProps> = ({ position, top, height, color }) => {
   return (
     <div
       className={`pong-paddle pong-paddle-${position}`}
@@ -16,7 +17,7 @@ const Paddle: React.FC<PaddleProps> = ({ position, top, height }) => {
         width: "10px", // Fixed paddle width
         position: "absolute", // Ensure proper positioning
         [position]: "10px", // Dynamically set alignment based on position
-        backgroundColor: "deeppink", // Corrected CSS color
+        backgroundColor: color, // Paddle color set dynamically
       }}
     ></div>
   );

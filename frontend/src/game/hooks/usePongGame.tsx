@@ -26,9 +26,8 @@ export const usePongGame = () => {
 
   const paddleSpeed = 20;
   const courtHeight = 600;
-  const targetBallSpeed = 6; // Target constant speed
+  const targetBallSpeed = 11;
 
-  // Normalize ball velocity to maintain consistent speed
   const normalizeSpeed = (vx: number, vy: number, targetSpeed: number) => {
     const currentSpeed = Math.sqrt(vx ** 2 + vy ** 2);
     if (currentSpeed === 0) return { vx: targetSpeed, vy: 0 };
@@ -42,15 +41,19 @@ export const usePongGame = () => {
     setPaddleHeight2
   );
 
-  const { powerUpX, powerUpY, powerUpType, isPowerUpActive, handlePowerUpCollision } = usePowerUp(
+  const {
+    powerUpX,
+    powerUpY,
+    powerUpType,
+    isPowerUpActive,
+    handlePowerUpCollision,
+  } = usePowerUp(
     gameContainerRef,
     (player, type) => {
       if (type === "shrinkOpponent") {
-        console.log(`Power-up collected by Player ${player}. Shrinking opponent's paddle.`);
         if (player === 1) shrinkPaddle(2);
         else if (player === 2) shrinkPaddle(1);
       } else if (type === "speedBoost") {
-        console.log(`Player ${player} collected speed boost.`);
         const boostMultiplier = 1.2;
         setBallVX((prev) => prev * boostMultiplier);
         setBallVY((prev) => prev * boostMultiplier);
@@ -61,7 +64,6 @@ export const usePongGame = () => {
           setBallVY(vy);
         }, 5000);
       } else if (type === "enlargePaddle") {
-        console.log(`Power-up collected by Player ${player}. Enlarging their paddle.`);
         if (player === 1) setPaddleHeight1((prev) => prev + 50);
         else if (player === 2) setPaddleHeight2((prev) => prev + 50);
 
@@ -75,63 +77,52 @@ export const usePongGame = () => {
   );
 
   const resetBallAndPaddles = () => {
-	console.log("Resetting ball and paddles...");
-  
-	if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-  
-	resetTimerRef.current = setTimeout(() => {
-	  setBallX(390);
-	  setBallY(294);
-  
-	  // Generate random angle ensuring it avoids near-vertical and near-horizontal directions
-	  let angle: number;
-	  do {
-		angle = Math.random() * 2 * Math.PI; // Full circle: 0 to 2π radians
-	  } while (
-		(Math.abs(Math.cos(angle)) < 0.4 && Math.abs(Math.sin(angle)) > 0.9) || // Avoid near-vertical
-		(Math.abs(Math.sin(angle)) < 0.4 && Math.abs(Math.cos(angle)) > 0.9)    // Avoid near-horizontal
-	  );
-  
-	  const randomSpeed = targetBallSpeed;
-	  const vx = Math.cos(angle) * randomSpeed;
-	  const vy = Math.sin(angle) * randomSpeed;
-  
-	  setBallVX(vx);
-	  setBallVY(vy);
-  
-	  console.log("Randomized ball velocity (DEBUG):", { vx, vy, angle });
-  
-	  setPaused(true); // Pause the game until a key is pressed
-	  setPaddle1Y(250);
-	  setPaddle2Y(250);
-  
-	  isScoringRef.current = false;
-	  console.log("Reset complete. Ball velocity set to:", { vx, vy });
-	}, 100);
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+
+    resetTimerRef.current = setTimeout(() => {
+      setBallX(390);
+      setBallY(294);
+
+      let angle: number;
+      do {
+        angle = Math.random() * 2 * Math.PI;
+      } while (
+        (Math.abs(Math.cos(angle)) < 0.4 && Math.abs(Math.sin(angle)) > 0.9) ||
+        (Math.abs(Math.sin(angle)) < 0.4 && Math.abs(Math.cos(angle)) > 0.9)
+      );
+
+      const randomSpeed = targetBallSpeed;
+      const vx = Math.cos(angle) * randomSpeed;
+      const vy = Math.sin(angle) * randomSpeed;
+
+      setBallVX(vx);
+      setBallVY(vy);
+
+      setPaused(true);
+      setPaddle1Y(250);
+      setPaddle2Y(250);
+
+      isScoringRef.current = false;
+    }, 100);
   };
-  
-  
 
   const handleScore = (player: number) => {
-    if (isScoringRef.current) {
-      console.warn(`Scoring blocked for Player ${player}`);
-      return;
-    }
+    if (isScoringRef.current) return;
 
     isScoringRef.current = true;
-    console.log(`Player ${player} scores! BallX: ${ballX}`);
 
-    if (player === 1) {
-      setScore1((prev) => prev + 1);
-    } else if (player === 2) {
-      setScore2((prev) => prev + 1);
-    }
+    if (player === 1) setScore1((prev) => prev + 1);
+    else if (player === 2) setScore2((prev) => prev + 1);
 
     resetBallAndPaddles();
   };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "w", "s"].includes(event.key)) {
+        event.preventDefault(); // Prevent scrolling
+      }
+
       if (paused) {
         setPaused(false);
         const { vx, vy } = normalizeSpeed(ballVX, ballVY, targetBallSpeed);
@@ -157,7 +148,7 @@ export const usePongGame = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [paused, courtHeight, paddleHeight1, paddleHeight2]);
+  }, [paused, courtHeight, paddleHeight1, paddleHeight2, ballVX, ballVY, targetBallSpeed]);
 
   useEffect(() => {
     let animationFrameId: number;

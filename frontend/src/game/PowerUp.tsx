@@ -5,16 +5,17 @@ interface PowerUpProps {
   y: number; // Y-coordinate of the power-up
   isActive: boolean; // Whether the power-up is currently active
   type: "shrinkOpponent" | "speedBoost" | "enlargePaddle"; // Type of the power-up
+  darkMode: boolean; // Whether dark mode is active
 }
 
-const PowerUp: React.FC<PowerUpProps> = ({ x, y, isActive, type }) => {
+const PowerUp: React.FC<PowerUpProps> = ({ x, y, isActive, type, darkMode }) => {
   if (!isActive) return null;
 
-  // Map power-up types to emojis
-  const powerUpEmojiMap: Record<string, string> = {
-    shrinkOpponent: "💗", // Shrink opponent emoji
-    speedBoost: "🦩", // Speed boost emoji
-    enlargePaddle: "🌺", // Enlarge paddle emoji
+  // Map power-up types to emojis for light and dark modes
+  const powerUpEmojiMap: Record<string, { light: string; dark: string }> = {
+    shrinkOpponent: { light: "💗", dark: "🕷️" }, // Shrink opponent emoji
+    speedBoost: { light: "🦩", dark: "🕸️" }, // Speed boost emoji
+    enlargePaddle: { light: "🌺", dark: "🕯️" }, // Enlarge paddle emoji
   };
 
   return (
@@ -30,7 +31,7 @@ const PowerUp: React.FC<PowerUpProps> = ({ x, y, isActive, type }) => {
         userSelect: "none",
       }}
     >
-      {powerUpEmojiMap[type] || "❓"} {/* Default to a question mark if type is undefined */}
+      {powerUpEmojiMap[type]?.[darkMode ? "dark" : "light"] || "❓"}
     </div>
   );
 };
