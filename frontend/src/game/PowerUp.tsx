@@ -4,37 +4,35 @@ interface PowerUpProps {
   x: number; // X-coordinate of the power-up
   y: number; // Y-coordinate of the power-up
   isActive: boolean; // Whether the power-up is currently active
-  type: "shrinkOpponent" | "speedBoost" | "enlargePaddle"; // Add the new power-up type
+  type: "shrinkOpponent" | "speedBoost" | "enlargePaddle"; // Type of the power-up
 }
 
 const PowerUp: React.FC<PowerUpProps> = ({ x, y, isActive, type }) => {
   if (!isActive) return null;
 
-  // Determine styles based on the type
-  const styles: React.CSSProperties = {
-    position: "absolute",
-    left: `${x}px`,
-    top: `${y}px`,
-    width: "30px",
-    height: "30px",
-    borderRadius: "50%",
-    border: "3px dashed",
-    backgroundColor:
-      type === "shrinkOpponent"
-        ? "lightblue"
-        : type === "speedBoost"
-        ? "yellow"
-        : "green", // Green for enlargePaddle
-    borderColor:
-      type === "shrinkOpponent"
-        ? "purple"
-        : type === "speedBoost"
-        ? "orange"
-        : "darkgreen", // Dark green for enlargePaddle
-    animation: type === "speedBoost" ? "pulse 1s infinite" : undefined, // Animation for speed boost
+  // Map power-up types to emojis
+  const powerUpEmojiMap: Record<string, string> = {
+    shrinkOpponent: "💗", // Shrink opponent emoji
+    speedBoost: "🦩", // Speed boost emoji
+    enlargePaddle: "🌺", // Enlarge paddle emoji
   };
 
-  return <div className="power-up" style={styles} />;
+  return (
+    <div
+      className="power-up"
+      style={{
+        position: "absolute",
+        left: `${x}px`,
+        top: `${y}px`,
+        fontSize: "30px",
+        zIndex: 10,
+        textAlign: "center",
+        userSelect: "none",
+      }}
+    >
+      {powerUpEmojiMap[type] || "❓"} {/* Default to a question mark if type is undefined */}
+    </div>
+  );
 };
 
 export default PowerUp;

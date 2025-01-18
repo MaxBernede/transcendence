@@ -16,7 +16,7 @@ export const useShrinkPaddle = (
 
   const shrinkPaddle = (player: number) => {
     const shrinkFactor = 0.5; // Shrink to 50% of original height
-    const shrinkDuration = 5000; // Duration of shrink effect in milliseconds
+    const shrinkDuration = 7000; // Duration of shrink effect in milliseconds
 
     if (player === 1 && !isPaddleShrunk1) {
       console.log("Shrinking Player 1's paddle."); // Debug log
@@ -41,7 +41,7 @@ export const useShrinkPaddle = (
     } else {
       console.log(
         `Player ${player}'s paddle is already shrunk or invalid player ID.`
-      ); // Debug log for invalid or duplicate shrink calls
+      );
     }
   };
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./Pong.css";
 import Paddle from "./Paddle";
 import Ball from "./Ball";
@@ -19,9 +19,15 @@ const Pong = () => {
     score2,
     powerUpX,
     powerUpY,
+    powerUpType,
     isPowerUpActive,
-    powerUpType, // Added to handle power-up types
   } = usePongGame();
+
+  const [powerUpsEnabled, setPowerUpsEnabled] = useState(true); // State for power-ups toggle
+
+  const togglePowerUps = () => {
+    setPowerUpsEnabled((prev) => !prev); // Toggle power-ups state
+  };
 
   return (
     <div className="pong-wrapper">
@@ -31,15 +37,18 @@ const Pong = () => {
         <Paddle position="left" top={paddle1Y ?? 0} height={paddleHeight1} />
         <Paddle position="right" top={paddle2Y ?? 0} height={paddleHeight2} />
         <Ball x={ballX} y={ballY} />
-        {isPowerUpActive && powerUpType && (
+        {powerUpsEnabled && isPowerUpActive && powerUpType && (
           <PowerUp
             x={powerUpX ?? 0}
             y={powerUpY ?? 0}
             isActive={isPowerUpActive}
-            type={powerUpType as "shrinkOpponent" | "speedBoost"} // Ensure TypeScript knows the type is valid
+            type={powerUpType}
           />
         )}
       </div>
+      <button className="toggle-power-ups-button" onClick={togglePowerUps}>
+        {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
+      </button>
     </div>
   );
 };
