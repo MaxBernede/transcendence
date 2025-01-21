@@ -9,6 +9,10 @@ import ProfileUpdate from './pages/user/ProfileUpdate';
 import { fetchUserData, UserData } from './utils/UserLogic';
 import TwoFactorAuth from './components/2FA/2FA';
 import TwoFA from './pages/TwoFA';
+import ChatPage from "./pages/chat/chat-page";
+import ChatLayout from "./components/chat/layout/chatList";
+import { UserProvider } from "./context";
+
 
 export const UserContext = createContext<{
 	userData: UserData | null;
@@ -62,6 +66,10 @@ function App() {
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
           <Route path="/2FA" element={<TwoFactorAuth />} />
           <Route path="/TwoFA" element={<TwoFA />} />
+		          {/* Only wrap /chat route with UserProvider */}
+				  <Route path="/chat/*" element={<UserProviderWrapper />}>
+          <Route path=":channelId" element={<ChatPage />} />
+        </Route>
           <Route
             path="*"
             element={<p style={{ padding: '20px', color: 'red' }}>404 - Page Not Found</p>}
@@ -73,3 +81,11 @@ function App() {
 }
 
 export default App;
+
+const UserProviderWrapper = () => {
+  return (
+    <UserProvider>
+      <ChatLayout />
+    </UserProvider>
+  );
+};

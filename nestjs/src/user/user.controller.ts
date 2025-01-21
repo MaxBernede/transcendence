@@ -14,6 +14,7 @@ import {
   UseGuards,
   Res,
   NotFoundException,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -24,7 +25,7 @@ import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { CreateUserDto } from './dto/createUser.dto';
 import { Match } from '../match/match.entity';
 import { Public } from 'src/decorators/public.decorator';
-import { AuthGuard } from 'src/auth/auth.guard';
+// import { AuthGuard } from 'src/auth/auth.guard';
 import axios from 'axios';
 import { Response } from 'express';
 import * as fs from 'fs';
@@ -41,6 +42,9 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly matchService: MatchService,
+
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,

@@ -4,13 +4,14 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Post,
   Res,
   Req,
   UseGuards,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { AuthGuard } from './auth.guard';
+// import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { Public } from 'src/decorators/public.decorator';
 import axios from 'axios';
@@ -45,28 +46,28 @@ export class AuthController {
   //   return this.authService.signIn(signInDto.username, signInDto.password);
   // }
 
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @Post('login')
-  async login(
-    @Body() loginDto: { username: string; password: string },
-    @Res() res: Response,
-  ) {
-    const jwt = await this.authService.login(
-      loginDto.username,
-      loginDto.password,
-    );
-    res.setHeader('Set-Cookie', [
-      cookie.serialize('jwt', jwt, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 3600, // 1 hour
-        path: '/',
-      }),
-    ]);
-    return res.json({ message: 'Login successful' });
-  }
+  //   @Public()
+  //   @HttpCode(HttpStatus.OK)
+  //   @Post('login')
+  //   async login(
+  //     @Body() loginDto: { username: string; password: string },
+  //     @Res() res: Response,
+  //   ) {
+  //     const jwt = await this.authService.login(
+  //       loginDto.username,
+  //       loginDto.password,
+  //     );
+  //     res.setHeader('Set-Cookie', [
+  //       cookie.serialize('jwt', jwt, {
+  //         httpOnly: true,
+  //         secure: process.env.NODE_ENV === 'production',
+  //         sameSite: 'strict',
+  //         maxAge: 3600, // 1 hour
+  //         path: '/',
+  //       }),
+  //     ]);
+  //     return res.json({ message: 'Login successful' });
+  //   }
 
   //   @UseGuards(AuthGuard)
   // @Get('profile')
@@ -226,6 +227,60 @@ export class AuthController {
     } catch (error) {
       console.log('Wrong token used to check the jwt');
       return res.status(401).json({ authenticated: false });
+    }
+  }
+
+  //! FOR DEVELOPMENT PURPOSES ONLY
+  @Public()
+  @Post('login')
+  @ApiOperation({ summary: 'Create a new conversation' })
+  @ApiBody({
+    description: 'login',
+    examples: {
+      Example: {
+        value: {
+          username: 'user', // Only two participants for DM
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async login(@Body() loginDto: { username: string }, @Res() res: Response) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { username: loginDto.username },
+      });
+
+      if (!user) {
+        throw new InternalServerErrorException('User not found');
+      }
+      const payload = typeof TokenPayload;
+      const p: TokenPayload = {
+        sub: user.id,
+        username: user.username,
+        email: user.email,
+      };
+
+      const jwtSecret = this.configService.get<string>('JWT_SECRET');
+      console.log('JWT_SECRET:', jwtSecret);
+      const jwt = this.jwtService.sign(p, { secret: jwtSecret });
+
+      res.setHeader('Set-Cookie', [
+        cookie.serialize('jwt', jwt, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 3600, // 1hr
+          path: '/',
+        }),
+      ]);
+	  return res.json({ message: 'Login successful' });
+    } catch (error) {
+      console.error(
+        'Failed to fetch JWT:',
+        error.response?.data || error.message,
+      );
+      return res.status(500).json({ message: 'Failed to fetch JWT.' });
     }
   }
 }

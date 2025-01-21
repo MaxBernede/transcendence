@@ -8,11 +8,33 @@ import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import * as path from 'path';
 
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Enable validation globally
-  app.useGlobalPipes(new ValidationPipe());
+  const config = new DocumentBuilder()
+    .setTitle('Cats example')
+    .setDescription('The cats API description')
+    .setVersion('1.0')
+    .addTag('cats')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  const theme = new SwaggerTheme();
+  const options = {
+    explorer: true,
+    // customCss: theme.getBuffer(SwaggerThemeNameEnum.DRACULA),
+    customCss: theme.getBuffer(SwaggerThemeNameEnum.ONE_DARK),
+  };
+  SwaggerModule.setup('docs', app, document, options);
+
+  app.useGlobalPipes(new ValidationPipe({
+	whitelist: true,
+	// forbidNonWhitelisted: true,
+	// transform: true,
+  }));
 
   // Use cookie-parser for handling cookies
   app.use(cookieParser());

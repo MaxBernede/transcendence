@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -18,9 +14,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".", // Add this to resolve paths correctly
+    "paths": {
+      "@/*": ["src/*"] // This resolves @ to src/ (used in your imports)
+    }
   },
-  "include": [
-    "src"
-, "src/components", "src/App.tsx", "src/index.tsx"  ]
+  "include": ["src", "src/components", "src/App.tsx", "src/index.tsx"],
+  "exclude": ["node_modules"]
 }

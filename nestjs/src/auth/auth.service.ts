@@ -27,7 +27,6 @@ export class AuthService {
   async getAuthToken(@Res() res: Response) {
     const clientId = this.configService.getOrThrow<string>('INTRA_CLIENT_ID');
     const redirectUri = 'http://localhost:3000/auth/getJwt';
-    // const redirectUri = 'http://localhost:3000/api/users/me';
 
     const authUrl = `https://api.intra.42.fr/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
     res.json({ url: authUrl });
@@ -36,7 +35,9 @@ export class AuthService {
   // Step 2: Exchange code for JWT
   async getJwtToken(@Res() res: Response) {
     const clientId = this.configService.getOrThrow<string>('INTRA_CLIENT_ID');
-    const clientSecret = this.configService.getOrThrow<string>('INTRA_CLIENT_SECRET');
+    const clientSecret = this.configService.getOrThrow<string>(
+      'INTRA_CLIENT_SECRET',
+    );
     const redirectUri = 'http://localhost:3000/auth/getJwt';
     const code = res.req.query.code;
 
@@ -88,7 +89,9 @@ export class AuthService {
         username: user.username,
         email: user.email,
       };
-      const jwt = this.jwtService.sign(p);
+      const jwtSecret = this.configService.get<string>('JWT_SECRET');
+      console.log('JWT_SECRET:', jwtSecret);
+      const jwt = this.jwtService.sign(p, { secret: jwtSecret });
 
       // Set JWT in cookies
       res.setHeader('Set-Cookie', [

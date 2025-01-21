@@ -8,11 +8,12 @@ import { Match } from '../match/match.entity';
 import { AchievementEntity } from '../achievement/achievement.entity';
 import { typeOrmConfig } from '../ormconfig';
 import { AuthModule } from '../auth/auth.module';
+import { Chat, Conversation, UserConversation } from 'src/conversations/entities/conversation.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeOrmConfig),
-    TypeOrmModule.forFeature([User, Match, AchievementEntity]),
+    TypeOrmModule.forFeature([User, Match, AchievementEntity, Chat, Conversation, UserConversation]),
     MatchModule,
     // forwardRef(() => AuthModule),
   ],

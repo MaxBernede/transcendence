@@ -8,22 +8,15 @@ import {
   NotFoundException,
   Req,
   UseGuards,
-  Res,
-  InternalServerErrorException,
 } from '@nestjs/common';
-import { AppService } from './app.service';
 import { UserService } from './user/user.service';
-import { JwtStrategy } from './auth/jwt.strategy';
 import { GetUserPayload } from './test.decorator';
-import { JwtAuthGuard } from './temp-jwt.guard';
+import { JwtAuthGuard } from './auth/jwt.guard';
 import { TokenPayload } from './auth/dto/token-payload';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user/user.entity';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Response } from 'express';
-import axios from 'axios';
-import * as cookie from 'cookie';
 import { JwtService } from '@nestjs/jwt';
 @Controller()
 export class AppController {
@@ -220,7 +213,18 @@ export class AppController {
 //       }
 //       id = userId.toString();
 //     }
+//     if (id === 'me') {
+//       // Resolve "me" to the current user's ID using AuthGuard
+//       const userId = request['user']?.sub;
+//       if (!userId) {
+//         throw new NotFoundException('User not authenticated');
+//       }
+//       id = userId.toString();
+//     }
 
+//     // Determine if the resolved ID is numeric
+//     const isNumericId = !isNaN(Number(id));
+//     let user;
 //     // Determine if the resolved ID is numeric
 //     const isNumericId = !isNaN(Number(id));
 //     let user;
@@ -232,7 +236,17 @@ export class AppController {
 //       console.error('Error fetching user:', error.message);
 //       user = null;
 //     }
+//     try {
+//       // Try fetching the user from the database
+//       user = await this.userService.findOne(isNumericId ? +id : id);
+//     } catch (error) {
+//       console.error('Error fetching user:', error.message);
+//       user = null;
+//     }
 
+//     if (user) {
+//       return user;
+//     }
 //     if (user) {
 //       return user;
 //     }
@@ -240,7 +254,21 @@ export class AppController {
 //     console.warn(`User with ID or username "${id}" not found.`);
 //     throw new NotFoundException(`User with ID or username "${id}" not found.`);
 //   }
+//     console.warn(`User with ID or username "${id}" not found.`);
+//     throw new NotFoundException(`User with ID or username "${id}" not found.`);
+//   }
 
+//   @Post('api/users/:id/update-username')
+//   async updateUsername(
+//     @Param('id') id: string,
+//     @Body('username') newUsername: string,
+//   ) {
+//     console.log(`Updating username for user ID ${id} to:`, newUsername);
+//     if (!newUsername || newUsername.trim().length === 0) {
+//       throw new BadRequestException('Username cannot be empty');
+//     }
+//     return { id, username: newUsername };
+//   }
 //   @Post('api/users/:id/update-username')
 //   async updateUsername(
 //     @Param('id') id: string,

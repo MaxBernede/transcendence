@@ -33,8 +33,12 @@ import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
         signOptions: { expiresIn: '24h' },
       }),
     }),
+    DatabasesModule,
+    TypeOrmModule.forRoot(typeOrmConfig),
+    TypeOrmModule.forFeature([User]),
   ],
   providers: [AuthService, JwtStrategy],
+  //   providers: [AuthService, JwtStrategy, SocketAuthGuard],
   controllers: [AuthController],
   exports: [AuthService, JwtModule, PassportModule],
 })

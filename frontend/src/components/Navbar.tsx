@@ -13,16 +13,17 @@ const Navbar: React.FC = () => {
 	}
 
 	return (
-		<nav className={styles.navbar}>
+		<nav className={`${styles.navbar} fixed top-0 left-0 w-full z-50 bg-gray-900 text-white p-4 shadow-md`} >
 			<Link to="/" className={styles.navLink}>Home</Link>
 			<Link to="/creation" className={styles.navLink}>Creation</Link>
 			<Link to="/2FA" className={styles.navLink}>2FA (remove it later)</Link>
+			<Link to="/chat" className={styles.navLink}>Chat</Link>
 			<div className={styles.navRight}>
 				<Link to="/user/profileupdate" className={styles.navLink}>⚙️ Edit</Link>
 				<Link to="/user/me" className={styles.navLink}>My Profile</Link>
 			</div>
 	</nav>
 	);
-};
+  };
 
 export default Navbar;
