@@ -8,6 +8,10 @@ import {
 } from 'typeorm';
 import { Match } from '../match/match.entity';
 import { AchievementEntity } from '../achievement/achievement.entity';
+import {
+  Chat,
+  UserConversation,
+} from 'src/conversations/entities/conversation.entity';
 
 @Entity('user')
 export class User {
@@ -83,4 +87,13 @@ export class User {
     inverseJoinColumn: { name: 'achievement_id', referencedColumnName: 'id' },
   })
   achievements: AchievementEntity[];
+
+  //   @OneToMany(() => Chat, (chat) => chat.user)
+  //   chats: Chat[];
+
+  @OneToMany(
+    () => UserConversation,
+    (userConversation) => userConversation.user,
+  )
+  userConversations: UserConversation[];
 }

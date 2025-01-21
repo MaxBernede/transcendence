@@ -13,6 +13,7 @@ import {
   Req,
   UseGuards,
   Res,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -23,16 +24,25 @@ import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { CreateUserDto } from './dto/createUser.dto';
 import { Match } from '../match/match.entity';
 import { Public } from 'src/decorators/public.decorator';
-import { AuthGuard } from 'src/auth/auth.guard';
+// import { AuthGuard } from 'src/auth/auth.guard';
 import axios from 'axios';
 import { Response } from 'express';
 import * as fs from 'fs';
+import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { GetUserPayload } from 'src/test.decorator';
+import { TokenPayload } from 'src/auth/dto/token-payload';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './user.entity';
+import { Repository } from 'typeorm';
 
 @Controller('api/users')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly matchService: MatchService,
+
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   @Post()
@@ -40,32 +50,95 @@ export class UserController {
     return this.userService.createUser(createUserDto);
   }
 
-  @Put(':id')
-  async updateUser(
-    @Param('id') id: string,
-    @Body() updatedData: UpdateUserDto,
-  ) {
-    console.log('Updated Data Received:', updatedData);
-    return this.userService.updateUser(id, updatedData);
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+	// console.log(request);
+	console.log('cookies', request.headers['cookie']);
+	console.log('user');
+	const existingUser = await this.userRepository.findOne({
+	  where: { username: payload.username },
+	});
+	return existingUser;
   }
 
   @Get(':id')
-  async getUser(@Param('id') id: string) {
-    return this.userService.getUser(id);
+  async getUser(@Param('id') id: string, @Req() request: Request) {
+    console.log('Requested User ID or Username:', id); // Debug log
+
+    if (id === 'me') {
+      // Resolve "me" to the current user's ID using AuthGuard
+      const userId = request['user']?.sub;
+      if (!userId) {
+        throw new NotFoundException('User not authenticated');
+      }
+      id = userId.toString();
+    }
+
+    // Determine if the resolved ID is numeric
+    const isNumericId = !isNaN(Number(id));
+    let user;
+
+    try {
+      // Try fetching the user from the database
+      user = await this.userService.findOne(isNumericId ? +id : id);
+    } catch (error) {
+      console.error('Error fetching user:', error.message);
+      user = null;
+    }
+
+    if (user) {
+      return user;
+    }
+
+    console.warn(`User with ID or username "${id}" not found.`);
+    throw new NotFoundException(`User with ID or username "${id}" not found.`);
   }
+
+  @Post(':id/update-username')
+  async updateUsername(
+    @Param('id') id: string,
+    @Body('username') newUsername: string,
+  ) {
+    console.log(`Updating username for user ID ${id} to:`, newUsername);
+    if (!newUsername || newUsername.trim().length === 0) {
+      throw new BadRequestException('Username cannot be empty');
+    }
+    return { id, username: newUsername };
+  }
+
+
+
+
+
+
+
+//   @Put(':id')
+//   async updateUser(
+//     @Param('id') id: string,
+//     @Body() updatedData: UpdateUserDto,
+//   ) {
+//     console.log('Updated Data Received:', updatedData);
+//     return this.userService.updateUser(id, updatedData);
+//   }
+
+//   @Get(':id')
+//   async getUser(@Param('id') id: string) {
+//     return this.userService.getUser(id);
+//   }
 
   // AUTH STRATEGY CALL
 
   // @UseGuards(AuthGuard)
-  @Get('me')
-  async getLoggedInUser(@Req() request: any) {
-    console.log('Request to /me received');
-    const userId = request.user?.sub;
-    if (!userId) {
-      throw new BadRequestException('Unable to determine user from token.');
-    }
-    return this.userService.findOneById(userId);
-  }
+  //   @Get('me')
+  //   async getLoggedInUser(@Req() request: any) {
+  //     console.log('Request to /me received');
+  //     const userId = request.user?.sub;
+  //     if (!userId) {
+  //       throw new BadRequestException('Unable to determine user from token.');
+  //     }
+  //     return this.userService.findOneById(userId);
+  //   }
 
   @Post(':id/upload-avatar')
   @UseInterceptors(

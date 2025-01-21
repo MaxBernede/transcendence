@@ -273,8 +273,8 @@ export class UserService {
     } else {
       user = this.userRepository.create(userInfo);
     }
-
     console.log('User saved:', user);
+
 
     return this.userRepository.save(user);
   }
