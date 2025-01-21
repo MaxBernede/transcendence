@@ -12,6 +12,7 @@ import TwoFA from './pages/TwoFA';
 import ChatPage from "./pages/chat/chat-page";
 import ChatLayout from "./components/chat/layout/chatList";
 import { UserProvider } from "./context";
+import PongPage from './game/PongPage';
 
 
 export const UserContext = createContext<{
@@ -66,6 +67,7 @@ function App() {
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
           <Route path="/2FA" element={<TwoFactorAuth />} />
           <Route path="/TwoFA" element={<TwoFA />} />
+		  <Route path="/pong" element={<PongPage />} /> 
 		          {/* Only wrap /chat route with UserProvider */}
 				  <Route path="/chat/*" element={<UserProviderWrapper />}>
           <Route path=":channelId" element={<ChatPage />} />

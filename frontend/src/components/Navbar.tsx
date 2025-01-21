@@ -18,6 +18,7 @@ const Navbar: React.FC = () => {
 			<Link to="/creation" className={styles.navLink}>Creation</Link>
 			<Link to="/2FA" className={styles.navLink}>2FA (remove it later)</Link>
 			<Link to="/chat" className={styles.navLink}>Chat</Link>
+			<Link to="/pong">Pong Game</Link> 
 			<div className={styles.navRight}>
 				<Link to="/user/profileupdate" className={styles.navLink}>⚙️ Edit</Link>
 				<Link to="/user/me" className={styles.navLink}>My Profile</Link>
