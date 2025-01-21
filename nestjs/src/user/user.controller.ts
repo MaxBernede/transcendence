@@ -13,6 +13,7 @@ import {
   Req,
   UseGuards,
   Res,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -28,17 +29,38 @@ import axios from 'axios';
 import { Response } from 'express';
 import * as fs from 'fs';
 import * as cookie from 'cookie';
+import { JwtAuthGuard } from 'src/temp-jwt.guard';
+import { GetUserPayload } from 'src/test.decorator';
+import { TokenPayload } from 'src/auth/dto/token-payload';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './user.entity';
+import { Repository } from 'typeorm';
 
 @Controller('api/users')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly matchService: MatchService,
+
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   @Post()
   async createUser(@Body() createUserDto: CreateUserDto) {
     return this.userService.createUser(createUserDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+    console.log(request);
+    // console.log('cookies', request.headers['cookie']);
+    // console.log('user');
+    const existingUser = await this.userRepository.findOne({
+      where: { email: payload.email },
+    });
+    return existingUser;
   }
 
   @Put(':id')
@@ -50,23 +72,66 @@ export class UserController {
     return this.userService.updateUser(id, updatedData);
   }
 
+  //   @Get(':id')
+  //   async getUser(@Param('id') id: string) {
+  //     return this.userService.getUser(id);
+  //   }
   @Get(':id')
-  async getUser(@Param('id') id: string) {
-    return this.userService.getUser(id);
+  async getUser(@Param('id') id: string, @Req() request: Request) {
+    console.log('Requested User ID or Username:', id); // Debug log
+
+    if (id === 'me') {
+      // Resolve "me" to the current user's ID using AuthGuard
+      const userId = request['user']?.sub;
+      if (!userId) {
+        throw new NotFoundException('User not authenticated');
+      }
+      id = userId.toString();
+    }
+
+    // Determine if the resolved ID is numeric
+    const isNumericId = !isNaN(Number(id));
+    let user;
+
+    try {
+      // Try fetching the user from the database
+      user = await this.userService.findOne(isNumericId ? +id : id);
+    } catch (error) {
+      console.error('Error fetching user:', error.message);
+      user = null;
+    }
+
+    if (user) {
+      return user;
+    }
+
+    console.warn(`User with ID or username "${id}" not found.`);
+    throw new NotFoundException(`User with ID or username "${id}" not found.`);
   }
 
   // AUTH STRATEGY CALL
 
   // @UseGuards(AuthGuard)
-  @Get('me')
-  async getLoggedInUser(@Req() request: any) {
-    console.log('Request to /me received');
-    const userId = request.user?.sub;
-    if (!userId) {
-      throw new BadRequestException('Unable to determine user from token.');
-    }
-    return this.userService.findOneById(userId);
-  }
+  //   @Get('me')
+  //   async getLoggedInUser(@Req() request: any) {
+  //     console.log('Request to /me received');
+  //     const userId = request.user?.sub;
+  //     if (!userId) {
+  //       throw new BadRequestException('Unable to determine user from token.');
+  //     }
+  //     return this.userService.findOneById(userId);
+  //   }
+//   @UseGuards(JwtAuthGuard)
+//   @Get('me')
+//   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+//     console.log(request);
+//     // console.log('cookies', request.headers['cookie']);
+//     // console.log('user');
+//     const existingUser = await this.userRepository.findOne({
+//       where: { email: payload.email },
+//     });
+//     return existingUser;
+//   }
 
   //Last part of the login after the 2FA
   async endLogin(@Req() request: any, @Res() res: Response) {
@@ -74,20 +139,20 @@ export class UserController {
     if (!userId) {
       throw new BadRequestException('Unable to determine user from token.');
     }
-  
+
     const user = await this.userService.findOneById(userId);
     if (!user) {
       throw new BadRequestException('User not found.');
     }
-  
+
     // Set JWT in cookies
     res.setHeader('Set-Cookie', [
       cookie.serialize('jwt', user.tempJWT, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 3600, // 1hr
-      path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600, // 1hr
+        path: '/',
       }),
     ]);
 
@@ -95,10 +160,6 @@ export class UserController {
     await this.userService.updateUser(user.id.toString(), tempJWT);
     return res.redirect(`http://localhost:3001/user/${user.id}`);
   }
-  
-
-  
-
 
   @Post(':id/upload-avatar')
   @UseInterceptors(
@@ -183,14 +244,14 @@ export class UserController {
 
     // commented because match database changed
     return [];
-      // id: match.id,
-      // type: match.type,
-      // opponent: match.opponent,
-      // result: match.result,
-      // score: match.score,
-      // description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
-      // date: new Date(match.date).toLocaleDateString('en-GB'),
-    };
+    // id: match.id,
+    // type: match.type,
+    // opponent: match.opponent,
+    // result: match.result,
+    // score: match.score,
+    // description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
+    // date: new Date(match.date).toLocaleDateString('en-GB'),
+  }
 
   @Put(':id/match-history')
   async updateMatchHistory(

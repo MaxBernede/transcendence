@@ -16,11 +16,12 @@ import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.modu
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeOrmConfig),
-    TypeOrmModule.forFeature([User]),
-    DatabasesModule,
-    UsersModule,
+    // TypeOrmModule.forFeature([User]),
+    // DatabasesModule,
+    // UsersModule,
     AuthModule,
-    AchievementModule,
+	UsersModule,
+    // AchievementModule,
     TwoFactorAuthModule,
     ConfigModule.forRoot({
       isGlobal: true,

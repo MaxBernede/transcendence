@@ -14,7 +14,7 @@ import { AuthModule } from '../auth/auth.module';
     TypeOrmModule.forRoot(typeOrmConfig),
     TypeOrmModule.forFeature([User, Match, AchievementEntity]),
     MatchModule,
-    forwardRef(() => AuthModule),
+    // forwardRef(() => AuthModule),
   ],
   controllers: [UserController],
   providers: [UserService],

@@ -6,9 +6,22 @@ import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { typeOrmConfig } from 'src/ormconfig';
+import { User } from 'src/user/user.entity';
+import { DatabasesModule } from 'src/database/database.module';
+import { AchievementModule } from 'src/achievement/achievement.module';
+import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
 
 @Module({
   imports: [
+	TypeOrmModule.forRoot(typeOrmConfig),
+	TypeOrmModule.forFeature([User]),
+	DatabasesModule,
+	UsersModule,
+	AuthModule,
+	AchievementModule,
+	TwoFactorAuthModule,
     ConfigModule,
     forwardRef(() => UsersModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),
