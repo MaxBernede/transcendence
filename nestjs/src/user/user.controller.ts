@@ -14,7 +14,6 @@ import {
   UseGuards,
   Res,
   NotFoundException,
-  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -30,12 +29,13 @@ import axios from 'axios';
 import { Response } from 'express';
 import * as fs from 'fs';
 import * as cookie from 'cookie';
-import { JwtAuthGuard } from 'src/temp-jwt.guard';
+// import { JwtAuthGuard } from 'src/temp-jwt.guard';
 import { GetUserPayload } from 'src/test.decorator';
 import { TokenPayload } from 'src/auth/dto/token-payload';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
+import { JwtAuthGuard } from 'src/auth/jwt.guard';
 
 @Controller('api/users')
 export class UserController {
@@ -46,8 +46,6 @@ export class UserController {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
   ) {}
 
   @Post()
@@ -58,7 +56,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-    console.log(request);
+    // console.log(request);
     // console.log('cookies', request.headers['cookie']);
     // console.log('user');
     const existingUser = await this.userRepository.findOne({

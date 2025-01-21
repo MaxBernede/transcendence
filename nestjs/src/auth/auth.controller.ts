@@ -4,7 +4,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  InternalServerErrorException,
   Post,
   Res,
   Req,
@@ -25,6 +24,7 @@ import { User } from 'src/user/user.entity';
 import { TokenPayload } from './dto/token-payload';
 import { UserService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
+import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -120,11 +120,12 @@ export class AuthController {
 
       const userInfo = userResponse.data;
 
-      // console.log(userInfo);
+      console.log(userInfo);
 
       const existingUser = await this.userRepository.findOne({
         where: { intraId: userInfo.id },
       });
+	//   console.log('Existing User:', existingUser);
       let user;
       if (!existingUser) {
         // I ALREADY EXIST USE NEW USER DATAS
@@ -136,6 +137,7 @@ export class AuthController {
           lastName: userInfo.last_name,
           username: userInfo.login,
           image: userInfo.image,
+		  avatar: userInfo.image.link,
         });
 
         console.log(user);

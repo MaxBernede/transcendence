@@ -12,6 +12,7 @@ import { ConfigModule } from '@nestjs/config';
 import { User } from './user/user.entity';
 import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.module';
 import { ConversationsModule } from './conversations/conversations.module';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { ConversationsModule } from './conversations/conversations.module';
     }),
     TypeOrmModule.forRoot(typeOrmConfig),
     // TypeOrmModule.forFeature([User]),
-    // DatabasesModule,
+    DatabasesModule,
     // UsersModule,
     AuthModule,
 	UsersModule,
@@ -30,6 +31,6 @@ import { ConversationsModule } from './conversations/conversations.module';
     ConversationsModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [AppService],
 })
 export class AppModule {}

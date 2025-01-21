@@ -204,7 +204,7 @@ export class ConversationsGateway
       where: { id: user.sub },
       select: ['id', 'username', 'avatar'], // Only select the required fields
     });
-    // console.log('User:', dbUser);
+    console.log('User:', dbUser);
     try {
       const validatedUser = PublicUserInfoSchema.parse(dbUser);
       console.log('Validated User:', validatedUser);
