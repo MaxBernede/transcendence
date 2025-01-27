@@ -6,7 +6,7 @@ const PongPage = () => {
     <div>
       {/* <h1>PONG GAME</h1> */}
       <Pong />
-      <Pong />
+      {/* <Pong /> */}
     </div>
   );
 };

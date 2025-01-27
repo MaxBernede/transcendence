@@ -283,5 +283,15 @@ export class UserService {
   async findOneById(id: number): Promise<User> {
     return this.userRepository.findOne({ where: { id } });
   }
+
+  async incrementWins(userId: number) {
+    await this.userRepository.increment({ id: userId }, 'wins', 1);
+    return { message: 'Win count updated successfully.' };
+  }
+
+  async incrementLoose(userId: number) {
+    await this.userRepository.increment({ id: userId }, 'loose', 1);
+    return { message: 'Loose count updated successfully.' };
+  }
   
 }

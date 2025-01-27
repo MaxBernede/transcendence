@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config'; // Import ConfigService
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -14,6 +15,11 @@ import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Fetch ConfigService for debugging
+  const configService = app.get(ConfigService);
+  console.log('INTRA_CLIENT_ID:', configService.get('INTRA_CLIENT_ID'));
+  console.log('INTRA_CLIENT_SECRET:', configService.get('INTRA_CLIENT_SECRET'));
+
   // Enable validation globally
   const config = new DocumentBuilder()
     .setTitle('Cats example')
@@ -25,15 +31,12 @@ async function bootstrap() {
   const theme = new SwaggerTheme();
   const options = {
     explorer: true,
-    // customCss: theme.getBuffer(SwaggerThemeNameEnum.DRACULA),
     customCss: theme.getBuffer(SwaggerThemeNameEnum.ONE_DARK),
   };
   SwaggerModule.setup('docs', app, document, options);
 
   app.useGlobalPipes(new ValidationPipe({
-	whitelist: true,
-	// forbidNonWhitelisted: true,
-	// transform: true,
+    whitelist: true,
   }));
 
   // Use cookie-parser for handling cookies
@@ -54,7 +57,6 @@ async function bootstrap() {
   });
 
   // Ensure the "uploads/avatars" folder exists
-
   const uploadPath = join(__dirname, '..', 'uploads', 'avatars');
   console.log(`Checking directory: ${uploadPath}`);
   if (!existsSync(uploadPath)) {
@@ -64,12 +66,6 @@ async function bootstrap() {
     console.log(`Directory already exists: ${uploadPath}`);
   }
 
-  // Serve static files for uploaded avatars
-  //   app.useStaticAssets(uploadPath, {
-  //     prefix: '/uploads/avatars/',
-  //   });
-
-  // app.use('/uploads', express.static(uploadPath));
   app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
   const publicAssetsPath = join(

@@ -18,6 +18,7 @@ export const usePongGame = () => {
   const [score1, setScore1] = useState(0);
   const [score2, setScore2] = useState(0);
 
+  const [winner, setWinner] = useState<string | null>(null); // New winner state
   const [collisionHandled, setCollisionHandled] = useState(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
@@ -106,13 +107,31 @@ export const usePongGame = () => {
     }, 100);
   };
 
+  const resetGame = () => {
+    setScore1(0);
+    setScore2(0);
+    setWinner(null);
+    resetBallAndPaddles();
+  };
+
   const handleScore = (player: number) => {
-    if (isScoringRef.current) return;
+    if (isScoringRef.current || winner) return;
 
     isScoringRef.current = true;
 
-    if (player === 1) setScore1((prev) => prev + 1);
-    else if (player === 2) setScore2((prev) => prev + 1);
+    if (player === 1) {
+      setScore1((prev) => {
+        const newScore = prev + 1;
+        if (newScore === 3) setWinner("PLAYER 1");
+        return newScore;
+      });
+    } else if (player === 2) {
+      setScore2((prev) => {
+        const newScore = prev + 1;
+        if (newScore === 3) setWinner("PLAYER 2");
+        return newScore;
+      });
+    }
 
     resetBallAndPaddles();
   };
@@ -123,7 +142,7 @@ export const usePongGame = () => {
         event.preventDefault(); // Prevent scrolling
       }
 
-      if (paused) {
+      if (paused && !winner) {
         setPaused(false);
         const { vx, vy } = normalizeSpeed(ballVX, ballVY, targetBallSpeed);
         setBallVX(vx);
@@ -152,21 +171,13 @@ export const usePongGame = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    paused,
-    courtHeight,
-    paddleHeight1,
-    paddleHeight2,
-    ballVX,
-    ballVY,
-    targetBallSpeed,
-  ]);
+  }, [paused, courtHeight, paddleHeight1, paddleHeight2, winner]);
 
   useEffect(() => {
     let animationFrameId: number;
 
     const update = () => {
-      if (gameContainerRef.current && !paused) {
+      if (gameContainerRef.current && !paused && !winner) {
         const rect = gameContainerRef.current.getBoundingClientRect();
         const courtWidth = rect.width;
 
@@ -232,7 +243,7 @@ export const usePongGame = () => {
     animationFrameId = requestAnimationFrame(update);
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [ballVX, ballVY, ballY, paddle1Y, paddle2Y, collisionHandled, paused]);
+  }, [ballVX, ballVY, ballY, paddle1Y, paddle2Y, collisionHandled, paused, winner]);
 
   return {
     gameContainerRef,
@@ -248,5 +259,7 @@ export const usePongGame = () => {
     isPowerUpActive,
     score1,
     score2,
+    winner,
+    resetGame,
   };
 };

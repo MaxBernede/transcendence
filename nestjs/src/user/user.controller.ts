@@ -276,4 +276,20 @@ export class UserController {
     const user = await this.userService.getUserWithAchievements(id);
     return user.achievements;
   }
+
+  @UseGuards(JwtAuthGuard) // Protect this route with JWT auth
+  @Patch('updateStats')
+  async updateStats(
+    @Body() { result }: { result: 'win' | 'loose' },
+    @Req() req,
+  ) {
+    const userId = req.user.id; // Get user ID from JWT
+    if (result === 'win') {
+      return this.userService.incrementWins(userId);
+    } else if (result === 'loose') {
+      return this.userService.incrementLoose(userId);
+    } else {
+      throw new Error('Invalid result type. Must be "win" or "loose".');
+    }
+  }
 }
