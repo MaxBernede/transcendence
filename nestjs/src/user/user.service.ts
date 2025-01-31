@@ -270,11 +270,12 @@ export class UserService {
 
     if (user) {
       // user = { ...user, ...userInfo };
-      console.log("user already exist, not overwriting informations");
-    } else {
+      console.log("User already exist in the database");
+    } 
+    else {
       user = this.userRepository.create(userInfo);
     }
-    console.log('User saved:', user);
+    // console.log('User saved:', user);
 
 
     return this.userRepository.save(user);

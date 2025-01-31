@@ -27,119 +27,74 @@ export class AuthService {
   async getAuthToken(@Res() res: Response) {
     const clientId = this.configService.getOrThrow<string>('INTRA_CLIENT_ID');
     const redirectUri = 'http://localhost:3000/auth/getJwt';
-
     const authUrl = `https://api.intra.42.fr/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
     res.json({ url: authUrl });
   }
 
-  // Step 2: Exchange code for JWT
-  async getJwtToken(@Res() res: Response) {
-    const clientId = this.configService.getOrThrow<string>('INTRA_CLIENT_ID');
-    const clientSecret = this.configService.getOrThrow<string>(
-      'INTRA_CLIENT_SECRET',
-    );
-    const redirectUri = 'http://localhost:3000/auth/getJwt';
-    const code = res.req.query.code;
+  /** Main function called from controller */
+	async intraJwt(code: string): Promise<string> {
+		const accessToken = await this.getJWTToken(code);
+		const userInfo = await this.fetchUserInfo(accessToken);
+		const user = await this.findOrCreateUser(userInfo);
+		return this.generateAndStoreJWT(user);
+	}
 
-    if (!code || !redirectUri) {
-      return res
-        .status(400)
-        .json({ message: 'Missing parameters or environment variables.' });
-    }
+	private async getJWTToken(code: string): Promise<string> {
+		const clientId = this.configService.getOrThrow<string>('INTRA_CLIENT_ID');
+		const clientSecret = this.configService.getOrThrow<string>('INTRA_CLIENT_SECRET');
+		const redirectUri = 'http://localhost:3000/auth/getJwt';
 
-    try {
-      const tokenResponse = await axios.post(
-        'https://api.intra.42.fr/oauth/token',
-        {
-          grant_type: 'authorization_code',
-          client_id: clientId,
-          client_secret: clientSecret,
-          code,
-          redirect_uri: redirectUri,
-        },
-      );
+		const { data } = await axios.post('https://api.intra.42.fr/oauth/token', {
+			grant_type: 'authorization_code',
+			client_id: clientId,
+			client_secret: clientSecret,
+			code,
+			redirect_uri: redirectUri,
+		});
+		return data.access_token;
+	}
 
-      const accessToken = tokenResponse.data.access_token;
+	private async fetchUserInfo(accessToken: string) {
+		const { data } = await axios.get('https://api.intra.42.fr/v2/me', {
+			headers: { Authorization: `Bearer ${accessToken}` },
+		});
+		return data;
+	}
 
-      // Fetch user data from intra API
-      const userResponse = await axios.get('https://api.intra.42.fr/v2/me', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+  private async findOrCreateUser(userInfo: any) {
+    const user = await this.usersService.createOrUpdateUser({
+      intraId: userInfo.id,
+      email: userInfo.email,
+      firstName: userInfo.first_name,
+      lastName: userInfo.last_name,
+      username: userInfo.login,
+      image: userInfo.image,
+    });
+    return user
+	}
 
-      const userInfo = userResponse.data;
+	/** Step 4: Generate and store JWT */
+	private async generateAndStoreJWT(user: any): Promise<string> {
+		const payload: TokenPayload = { sub: user.id, username: user.username, email: user.email };
+		const jwt = this.jwtService.sign(payload);
+		//await this.userService.updateUser(user.id.toString(), { tempJWT: jwt });
+		return jwt;
+	}
 
-      // IF ALREADY EXIST USE NEW USER DATAS
-      // Save user to the database
-      const user = await this.usersService.createOrUpdateUser({
-        intraId: userInfo.id,
-        email: userInfo.email,
-        firstName: userInfo.first_name,
-        lastName: userInfo.last_name,
-        username: userInfo.login,
-        image: userInfo.image,
-      });
+	setJwtCookie(res: Response, jwt: string) {
+		res.setHeader('Set-Cookie', [cookie.serialize('jwt', jwt, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict',
+			maxAge: 3600,
+			path: '/',
+		})]);
+	}
 
-      // Generate a JWT token with username
-      //   const payload = { sub: user.id, email: user.email, username: user.username };
-      const payload = typeof TokenPayload;
-      const p: TokenPayload = {
-        sub: user.id,
-        username: user.username,
-        email: user.email,
-      };
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      console.log('JWT_SECRET:', jwtSecret);
-      const jwt = this.jwtService.sign(p, { secret: jwtSecret });
-
-      // Set JWT in cookies
-      res.setHeader('Set-Cookie', [
-        cookie.serialize('jwt', jwt, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 3600, // 1hr
-          path: '/',
-        }),
-      ]);
-
-      // console.log('JWT set in cookies:', jwt);
-
-      // Redirect to the specific user page
-      return res.redirect(`http://localhost:3001/user/${user.id}`);
-    } catch (error) {
-      console.error(
-        'Failed to fetch JWT:',
-        error.response?.data || error.message,
-      );
-      return res.status(500).json({ message: 'Failed to fetch JWT.' });
-    }
-  }
-
-  // Step 3: Fetch user info (frontend will call this API)
-  async getUserInfo(token: string) {
-    try {
-      const response = await axios.get('https://api.intra.42.fr/v2/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const userInfo = response.data;
-
-      // Save user info in the database
-      await this.usersService.createOrUpdateUser(userInfo);
-
-      return userInfo;
-    } catch (error) {
-      console.error(
-        'Failed to fetch user info:',
-        error.response?.data || error.message,
-      );
-      throw new UnauthorizedException('Invalid or expired token.');
-    }
-  }
+	getUserIdFromJwt(jwt: string): string {
+		const decoded = this.jwtService.decode(jwt) as TokenPayload;
+		return decoded.sub.toString();
+	}
 
   async login(username: string, password: string): Promise<string> {
     const user = await this.usersService.findOne(username);
