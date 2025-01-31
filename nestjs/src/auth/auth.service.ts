@@ -91,6 +91,16 @@ export class AuthService {
 		})]);
 	}
 
+  clearCookies(res: Response){
+    res.clearCookie('jwt', {
+      path: '/', // Same path as when the cookie was set
+      domain: 'localhost', // Optional: Set the same domain if used
+      httpOnly: true, // Match the same HttpOnly flag used when setting the cookie
+      secure: false, // Ensure it matches the secure flag (use true if on HTTPS)
+      sameSite: 'strict', // SameSite attribute should match as well
+    });
+  }
+
 	getUserIdFromJwt(jwt: string): string {
 		const decoded = this.jwtService.decode(jwt) as TokenPayload;
 		return decoded.sub.toString();
