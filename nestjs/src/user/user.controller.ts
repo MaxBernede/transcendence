@@ -14,6 +14,7 @@ import {
   UseGuards,
   Res,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -277,19 +278,31 @@ export class UserController {
     return user.achievements;
   }
 
-  @UseGuards(JwtAuthGuard) // Protect this route with JWT auth
+  @UseGuards(JwtAuthGuard)
   @Patch('updateStats')
   async updateStats(
-    @Body() { result }: { result: 'win' | 'loose' },
-    @Req() req,
+	@Body() { result }: { result: 'win' | 'loose' },
+	@Req() req,
   ) {
-    const userId = req.user.id; // Get user ID from JWT
-    if (result === 'win') {
-      return this.userService.incrementWins(userId);
-    } else if (result === 'loose') {
-      return this.userService.incrementLoose(userId);
-    } else {
-      throw new Error('Invalid result type. Must be "win" or "loose".');
-    }
-  }
+	console.log("🔍 Incoming request: User ID =", req.user?.id, "Result =", result);
+  
+	if (!req.user || !req.user.id) {
+	  console.error("❌ User not authenticated.");
+	  throw new UnauthorizedException("User not authenticated.");
+	}
+  
+	const userId = req.user.id;
+	console.log("✅ Authenticated user:", userId);
+  
+	if (result === 'win') {
+	  console.log("🏆 Incrementing WINS for User ID:", userId);
+	  return this.userService.incrementWins(userId);
+	} else if (result === 'loose') {
+	  console.log("💀 Incrementing LOSSES for User ID:", userId);
+	  return this.userService.incrementLoose(userId);
+	} else {
+	  throw new BadRequestException('Invalid result type. Must be "win" or "loose".');
+	}
+  }  
+  
 }

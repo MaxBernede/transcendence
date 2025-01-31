@@ -48,32 +48,63 @@
 //   }
 // }
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UserService } from '../user/user.service';
 import { TokenPayload } from './dto/token-payload';
 
+// @Injectable()
+// export class JwtStrategy extends PassportStrategy(Strategy) {
+//   constructor(private readonly configService: ConfigService) {
+//     super({
+//       jwtFromRequest: ExtractJwt.fromExtractors([
+//         (request) => {
+//           // Log cookies
+//           // console.log('Incoming cookies:', request?.cookies);
+
+//           // Extract token from cookies
+//           return request?.cookies?.jwt || null;
+//         },
+//       ]),
+//       secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+//     });
+//     console.log('JwtStrategy initialized');
+//   }
+
+//   async validate(payload: TokenPayload) {
+//     // console.log('Validated payload:', payload);
+//     return payload; // Attach user payload to the request object
+//   }
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly configService: ConfigService) {
+    constructor(
+		private readonly configService: ConfigService,
+		private readonly userService: UserService, // ✅ Inject UserService
+	  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request) => {
-          // Log cookies
-          // console.log('Incoming cookies:', request?.cookies);
-
-          // Extract token from cookies
-          return request?.cookies?.jwt || null;
-        },
+        (request) => request?.cookies?.jwt || null, // Extract from cookies
+        ExtractJwt.fromAuthHeaderAsBearerToken(), // Extract from Authorization header
       ]),
+      ignoreExpiration: false, // Ensures JWT expiration is checked
       secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
     });
     console.log('JwtStrategy initialized');
   }
 
-  async validate(payload: TokenPayload) {
-    // console.log('Validated payload:', payload);
-    return payload; // Attach user payload to the request object
-  }
+  async validate(payload: any) {
+	console.log("Decoded JWT Payload:", payload);
+	if (!payload || !payload.sub) {
+	  throw new UnauthorizedException("Invalid token payload");
+	}
+  
+	const user = await this.userService.findOne(payload.sub);
+	if (!user) {
+	  throw new UnauthorizedException("User not found");
+	}
+  
+	return user;
+  }  
 }

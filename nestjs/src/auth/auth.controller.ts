@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 // import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
@@ -92,7 +93,7 @@ export class AuthController {
 	const code = res.req.query.code;
   
 	console.log('Received code:', code); // Log the received code
-  
+	
 	if (!code || !redirectUri) {
 	  console.error('Missing parameters or environment variables.');
 	  return res
@@ -232,57 +233,97 @@ export class AuthController {
     }
   }
 
-  //! FOR DEVELOPMENT PURPOSES ONLY
-  @Public()
-  @Post('login')
-  @ApiOperation({ summary: 'Create a new conversation' })
-  @ApiBody({
-    description: 'login',
-    examples: {
-      Example: {
-        value: {
-          username: 'user', // Only two participants for DM
-        },
+//   //! FOR DEVELOPMENT PURPOSES ONLY
+//   @Public()
+//   @Post('login')
+//   @ApiOperation({ summary: 'Create a new conversation' })
+//   @ApiBody({
+//     description: 'login',
+//     examples: {
+//       Example: {
+//         value: {
+//           username: 'user', // Only two participants for DM
+//         },
+//       },
+//     },
+//   })
+//   @ApiResponse({ status: 400, description: 'Bad Request' })
+//   async login(@Body() loginDto: { username: string }, @Res() res: Response) {
+//     try {
+//       const user = await this.userRepository.findOne({
+//         where: { username: loginDto.username },
+//       });
+
+//       if (!user) {
+//         throw new InternalServerErrorException('User not found');
+//       }
+//       const payload = typeof TokenPayload;
+//       const p: TokenPayload = {
+//         sub: user.id,
+//         username: user.username,
+//         email: user.email,
+//       };
+
+//       const jwtSecret = this.configService.get<string>('JWT_SECRET');
+//       console.log('JWT_SECRET:', jwtSecret);
+//       const jwt = this.jwtService.sign(p, { secret: jwtSecret });
+
+//       res.setHeader('Set-Cookie', [
+//         cookie.serialize('jwt', jwt, {
+//           httpOnly: true,
+//           secure: process.env.NODE_ENV === 'production',
+//           sameSite: 'strict',
+//           maxAge: 3600, // 1hr
+//           path: '/',
+//         }),
+//       ]);
+// 	  return res.json({ message: 'Login successful' });
+//     } catch (error) {
+//       console.error(
+//         'Failed to fetch JWT:',
+//         error.response?.data || error.message,
+//       );
+//       return res.status(500).json({ message: 'Failed to fetch JWT.' });
+//     }
+//   }
+
+@Public()
+@Post('login')
+@ApiOperation({ summary: 'Login without password' })
+@ApiBody({
+  description: 'Login with username only',
+  examples: {
+    Example: {
+      value: {
+        username: 'testuser',
       },
     },
-  })
-  @ApiResponse({ status: 400, description: 'Bad Request' })
-  async login(@Body() loginDto: { username: string }, @Res() res: Response) {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { username: loginDto.username },
-      });
+  },
+})
+@ApiResponse({ status: 400, description: 'Bad Request' })
+async login(@Body() loginDto: { username: string }, @Res() res: Response) {
+  try {
+    const user = await this.userRepository.findOne({
+      where: { username: loginDto.username },
+    });
 
-      if (!user) {
-        throw new InternalServerErrorException('User not found');
-      }
-      const payload = typeof TokenPayload;
-      const p: TokenPayload = {
-        sub: user.id,
-        username: user.username,
-        email: user.email,
-      };
-
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      console.log('JWT_SECRET:', jwtSecret);
-      const jwt = this.jwtService.sign(p, { secret: jwtSecret });
-
-      res.setHeader('Set-Cookie', [
-        cookie.serialize('jwt', jwt, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 3600, // 1hr
-          path: '/',
-        }),
-      ]);
-	  return res.json({ message: 'Login successful' });
-    } catch (error) {
-      console.error(
-        'Failed to fetch JWT:',
-        error.response?.data || error.message,
-      );
-      return res.status(500).json({ message: 'Failed to fetch JWT.' });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
+
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      email: user.email,
+    };
+
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwt = this.jwtService.sign(payload, { secret: jwtSecret });
+
+    return res.json({ message: 'Login successful', token: jwt });
+  } catch (error) {
+    console.error('Login error:', error.message);
+    return res.status(500).json({ message: 'Login failed' });
   }
+}
 }

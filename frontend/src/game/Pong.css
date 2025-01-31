@@ -19,6 +19,7 @@
 	justify-content: space-between;
 	width: 800px; /* Match the game container width */
 	margin-bottom: 20px;
+	padding-top: 70px;
 	transition: color 0.3s ease;
 }
 

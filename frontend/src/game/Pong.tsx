@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Pong.css";
 import Paddle from "./Paddle";
 import Ball from "./Ball";
 import Scoreboard from "./Scoreboard";
 import PowerUp from "./PowerUp";
 import { usePongGame } from "./hooks/usePongGame";
-import axios from "axios";
+import axios, { AxiosError } from "axios"; 
 
 const Pong = () => {
   const {
@@ -23,11 +23,43 @@ const Pong = () => {
     powerUpType,
     isPowerUpActive,
     winner,
-    resetGame, // Reset game when winner is determined
+    resetGame,
   } = usePongGame();
 
   const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
   const [darkBackground, setDarkBackground] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<string>("");
+
+  // Add this useEffect for fetching the logged-in user's name
+  const fetchUserName = async () => {
+	try {
+	  const jwt = localStorage.getItem("jwt");
+	  console.log("🛠 Checking stored JWT:", jwt); // Debug log
+  
+	  if (!jwt) {
+		console.error("❌ No JWT found. User is not logged in.");
+		return;
+	  }
+  
+	  console.log("📢 Sending request with JWT:", jwt);
+  
+	  const response = await axios.get("http://localhost:3000/api/users/me", {
+		headers: { Authorization: `Bearer ${jwt}` },
+	  });
+  
+	  console.log("✅ Fetched username:", response.data.username);
+	  setLoggedInUser(response.data.username || "PLAYER 1");
+	} catch (error) {
+	  console.error("❌ Error fetching user:", error);
+	  setLoggedInUser("PLAYER 1"); // Default if fetch fails
+	}
+  };
+
+  useEffect(() => {
+    fetchUserName();
+  }, []);
+
+  
 
   const togglePowerUps = () => setPowerUpsEnabled((prev) => !prev);
   const toggleDarkBackground = () => setDarkBackground((prev) => !prev);
@@ -37,40 +69,71 @@ const Pong = () => {
   const courtBackground = darkBackground ? "#1a1a1a" : "#ffcce6";
   const courtBorder = darkBackground ? "#333333" : "#ff99cc";
   const centerLineColor = darkBackground ? "#444444" : "#ffb3d9";
-  const popupBackground = darkBackground ? "#2c2c2c" : "#ffe6f1"; // Popup background
+  const popupBackground = darkBackground ? "#2c2c2c" : "#ffe6f1";
 
-  // Function to update wins and losses in the database
   const updateStats = async (result: "win" | "loose") => {
-    try {
-      await axios.patch(
-        "http://localhost:3000/users/updateStats", // Backend endpoint
-        { result }, // Pass the result: 'win' or 'loose'
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwt")}`, // Include JWT token from localStorage
-          },
-        }
-      );
-      console.log(`${result} recorded in the database.`);
-    } catch (error) {
-      console.error("Failed to update stats:", error);
-    }
+	try {
+	  console.log(`📢 Sending request to update stats with result: ${result}`);
+	  const jwt = localStorage.getItem("jwt");
+  
+	  if (!jwt) {
+		console.error("❌ No JWT found. User is not logged in.");
+		return;
+	  }
+  
+	  const response = await axios.patch(
+		"http://localhost:3000/api/users/updateStats",
+		{ result },
+		{
+		  headers: {
+			Authorization: `Bearer ${jwt}`,
+		  },
+		}
+	  );
+  
+	  console.log(`✅ Game result (${result}) recorded successfully:`, response.data);
+	} catch (error) {
+	  const axiosError = error as AxiosError; // Explicitly cast to AxiosError
+	  console.error("❌ Failed to update stats:", axiosError.response?.data || axiosError.message);
+	}
   };
-
-  // Trigger database updates when a winner is determined
-  if (winner) {
-    if (winner === "Player 1") {
-      updateStats("win"); // Update win for Player 1
-      updateStats("loose"); // Update loss for Player 2
-    } else if (winner === "Player 2") {
-      updateStats("loose"); // Update loss for Player 1
-      updateStats("win"); // Update win for Player 2
-    }
-  }
+  
+  
+  
+  // Call updateStats when a game ends
+// Ensure updateStats is called only once per game and updates correctly
+useEffect(() => {
+	if (winner) {
+	  console.log(`🏆 Game finished! Winner: "${winner}"`);
+	  console.log(`🎮 Logged-in user: "${loggedInUser}"`);
+  
+	  // Assume "PLAYER 1" is always the logged-in user
+	  const isPlayer1 = true; // Change this if your game logic allows switching sides
+	  const winnerIsPlayer1 = winner.trim().toLowerCase() === "player 1";
+  
+	  if (isPlayer1 && winnerIsPlayer1) {
+		console.log("✅ Correctly detected WIN! Updating database...");
+		updateStats("win");
+	  } else if (!isPlayer1 && !winnerIsPlayer1) {
+		console.log("✅ Correctly detected WIN! Updating database...");
+		updateStats("win");
+	  } else {
+		console.log("❌ Detected LOSS instead! Updating database...");
+		updateStats("loose");
+	  }
+	}
+  }, [winner]);
+  
+  
 
   return (
     <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`}>
-      <Scoreboard score1={score1} score2={score2} darkMode={darkBackground} />
+      <Scoreboard
+        score1={score1}
+        score2={score2}
+        darkMode={darkBackground}
+        loggedInUser={loggedInUser} // Pass the logged-in user's name here
+      />
       <div
         ref={gameContainerRef}
         className="pong-game-container"
@@ -107,7 +170,6 @@ const Pong = () => {
         )}
       </div>
 
-      {/* Popup when someone wins */}
       {winner && (
         <div
           className="pong-winner-popup"
@@ -130,7 +192,6 @@ const Pong = () => {
         </div>
       )}
 
-      {/* Control buttons */}
       <div className="pong-buttons">
         <button
           className={`toggle-button ${darkBackground ? "dark-mode" : ""}`}

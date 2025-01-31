@@ -285,13 +285,34 @@ export class UserService {
   }
 
   async incrementWins(userId: number) {
-    await this.userRepository.increment({ id: userId }, 'wins', 1);
-    return { message: 'Win count updated successfully.' };
+	console.log(`⚡ Incrementing WINS for User ID: ${userId}`);
+  
+	const user = await this.userRepository.findOne({ where: { id: userId } });
+	if (!user) {
+	  console.error("❌ User not found in database.");
+	  throw new NotFoundException("User not found");
+	}
+  
+	user.wins += 1;
+	console.log(`✅ New wins count: ${user.wins}`);
+	await this.userRepository.save(user);
+	return user;
   }
-
+  
   async incrementLoose(userId: number) {
-    await this.userRepository.increment({ id: userId }, 'loose', 1);
-    return { message: 'Loose count updated successfully.' };
+	console.log(`⚡ Incrementing LOSSES for User ID: ${userId}`);
+  
+	const user = await this.userRepository.findOne({ where: { id: userId } });
+	if (!user) {
+	  console.error("❌ User not found in database.");
+	  throw new NotFoundException("User not found");
+	}
+  
+	user.loose += 1;
+	console.log(`✅ New losses count: ${user.loose}`);
+	await this.userRepository.save(user);
+	return user;
   }
+  
   
 }
