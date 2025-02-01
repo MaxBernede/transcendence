@@ -58,4 +58,30 @@ export class TwoFactorAuthController {
 			return res.status(400).json({message: 'Invalid token'});
 		}
 	}
+
+	@Post('add2FA')
+	async add2FA(@Body() body: { secret: string; token: string, intraId: number }) {
+		const { secret, token, intraId } = body;
+		const isValid = this.twoFactorAuthService.verifyToken(secret, token);
+
+		// Here check if the isValid and if yes update values for intraID in DBB
+		console.log("intra id in verify 2FA: ", intraId);
+		if (!isValid)
+			return { isValid, message: 'Invalid 2FA token' };
+		try {
+			const user = await this.userService.findOne(intraId); // Find the user in the database by intraId
+			if (!user)
+				return { isValid, message: 'User not found' };
+
+			const updatedData = { secret_2fa: secret };
+	
+			await this.userService.updateUser(intraId.toString(), updatedData);
+	
+			return { isValid, message: '2FA secret has been cleared successfully' };
+		} 
+		catch (error) {
+			console.error('Error updating user data:', error);
+			return { isValid, message: 'Error updating user data', error };
+		}
+	}
 }

@@ -62,7 +62,7 @@ const TwoFactorAuth = () => {
 	// Verify OTP
 	const verify2FA = async () => {
 		try {
-			const response = await fetch('http://localhost:3000/2fa/verify', {
+			const response = await fetch('http://localhost:3000/2fa/add2FA', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ secret, token: otp, intraId: userData?.id}),
