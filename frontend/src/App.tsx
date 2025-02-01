@@ -8,7 +8,7 @@ import Navbar from './components/Navbar';
 import ProfileUpdate from './pages/user/ProfileUpdate';
 import { fetchUserData, UserData } from './utils/UserLogic';
 import TwoFactorAuth from './components/2FA/2FA';
-import TwoFA from './pages/TwoFA';
+import TwoFASetup from './pages/login/2FASetup';
 import ChatPage from "./pages/chat/chat-page";
 import ChatLayout from "./components/chat/layout/chatList";
 import { UserProvider } from "./context";
@@ -66,7 +66,7 @@ function App() {
           <Route path="/user/:id" element={<UserPage />} />
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
           <Route path="/2FA" element={<TwoFactorAuth />} />
-          <Route path="/TwoFA" element={<TwoFA />} />
+          <Route path="/2FASetup" element={<TwoFASetup />} />
 		  <Route path="/pong" element={<PongPage />} /> 
 		          {/* Only wrap /chat route with UserProvider */}
 				  <Route path="/chat/*" element={<UserProviderWrapper />}>

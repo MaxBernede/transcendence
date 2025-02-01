@@ -21,12 +21,19 @@ export class TwoFactorAuthController {
 	}
 
 	@Post('verify')
-	async verify2FA(@Body() body: { secret: string; token: string, intraId: number }) {
-		const { secret, token, intraId } = body;
+	async verify2FA(@Body() body: {token: string, intraId: number }) {
+		const { token, intraId } = body;
+
+		const user = this.userService.findOneById(intraId)
+
+		if (!user) return { isValid: false, message: 'User not found' };
+
+		const secret = (await user).secret_2fa
+
 		const isValid = this.twoFactorAuthService.verifyToken(secret, token);
 
 		// Here check if the isValid and if yes update values for intraID in DBB
-		console.log("intra id in verify 2FA: ", intraId);
+		// console.log("intra id in verify 2FA: ", intraId);
 		if (!isValid)
 			return { isValid, message: 'Invalid 2FA token' };
 		try {
@@ -38,7 +45,7 @@ export class TwoFactorAuthController {
 	
 			await this.userService.updateUser(intraId.toString(), updatedData);
 	
-			return { isValid, message: '2FA secret has been cleared successfully' };
+			// return { isValid, message: '2FA secret has been cleared successfully' };
 		} 
 		catch (error) {
 			console.error('Error updating user data:', error);

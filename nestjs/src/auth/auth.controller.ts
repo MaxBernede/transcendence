@@ -45,7 +45,6 @@ export class AuthController {
     return this.authService.getAuthToken(res);
   }
 
-
   @Public()
   @Get('getJwt')
   async intraJwt(@Res() res: Response) {
@@ -55,6 +54,12 @@ export class AuthController {
 
     try {
       const jwt = await this.authService.intraJwt(code);
+      // there could be an error in parseint ? idk
+      const user = await this.userService.findOneById(parseInt(this.authService.getUserIdFromJwt(jwt), 10));
+      
+      if (user && user.secret_2fa)
+        return res.redirect(`http://localhost:3001/2FASetup?id=${user.id}`);
+
       this.authService.setJwtCookie(res, jwt);
       return res.redirect(`http://localhost:3001/user/${this.authService.getUserIdFromJwt(jwt)}`);
     } 

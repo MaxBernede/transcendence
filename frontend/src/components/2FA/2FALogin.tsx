@@ -4,7 +4,6 @@ import { fetchUserData } from '../../utils/UserLogic';
 
 
 const TwoFactorAuthLogin = () => {
-	const [secret, setSecret] = useState('');
 	const [otp, setOtp] = useState('');
 	const [isValid, setIsValid] = useState(null);
 	const { userData, setUserData, loading, error, achievements, setAchievements, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
@@ -22,7 +21,6 @@ const TwoFactorAuthLogin = () => {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					secret: userData?.secret_2fa,
 					token: otp,
 					intraId: userData?.id,
 				}),
@@ -30,7 +28,7 @@ const TwoFactorAuthLogin = () => {
 			const data = await response.json();
 			setIsValid(data.isValid);
 
-			if (data.isValid) {
+			if (!data.isValid) {
 				setTimeout(() => {
 					window.location.reload();
 				}, 2000);
@@ -51,13 +49,18 @@ const TwoFactorAuthLogin = () => {
 						value={otp}
 						onChange={(e) => setOtp(e.target.value)}
 						style={{
-							padding: '10px',
-							marginRight: '10px',
-							width: '200px',
-							fontSize: '16px',
-						}}
+							color: 'black', // Ensure text is visible
+							backgroundColor: 'white', // Set a clear background
+							border: '1px solid black', // Make it stand out
+							padding: '5px',
+						  }}
 					/>
-					<button onClick={verifyLogin2FA} style={{ padding: '10px', fontSize: '16px' }}>
+					<button onClick={verifyLogin2FA}                   style={{
+                    color: 'black', // Ensure text is visible
+                    backgroundColor: 'white', // Set a clear background
+                    border: '1px solid black', // Make it stand out
+                    padding: '5px',
+                  }}>
 						Login
 					</button>
 					{isValid !== null && (

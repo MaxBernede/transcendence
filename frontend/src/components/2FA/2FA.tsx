@@ -98,13 +98,18 @@ const TwoFactorAuth = () => {
 
 			{secret && (
 				<div style={{ marginTop: '20px' }}>
-					<h2>Verify OTP</h2>
+					<h2>Verify OTP to add or change Auth code</h2>
 					<input
 						type="text"
 						placeholder="Enter OTP"
 						value={otp}
 						onChange={(e) => setOtp(e.target.value)}
-						style={{ padding: '10px', marginRight: '10px', width: '200px' }}
+						style={{
+							color: 'black', // Ensure text is visible
+							backgroundColor: 'white', // Set a clear background
+							border: '1px solid black', // Make it stand out
+							padding: '5px',
+						  }}
 					/>
 					<button onClick={verify2FA} style={{ padding: '10px' }}>
 						Verify

@@ -13,6 +13,7 @@ import axios from 'axios';
 import * as cookie from 'cookie';
 import { TokenPayload } from './dto/token-payload';
 import { use } from 'passport';
+import { User } from 'src/user/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -77,7 +78,8 @@ export class AuthService {
 	private async generateAndStoreJWT(user: any): Promise<string> {
 		const payload: TokenPayload = { sub: user.id, username: user.username, email: user.email };
 		const jwt = this.jwtService.sign(payload);
-		//await this.userService.updateUser(user.id.toString(), { tempJWT: jwt });
+    console.log("JWT: ", jwt);
+		await this.usersService.updateUser(user.id.toString(), { tempJWT: jwt });
 		return jwt;
 	}
 
@@ -100,6 +102,12 @@ export class AuthService {
       sameSite: 'strict', // SameSite attribute should match as well
     });
   }
+
+  // async handleSuccessful2FA(res: Response, user: User, jwt: string) {
+
+  //   this.setJwtCookie(res, jwt);
+  //   return res.redirect(`http://localhost:3001/user/${this.getUserIdFromJwt(jwt)}`);
+  // }
 
 	getUserIdFromJwt(jwt: string): string {
 		const decoded = this.jwtService.decode(jwt) as TokenPayload;
