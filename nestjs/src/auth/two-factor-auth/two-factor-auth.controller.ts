@@ -1,6 +1,8 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Res } from '@nestjs/common';
 import { TwoFactorAuthService } from './two-factor-auth.service';
 import { UserService } from 'src/user/user.service';
+import { Response } from 'express';
+import { Public } from 'src/decorators/public.decorator';
 
 @Controller('2fa')
 export class TwoFactorAuthController {
@@ -21,35 +23,39 @@ export class TwoFactorAuthController {
 	}
 
 	@Post('verify')
-	async verify2FA(@Body() body: {token: string, intraId: number }) {
+	async verify2FA(@Body() body: {token: string, intraId: number }, @Res() res: Response) {
 		const { token, intraId } = body;
 
-		const user = this.userService.findOneById(intraId)
+		// console.log(intraId)
+		const user = await this.userService.findOneById(intraId)
 
 		if (!user) return { isValid: false, message: 'User not found' };
 
-		const secret = (await user).secret_2fa
+		const secret = user.secret_2fa
 
 		const isValid = this.twoFactorAuthService.verifyToken(secret, token);
 
 		// Here check if the isValid and if yes update values for intraID in DBB
-		// console.log("intra id in verify 2FA: ", intraId);
-		if (!isValid)
-			return { isValid, message: 'Invalid 2FA token' };
+		if (!isValid){
+			console.log("Invalid")
+			return res.status(400).json({message: 'Invalid token'});
+		}
 		try {
-			const user = await this.userService.findOne(intraId); // Find the user in the database by intraId
-			if (!user)
-				return { isValid, message: 'User not found' };
-
 			const updatedData = { secret_2fa: secret };
 	
 			await this.userService.updateUser(intraId.toString(), updatedData);
-	
-			// return { isValid, message: '2FA secret has been cleared successfully' };
+
+			// If valid, just redirect ? not sure its the right place tho
+			const jwt = user.tempJWT
+			this.twoFactorAuthService.setJwtCookieTwo(res, jwt);
+			return res.status(200).json({message: '2FA validated'});
+			// return res.redirect(`http://localhost:3001/user/${user.intraId}`);
+			// console.log("Valid")
+			
 		} 
 		catch (error) {
 			console.error('Error updating user data:', error);
-			return { isValid, message: 'Error updating user data', error };
+			return res.status(400).json({message: 'Invalid token'});
 		}
 	}
 }

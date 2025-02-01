@@ -2,18 +2,13 @@ import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../../App';
 import { fetchUserData } from '../../utils/UserLogic';
 
+interface TwoFactorAuthLoginProps {
+	userId: string | null;
+  }
 
-const TwoFactorAuthLogin = () => {
+const TwoFactorAuthLogin: React.FC<TwoFactorAuthLoginProps> = ({ userId }) => {
 	const [otp, setOtp] = useState('');
-	const [isValid, setIsValid] = useState(null);
-	const { userData, setUserData, loading, error, achievements, setAchievements, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
-
-	useEffect(() => {
-		if (!userData) {
-		// If userData is not available, fetch it
-		fetchUserData(setUserData, setAchievements, setMatchHistory, () => {}, () => {});
-		}
-	}, [userData, setUserData, setAchievements, setMatchHistory]);
+	const [isValid, setIsValid] = useState(false);
 
 	const verifyLogin2FA = async () => {
 		try {
@@ -22,17 +17,21 @@ const TwoFactorAuthLogin = () => {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					token: otp,
-					intraId: userData?.id,
+					intraId: userId,
 				}),
+				credentials: 'include',
 			});
-			const data = await response.json();
-			setIsValid(data.isValid);
-
-			if (!data.isValid) {
+			if (response.ok){
+				const data = await response.json();
+				setIsValid(true);
+				window.location.href = 'http://localhost:3001/user/me';
+			}
+			else{
 				setTimeout(() => {
 					window.location.reload();
 				}, 2000);
 			}
+
 		} catch (error) {
 			console.error('Error verifying 2FA:', error);
 		}

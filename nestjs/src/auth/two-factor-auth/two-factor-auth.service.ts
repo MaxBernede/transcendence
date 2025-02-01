@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
+import * as cookie from 'cookie';
+import { Response } from 'express';
 
 @Injectable()
 export class TwoFactorAuthService {
@@ -21,5 +23,15 @@ export class TwoFactorAuthService {
 			encoding: 'base32',
 			token,
 		});
+	}
+
+	setJwtCookieTwo(res: Response, jwt: string) {
+		res.setHeader('Set-Cookie', [cookie.serialize('jwt', jwt, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict',
+			maxAge: 3600,
+			path: '/',
+		})]);
 	}
 }

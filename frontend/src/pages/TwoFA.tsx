@@ -19,7 +19,7 @@ const TwoFA: React.FC = () => {
   return (
 	<div>
 		<TwoFactorAuth></TwoFactorAuth>
-		<TwoFactorAuthLogin></TwoFactorAuthLogin>
+		<TwoFactorAuthLogin userId={String(userData?.id)}></TwoFactorAuthLogin>
 		{/* Below to check if the usercontext work */}
 	</div>
   );

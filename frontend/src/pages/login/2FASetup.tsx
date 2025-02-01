@@ -32,7 +32,7 @@ const TwoFASetup: React.FC = () => {
 			</Typography>
 			<p>You have 2 minutes to log in</p>
 			
-			<TwoFactorAuthLogin />
+			<TwoFactorAuthLogin userId={userId}/>
 		</Box>
 	);
 };
