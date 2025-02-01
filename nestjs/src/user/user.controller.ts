@@ -68,9 +68,9 @@ export class UserController {
   @Put(':id')
   async updateUser(
     @Param('id') id: string,
-    @Body() updatedData: UpdateUserDto,
+    @Body() updatedData: any,
   ) {
-    console.log('Updated Data Received:', updatedData);
+    // console.log('Updated Data Received:', updatedData);
     return this.userService.updateUser(id, updatedData);
   }
 

@@ -105,6 +105,12 @@ export const Header: React.FC<HeaderProps> = ({
                   type="text"
                   value={tempUsername}
                   onChange={(e) => setTempUsername(e.target.value)}
+                  style={{
+                    color: 'black', // Ensure text is visible
+                    backgroundColor: 'white', // Set a clear background
+                    border: '1px solid black', // Make it stand out
+                    padding: '5px',
+                  }}
                 />
                 <button onClick={handleSave}>Save</button>
                 <button onClick={() => setEditing(false)}>Cancel</button>

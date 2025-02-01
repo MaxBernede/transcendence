@@ -79,6 +79,21 @@ export class UserService {
     return user;
   }
 
+  // async updateFields(id: string, data: Partial<User>) {
+  //   // Remove fields that are undefined (only update provided fields)
+  //   const filteredData = {};
+  //   for (const key in data) {
+  //     if (data[key] !== undefined) {
+  //       filteredData[key] = data[key];
+  //     }
+  //   }
+  
+  //   // If there are fields to update, update the database
+  //   if (Object.keys(filteredData).length > 0) {
+  //     await this.userRepository.update(id, filteredData);
+  //   }
+  // }
+
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: +id },
@@ -89,8 +104,8 @@ export class UserService {
       throw new NotFoundException(`User with ID "${id}" not found`);
     }
 
-    console.log('Before Update:', user);
-    console.log('Updated Data Received:', updatedData);
+    // console.log('Before Update:', user);
+    // console.log('Updated Data Received:', updatedData);
 
     if (updatedData.wins !== undefined) {
       console.log(`Updating wins from ${user.wins} to ${updatedData.wins}`);
@@ -124,7 +139,7 @@ export class UserService {
 
     Object.assign(user, updatedData);
 
-    console.log('Final User Object before saving:', user);
+    // console.log('Final User Object before saving:', user);
 
     return this.userRepository.save(user);
   }

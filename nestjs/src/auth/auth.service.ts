@@ -31,7 +31,7 @@ export class AuthService {
     res.json({ url: authUrl });
   }
 
-  /** Main function called from controller */
+  // Main function called from controller 
 	async intraJwt(code: string): Promise<string> {
 		const accessToken = await this.getJWTToken(code);
 		const userInfo = await this.fetchUserInfo(accessToken);
