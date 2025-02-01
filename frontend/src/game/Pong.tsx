@@ -31,13 +31,14 @@ const Pong = () => {
   const [loggedInUser, setLoggedInUser] = useState<string>("");
 
   // Add this useEffect for fetching the logged-in user's name
+  const [_, forceUpdate] = useState(0);
+
   const fetchUserName = async () => {
 	try {
 	  const jwt = localStorage.getItem("jwt");
-	  console.log("🛠 Checking stored JWT:", jwt); // Debug log
-  
+	  
 	  if (!jwt) {
-		console.error("❌ No JWT found. User is not logged in.");
+		console.error("❌ No JWT found in local storage. User is not logged in.");
 		return;
 	  }
   
@@ -47,18 +48,37 @@ const Pong = () => {
 		headers: { Authorization: `Bearer ${jwt}` },
 	  });
   
+	  console.log("✅ API Response:", response);
 	  console.log("✅ Fetched username:", response.data.username);
+	  
 	  setLoggedInUser(response.data.username || "PLAYER 1");
+  
 	} catch (error) {
 	  console.error("❌ Error fetching user:", error);
-	  setLoggedInUser("PLAYER 1"); // Default if fetch fails
+  
+	  if (axios.isAxiosError(error) && error.response) {
+		console.error("🔴 Server Response:", error.response.data);
+		if (error.response.status === 401) {
+		  console.error("🚨 Unauthorized! Check if your JWT is valid or expired.");
+		}
+	  }
+  
+	  setLoggedInUser("PLAYER 1"); // Fallback
 	}
   };
-
+  
+  
+  
+  // ✅ Add these after defining fetchUserName()
   useEffect(() => {
-    fetchUserName();
+	console.log("🚀 Component mounted! Fetching user info...");
+	fetchUserName();
   }, []);
-
+  
+  useEffect(() => {
+	console.log("🎯 Updated loggedInUser:", loggedInUser);
+  }, [loggedInUser]);
+  
   
 
   const togglePowerUps = () => setPowerUpsEnabled((prev) => !prev);
@@ -87,16 +107,20 @@ const Pong = () => {
 		{
 		  headers: {
 			Authorization: `Bearer ${jwt}`,
+			"Content-Type": "application/json",
 		  },
 		}
 	  );
   
 	  console.log(`✅ Game result (${result}) recorded successfully:`, response.data);
+  
+	  // ✅ Immediately refetch user data to reflect changes
+	  fetchUserName(); 
 	} catch (error) {
-	  const axiosError = error as AxiosError; // Explicitly cast to AxiosError
+	  const axiosError = error as AxiosError;
 	  console.error("❌ Failed to update stats:", axiosError.response?.data || axiosError.message);
 	}
-  };
+  };  
   
   
   

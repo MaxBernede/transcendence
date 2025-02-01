@@ -54,17 +54,33 @@ export class UserController {
     return this.userService.createUser(createUserDto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-    // console.log(request);
-    // console.log('cookies', request.headers['cookie']);
-    // console.log('user');
-    const existingUser = await this.userRepository.findOne({
-      where: { email: payload.email },
-    });
-    return existingUser;
+//   @UseGuards(JwtAuthGuard)
+//   @Get('me')
+//   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+//     // console.log(request);
+//     // console.log('cookies', request.headers['cookie']);
+//     // console.log('user');
+//     const existingUser = await this.userRepository.findOne({
+//       where: { email: payload.email },
+//     });
+//     return existingUser;
+//   }
+
+@UseGuards(JwtAuthGuard)
+@Get('me')
+async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+  console.log("Fetching user with ID:", payload.sub);
+
+  const existingUser = await this.userRepository.findOne({
+    where: { id: payload.sub }, // Use ID instead of email
+  });
+
+  if (!existingUser) {
+    throw new UnauthorizedException("User not found.");
   }
+  return existingUser;
+}
+
 
   @Put(':id')
   async updateUser(
@@ -280,29 +296,33 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('updateStats')
-  async updateStats(
-	@Body() { result }: { result: 'win' | 'loose' },
-	@Req() req,
-  ) {
-	console.log("🔍 Incoming request: User ID =", req.user?.id, "Result =", result);
-  
-	if (!req.user || !req.user.id) {
-	  console.error("❌ User not authenticated.");
+  async updateStats(@Body() { result }: { result: 'win' | 'loose' }, @Req() req) {
+	console.log("🔹 Incoming stats update request. User ID:", req.user.sub);
+	
+	const userId = req.user.sub; // Ensure we get user ID from JWT
+	if (!userId) {
 	  throw new UnauthorizedException("User not authenticated.");
 	}
   
-	const userId = req.user.id;
-	console.log("✅ Authenticated user:", userId);
+	const user = await this.userRepository.findOne({ where: { id: userId } });
+  
+	if (!user) {
+	  throw new NotFoundException("User not found.");
+	}
   
 	if (result === 'win') {
-	  console.log("🏆 Incrementing WINS for User ID:", userId);
-	  return this.userService.incrementWins(userId);
+	  console.log("🏆 Incrementing wins for user:", user.username);
+	  user.wins += 1;
 	} else if (result === 'loose') {
-	  console.log("💀 Incrementing LOSSES for User ID:", userId);
-	  return this.userService.incrementLoose(userId);
+	  console.log("💀 Incrementing losses for user:", user.username);
+	  user.loose += 1;
 	} else {
 	  throw new BadRequestException('Invalid result type. Must be "win" or "loose".');
 	}
+  
+	await this.userRepository.save(user); // ✅ Save updated user stats
+	return user;
   }  
+
   
 }
