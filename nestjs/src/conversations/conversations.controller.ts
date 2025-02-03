@@ -52,6 +52,7 @@ export class ConversationsController {
     @GetUserPayload() user: TokenPayload,
     @Body() createConversationDto: CreateConversationDto,
   ) {
+	console.log('createConversationDto:', createConversationDto);
     return this.conversationsService.createConversation(
       user,
       createConversationDto,
@@ -79,5 +80,18 @@ export class ConversationsController {
   @Get(':id/participants')
   async getParticipants(@Param('id') id: string, @GetUserPayload() user: TokenPayload) {
     return this.conversationsService.getParticipants(id, user);
+  }
+
+  @Delete(':conversationId/users/:userId')
+  async removeUserFromConversation(
+	@Param('conversationId') conversationId: string,
+	@Param('userId') userId: string,
+	@GetUserPayload() user: TokenPayload,
+  ) {
+	return this.conversationsService.removeUserFromConversation(
+	  conversationId,
+	  userId,
+	  user,
+	);
   }
 }

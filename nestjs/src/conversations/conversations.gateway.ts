@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  Inject,
   InternalServerErrorException,
   UnauthorizedException,
   UseGuards,
@@ -30,6 +32,8 @@ import { User } from 'src/user/user.entity';
 import { z } from 'zod';
 import { ChatDto } from './dto/chat.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { user } from 'drizzle/schema';
+import { plainToInstance } from 'class-transformer';
 // import { SocketAuthMiddleware } from 'src/auth/ws.mw';
 
 const PublicUserInfoSchema = z.object({
@@ -56,6 +60,7 @@ export interface serverToClientDto {
 
 // @UseGuards(SocketAuthGuard)
 // @UseGuards(JwtAuthGuard)
+// @UseGuards(WsJwtGuard)
 @WebSocketGateway({
   // path: '/socket.io',
   namespace: '/chat',
@@ -65,7 +70,6 @@ export interface serverToClientDto {
     credentials: true, // Allow cookies to be sent/received if needed
   },
 })
-// @UseGuards(WsJwtGuard)
 export class ConversationsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -76,7 +80,9 @@ export class ConversationsGateway
     private readonly conversationRepository: Repository<Conversation>,
     @InjectRepository(UserConversation)
     private readonly userConversationRepository: Repository<UserConversation>,
-    private readonly conversationsService: ConversationsService,
+    // private readonly conversationsService: ConversationsService,
+    // @Inject(ConversationsService) // Lazy injection of ConversationsService
+    // private readonly conversationsService: ConversationsService,
 
     @InjectRepository(Chat)
     private readonly chatRepository: Repository<Chat>,
@@ -87,32 +93,9 @@ export class ConversationsGateway
   ) {}
 
   @WebSocketServer() wss: Server;
-
-  //   validateClient(client: Socket) {
-  //     const cookies = client.handshake.headers.cookie;
-  //     if (!cookies) {
-  //       client.disconnect(true);
-  //       console.log('no cookies disconnecting');
-  //       throw new UnauthorizedException('No token provided');
-  //     }
-  //     const token = cookies
-  //       .split('; ')
-  //       .find((row) => row.startsWith('jwt='))
-  //       .split('=')[1];
-  //     console.log('Token:', token);
-  //     // const payload: TokenPayload = this.jwtService.verify(token);
-  //     // client['user'] = payload;
-  //     // return true;
-
-  //     try {
-  //       const payload: TokenPayload = this.jwtService.verify(token);
-  //       client['user'] = payload;
-  //     } catch (error) {
-  //       console.error('Error validating client:', error);
-  //       client.disconnect(true);
-  //       throw new UnauthorizedException('Invalid token');
-  //     }
-  //   }
+  private userSocketMap: Map<number, string> = new Map(); // Map of userId -> socketId
+  private socketIdUserMap: Map<string, number> = new Map(); // Map of socketId -> userId
+  private userIdSocketMap: Map<number, Socket> = new Map(); // Map of socketId -> userId
 
   async validateClient(client: Socket): Promise<boolean> {
     try {
@@ -155,8 +138,43 @@ export class ConversationsGateway
     // console.log('Init socket server');
   }
 
+  saveChat(message: ChatDto) {
+    try {
+      const chat: Chat = plainToInstance(Chat, message);
+      const savedChat = this.chatRepository.save(chat);
+      return savedChat;
+    } catch (error) {
+      console.error('Error saving chat:', error);
+      throw new BadRequestException('Error saving chat');
+    }
+  }
+
+  addUserToRoom(userId: number, conversationId: string) {
+    try {
+      const socket: Socket = this.userIdSocketMap.get(userId);
+      socket.join(conversationId);
+    } catch (error) {
+      console.error('Error adding user to room:', error);
+    }
+  }
+
+  removeUserFromRoom(userId: number, conversationId: string) {
+    try {
+      const socket: Socket = this.userIdSocketMap.get(userId);
+      socket.leave(conversationId);
+    } catch (error) {
+      console.error('Error removing user from room:', error);
+    }
+  }
+
   handleDisconnect(client: Socket) {
     console.log('Client disconnected:', client.id);
+    // userSocketMap.delete(client.id);
+    // this.socketIdUserMap.delete(client.id);
+    const userId = this.socketIdUserMap.get(client.id);
+    this.userSocketMap.delete(userId);
+    this.socketIdUserMap.delete(client.id);
+    this.userIdSocketMap.delete(userId);
   }
 
   async handleConnection(client: Socket, ...args: any[]) {
@@ -184,6 +202,10 @@ export class ConversationsGateway
         conversation.conversationId,
       );
     });
+
+    this.userSocketMap.set(payload.sub, client.id);
+    this.socketIdUserMap.set(client.id, payload.sub);
+    this.userIdSocketMap.set(payload.sub, client);
   }
 
   // @UseGuards(SocketAuthGuard)
@@ -244,8 +266,9 @@ export class ConversationsGateway
 
     let savedMessage: Chat;
     try {
-      savedMessage = await this.conversationsService.saveChat(newMessage);
+      savedMessage = await this.saveChat(newMessage);
     } catch (error) {
+      console.log('Error saving chat');
       throw new InternalServerErrorException('Error saving chat');
     }
     const res: serverToClientDto = {

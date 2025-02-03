@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  forwardRef,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -18,10 +19,19 @@ import {
 import { In, QueryFailedError, Repository } from 'typeorm';
 import { ChatDto } from './dto/chat.dto';
 import { plainToInstance } from 'class-transformer';
-import { serverToClientDto } from './conversations.gateway';
+import {
+  ConversationsGateway,
+  serverToClientDto,
+} from './conversations.gateway';
 import { chat } from 'drizzle/schema';
 import { INJECTABLE_WATERMARK } from '@nestjs/common/constants';
 import { User } from 'src/user/user.entity';
+import { EventsGateway } from 'src/events/events.gateway';
+
+enum EvensType {
+  USER_ADDED_TO_CHAT = 'USER_ADDED_TO_CHAT',
+  USER_REMOVED_FROM_CHAT = 'USER_REMOVED_FROM_CHAT',
+}
 
 @Injectable()
 export class ConversationsService {
@@ -32,11 +42,15 @@ export class ConversationsService {
     private readonly userConversationRepository: Repository<UserConversation>,
     private readonly userService: UserService,
 
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    // @InjectRepository(User)
+    // private readonly userRepository: Repository<User>,
 
     @InjectRepository(Chat)
     private readonly chatRepository: Repository<Chat>,
+
+    private readonly eventsGateway: EventsGateway,
+
+    private readonly conversationsGateway: ConversationsGateway,
   ) {}
 
   async createConversation(
@@ -80,6 +94,8 @@ export class ConversationsService {
       );
     }
 
+    console.log('groupName:', groupName);
+
     const participantIds: number[] = [];
     participantIds.push(senderId);
     for (const participant of participants) {
@@ -97,8 +113,11 @@ export class ConversationsService {
       type: 'GROUP',
     });
 
-    if (!groupName) {
-      newConversation.name = 'Untitled Group';
+    // if (!groupName) {
+    //   newConversation.name = 'Untitled Group';
+    // }
+    if (groupName) {
+      newConversation.name = groupName;
     }
 
     await this.conversationRepository.save(newConversation);
@@ -107,8 +126,23 @@ export class ConversationsService {
       const enrty = this.userConversationRepository.create({
         userId: p,
         conversation: newConversation,
+        role: p === senderId ? 'OWNER' : 'MEMBER',
       });
       await this.userConversationRepository.save(enrty);
+    }
+
+    console.log(participantIds);
+
+    this.eventsGateway.sendEventToUser(
+      EvensType.USER_ADDED_TO_CHAT,
+      participantIds,
+      {
+        message: 'You have been added to a group chat',
+      },
+    );
+
+    for (const p of participantIds) {
+      this.conversationsGateway.addUserToRoom(p, newConversation.id);
     }
 
     return newConversation;
@@ -145,7 +179,8 @@ export class ConversationsService {
     // console.log('receiverConversation:', receiverConversation);
     console.log('matchingConversation:', matchingConversation);
     if (matchingConversation) {
-      throw new BadRequestException('This conversation already exists');
+      //   throw new BadRequestException('This conversation already exists');
+      return matchingConversation.conversation;
     }
     // return {};
     console.log('No matching conversation found, creating a new one');
@@ -189,15 +224,25 @@ export class ConversationsService {
   async getChatHistory(user: TokenPayload) {
     const userId = user.sub;
 
+    // Get all the conversations that the user is part of
+    const userConversations = await this.userConversationRepository.find({
+      where: { userId },
+      relations: ['conversation'],
+    });
+
+    const conversationIds = userConversations.map(
+      (userConv) => userConv.conversationId,
+    );
+
+    // Now, find only the conversations the user is part of
     const conversations = await this.conversationRepository.find({
+      where: { id: In(conversationIds) }, // Filter conversations based on user participation
       relations: [
         'chats', // include the chats in the conversation
         'chats.userId', // load userId (user details)
         'chats.conversationId',
       ],
     });
-
-    console.log('conversations:', conversations);
 
     // Process the conversations and format the response as needed
     const formattedConversations = await Promise.all(
@@ -226,6 +271,46 @@ export class ConversationsService {
     return formattedConversations;
   }
 
+  //   async getChatHistory(user: TokenPayload) {
+  //     const userId = user.sub;
+
+  //     const conversations = await this.conversationRepository.find({
+  //       relations: [
+  //         'chats', // include the chats in the conversation
+  //         'chats.userId', // load userId (user details)
+  //         'chats.conversationId',
+  //       ],
+  //     });
+
+  //     // console.log('conversations:', conversations);
+
+  //     // Process the conversations and format the response as needed
+  //     const formattedConversations = await Promise.all(
+  //       conversations.map(async (conversation) => {
+  //         const chatWithUserDetails = await Promise.all(
+  //           conversation.chats.map(async (chat: any) => {
+  //             return {
+  //               text: chat.text,
+  //               createdAt: chat.createdAt,
+  //               senderUser: {
+  //                 userId: chat.userId.id, // Now the user is fetched from the database
+  //                 username: chat.userId.username,
+  //                 avatar: chat.userId.avatar,
+  //               },
+  //             };
+  //           }),
+  //         );
+
+  //         return {
+  //           conversationId: conversation.id,
+  //           chat: chatWithUserDetails,
+  //         };
+  //       }),
+  //     );
+
+  //     return formattedConversations;
+  //   }
+
   async getConversationsWithParticipants(user: TokenPayload) {
     const userId = user.sub;
 
@@ -242,10 +327,9 @@ export class ConversationsService {
 
     // Map through the userConversations and return only conversationId and participants (user objects)
     return userConversations.map((userConvo) => {
-
       const conversationId = userConvo.conversation.id;
       const type = userConvo.conversation.type;
-	  const name = userConvo.conversation.name;
+      const name = userConvo.conversation.name;
 
       const participants = userConvo.conversation.userConversations
         .map((uc) => uc.user) // Extract users
@@ -271,21 +355,10 @@ export class ConversationsService {
       return {
         conversationId, // Only return the conversationId
         type,
-		name,
+        name,
         participants, // Return the filtered user objects (participants)
       };
     });
-  }
-
-  saveChat(message: ChatDto) {
-    try {
-      const chat: Chat = plainToInstance(Chat, message);
-      const savedChat = this.chatRepository.save(chat);
-      return savedChat;
-    } catch (error) {
-      console.error('Error saving chat:', error);
-      throw new BadRequestException('Error saving chat');
-    }
   }
 
   //   async getParticipants(conversationId: string, user: TokenPayload) {
@@ -345,8 +418,11 @@ export class ConversationsService {
         userConversations[0]?.conversation?.type || 'unknown'; // Handle missing type safely
 
       return {
-        conversationType, // Include the conversation type in the response
-        participants: userConversations.map((userConvo) => userConvo.user),
+        conversationType,
+        participants: userConversations.map((userConvo) => ({
+          ...userConvo.user, // Spread the full user object
+          group_role: userConvo.role, // Add role separately
+        })),
       };
     } catch (error) {
       // Handle database-specific errors
@@ -360,6 +436,93 @@ export class ConversationsService {
 
       // General error handling
       console.error('Error fetching participants:', error.message);
+      throw new BadRequestException('Error fetching participants');
+    }
+  }
+
+  async removeUserFromConversation(
+    conversationId: string,
+    userId: string,
+    user: TokenPayload,
+  ) {
+    try {
+      const { participants } = await this.getParticipants(conversationId, user);
+      //   console.log('participants:', participants);
+
+      const currentUser = participants.find((p) => p.id === user.sub);
+      if (!currentUser) {
+        throw new UnauthorizedException(
+          'You are not a participant in this conversation',
+        );
+      }
+
+      // Check if currentUser has the 'role' property
+      if ('group_role' in currentUser) {
+        if (currentUser.group_role !== 'OWNER') {
+          throw new UnauthorizedException(
+            'You are not the owner of the conversation',
+          );
+        }
+      } else {
+        throw new UnauthorizedException(
+          'User does not have a valid role in this conversation',
+        );
+      }
+
+      const targetUser = participants.find(
+        (p) => p.id === parseInt(userId, 10),
+      );
+      if (!targetUser) {
+        throw new BadRequestException('User not found in the conversation');
+      }
+
+      //   console.log('currentUser:', currentUser.group_role);
+      if (currentUser.group_role !== 'OWNER') {
+        throw new UnauthorizedException(
+          'You are not the owner of the conversation',
+        );
+      }
+
+      if (currentUser.id === targetUser.id) {
+        throw new BadRequestException('You cannot remove yourself');
+      }
+
+      //TODO: actuall remove the user from the conversation
+      const result = await this.userConversationRepository.delete({
+        conversationId,
+        userId: targetUser.id,
+      });
+      console.log('User removed from conversation:', targetUser.username);
+
+      //   this.eventsGateway.sendEventToUser(
+      //     EvensType.USER_REMOVED_FROM_CHAT,
+      //     [targetUser.id],
+      //     {
+      //       message: 'You have been removed from the conversation',
+      // 	  id: conversationId,
+      //     },
+      //   );
+      const participantIds = participants.map((p) => p.id);
+      this.eventsGateway.sendEventToUser(
+        EvensType.USER_REMOVED_FROM_CHAT,
+        participantIds,
+        {
+          message: 'You have been removed from the conversation',
+          id: conversationId,
+		  userId: targetUser.id,
+        },
+      );
+
+      this.conversationsGateway.removeUserFromRoom(
+        targetUser.id,
+        conversationId,
+      );
+
+      return { message: 'User removed from conversation' };
+
+      //? Check if the user is the owner of the conversation
+    } catch (error) {
+      console.log('Error fetching participants:', error);
       throw new BadRequestException('Error fetching participants');
     }
   }

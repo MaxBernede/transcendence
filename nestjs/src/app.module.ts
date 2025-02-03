@@ -13,6 +13,8 @@ import { User } from './user/user.entity';
 import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { AppService } from './app.service';
+import { EventsGateway } from './events/events.gateway';
+import { ConversationsGateway } from './conversations/conversations.gateway';
 
 @Module({
   imports: [
@@ -31,6 +33,6 @@ import { AppService } from './app.service';
     ConversationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, EventsGateway],
 })
 export class AppModule {}

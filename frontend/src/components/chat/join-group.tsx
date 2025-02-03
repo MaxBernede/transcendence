@@ -50,7 +50,7 @@ const newGroupSchema = z.object({
 
 type NewGroup = z.infer<typeof newGroupSchema>;
 
-export const CreateNewGroup = () => {
+export const JoinGroup = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [participants, setParticipants] = useState<string[]>([]);
@@ -133,12 +133,12 @@ export const CreateNewGroup = () => {
     >
       <AlertDialogTrigger asChild>
         <Button className="bg-cyan-700" onClick={() => setIsOpen(true)}>
-          Create New Group
+          Join Group
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader className="flex flex-col items-center">
-          <AlertDialogTitle>Create a New Group</AlertDialogTitle>
+          <AlertDialogTitle>Join Group</AlertDialogTitle>
         </AlertDialogHeader>
 
         <Form {...form}>
@@ -149,56 +149,15 @@ export const CreateNewGroup = () => {
                 name="groupName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel htmlFor="groupname">Group name</FormLabel>
+                    <FormLabel htmlFor="groupname">Group ID</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        type="groupname"
-                        placeholder="groupname"
+                        type="groupid"
+                        placeholder="group id"
                       />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="participants"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor="participants">Participants</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          {...field}
-                          type="text"
-                          placeholder="Enter participant"
-                          onChange={(e) => field.onChange(e.target.value)}
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          className="bg-green-600"
-                          onClick={async () => {
-                            const isValid = await form.trigger("participants");
-                            if (isValid) {
-                              addParticipant(field.value);
-                              field.onChange("");
-                            }
-                          }}
-                          disabled={!field.value}
-                        >
-                          <Plus />
-                        </Button>
-                      </div>
-                    </FormControl>
-
-                    {form.formState.errors.participants && (
-                      <FormMessage className="text-red-500">
-                        {form.formState.errors.participants.message}
-                      </FormMessage>
-                    )}
                   </FormItem>
                 )}
               />
@@ -234,7 +193,7 @@ export const CreateNewGroup = () => {
                   disabled={loading}
                   onClick={customSubmit}
                 >
-                  Create Group
+                  Join Group
                 </Button>
               </AlertDialogAction>
             </AlertDialogFooter>

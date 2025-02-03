@@ -1,7 +1,8 @@
-import { pgTable, serial, bigint, varchar, integer, unique, timestamp, json, foreignKey, uuid, text, boolean, index, primaryKey, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, serial, bigint, varchar, integer, foreignKey, timestamp, unique, json, uuid, text, boolean, index, primaryKey, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const conversationTypeEnum = pgEnum("conversation_type_enum", ['DM', 'GROUP'])
+export const userConversationRoleEnum = pgEnum("user_conversation_role_enum", ['MEMBER', 'ADMIN', 'OWNER'])
 
 
 export const migrations = pgTable("migrations", {
@@ -16,28 +17,6 @@ export const userAchievementEntity = pgTable("user_achievement_entity", {
 	userId: integer().notNull(),
 	achievementId: integer().notNull(),
 });
-
-export const user = pgTable("user", {
-	id: serial().primaryKey().notNull(),
-	intraId: integer(),
-	username: varchar(),
-	firstName: varchar().default(''),
-	lastName: varchar().default(''),
-	email: varchar(),
-	avatar: varchar(),
-	password: varchar(),
-	tempJwt: varchar(),
-	secret2Fa: varchar("secret_2fa"),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-	wins: integer().default(0).notNull(),
-	loose: integer().default(0).notNull(),
-	ladderLevel: integer("ladder_level").default(0).notNull(),
-	activityStatus: varchar("activity_status"),
-	image: json(),
-}, (table) => [
-	unique("UQ_bb21f7478f422418fbd53620078").on(table.intraId),
-	unique("UQ_78a916df40e02a9deb1c4b75edb").on(table.username),
-]);
 
 export const matchHistory = pgTable("match_history", {
 	id: serial().primaryKey().notNull(),
@@ -55,19 +34,44 @@ export const matchHistory = pgTable("match_history", {
 		}).onDelete("cascade"),
 ]);
 
-export const conversation = pgTable("conversation", {
-	id: uuid().default(sql`uuid_generate_v4()`).primaryKey().notNull(),
-	type: conversationTypeEnum().default('DM').notNull(),
-	name: text().default('Untitled Group'),
-});
+export const achievement = pgTable("achievement", {
+	id: serial().primaryKey().notNull(),
+	achievementName: varchar("achievement_name").notNull(),
+	description: varchar().notNull(),
+	filename: varchar(),
+}, (table) => [
+	unique("UQ_fb1bf9570b9dd4146acf300edf2").on(table.achievementName),
+]);
+
+export const user = pgTable("user", {
+	id: serial().primaryKey().notNull(),
+	intraId: integer(),
+	username: varchar(),
+	firstName: varchar().default(''),
+	lastName: varchar().default(''),
+	email: varchar(),
+	avatar: varchar(),
+	password: varchar(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	wins: integer().default(0).notNull(),
+	loose: integer().default(0).notNull(),
+	ladderLevel: integer("ladder_level").default(0).notNull(),
+	activityStatus: varchar("activity_status"),
+	image: json(),
+	tempJwt: varchar(),
+	secret2Fa: varchar("secret_2fa"),
+}, (table) => [
+	unique("UQ_bb21f7478f422418fbd53620078").on(table.intraId),
+	unique("UQ_78a916df40e02a9deb1c4b75edb").on(table.username),
+]);
 
 export const chat = pgTable("chat", {
 	id: uuid().default(sql`uuid_generate_v4()`).primaryKey().notNull(),
 	text: text().notNull(),
-	edited: boolean().default(false).notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	conversationId: uuid(),
 	userId: integer(),
+	edited: boolean().default(false).notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.conversationId],
@@ -81,10 +85,20 @@ export const chat = pgTable("chat", {
 		}),
 ]);
 
+export const conversation = pgTable("conversation", {
+	id: uuid().default(sql`uuid_generate_v4()`).primaryKey().notNull(),
+	type: conversationTypeEnum().default('DM').notNull(),
+	name: text().default('Untitled Group'),
+});
+
 export const userConversation = pgTable("user_conversation", {
 	id: uuid().default(sql`uuid_generate_v4()`).primaryKey().notNull(),
 	userId: integer().notNull(),
 	conversationId: uuid().notNull(),
+	banned: boolean().default(false).notNull(),
+	banEnd: timestamp({ mode: 'string' }),
+	mutedUntil: timestamp({ mode: 'string' }),
+	role: userConversationRoleEnum().default('MEMBER').notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.userId],
@@ -96,15 +110,6 @@ export const userConversation = pgTable("user_conversation", {
 			foreignColumns: [conversation.id],
 			name: "FK_a3e5e26b62e895c0478fb104bec"
 		}),
-]);
-
-export const achievement = pgTable("achievement", {
-	id: serial().primaryKey().notNull(),
-	achievementName: varchar("achievement_name").notNull(),
-	description: varchar().notNull(),
-	filename: varchar(),
-}, (table) => [
-	unique("UQ_fb1bf9570b9dd4146acf300edf2").on(table.achievementName),
 ]);
 
 export const userFriendsUser = pgTable("user_friends_user", {
@@ -143,4 +148,23 @@ export const userAchievements = pgTable("user_achievements", {
 			name: "FK_36b4a912357ad1342b735d4d4c8"
 		}),
 	primaryKey({ columns: [table.userId, table.achievementId], name: "PK_a103993b75768d942744e4b3b40"}),
+]);
+
+export const conversationParticipantsUser = pgTable("conversation_participants_user", {
+	conversationId: uuid().notNull(),
+	userId: integer().notNull(),
+}, (table) => [
+	index("IDX_4928ef292e3fb48783034b82f7").using("btree", table.conversationId.asc().nullsLast().op("uuid_ops")),
+	index("IDX_5d93fb1843f96fbdefea37dae8").using("btree", table.userId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+			columns: [table.conversationId],
+			foreignColumns: [conversation.id],
+			name: "FK_4928ef292e3fb48783034b82f7a"
+		}).onUpdate("cascade").onDelete("cascade"),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [user.id],
+			name: "FK_5d93fb1843f96fbdefea37dae86"
+		}).onUpdate("cascade").onDelete("cascade"),
+	primaryKey({ columns: [table.conversationId, table.userId], name: "PK_25e9241137cdb0f2336d267cc99"}),
 ]);

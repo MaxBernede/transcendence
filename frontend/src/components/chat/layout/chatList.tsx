@@ -7,6 +7,7 @@ import exp from "constants";
 import { CreateNewDm } from "../create-new-dm";
 import { CreateNewGroup } from "../create-new-groupp";
 import { UserPayload, useUserContext } from "../../../context";
+import { JoinGroup } from "../join-group";
 
 // const ChatLayout = () => {
 //   return (
@@ -53,6 +54,7 @@ const ChatLayout = () => {
         <div className="w-1/4 bg-gray-800 p-4 overflow-y-auto">
           <CreateNewDm />
           <CreateNewGroup />
+		  <JoinGroup />
           <ConversationList />
         </div>
 

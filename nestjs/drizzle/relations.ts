@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, matchHistory, conversation, chat, userConversation, userFriendsUser, userAchievements, achievement } from "./schema";
+import { user, matchHistory, conversation, chat, userConversation, userFriendsUser, userAchievements, achievement, conversationParticipantsUser } from "./schema";
 
 export const matchHistoryRelations = relations(matchHistory, ({one}) => ({
 	user: one(user, {
@@ -19,6 +19,7 @@ export const userRelations = relations(user, ({many}) => ({
 		relationName: "userFriendsUser_userId2_user_id"
 	}),
 	userAchievements: many(userAchievements),
+	conversationParticipantsUsers: many(conversationParticipantsUser),
 }));
 
 export const chatRelations = relations(chat, ({one}) => ({
@@ -35,6 +36,7 @@ export const chatRelations = relations(chat, ({one}) => ({
 export const conversationRelations = relations(conversation, ({many}) => ({
 	chats: many(chat),
 	userConversations: many(userConversation),
+	conversationParticipantsUsers: many(conversationParticipantsUser),
 }));
 
 export const userConversationRelations = relations(userConversation, ({one}) => ({
@@ -74,4 +76,15 @@ export const userAchievementsRelations = relations(userAchievements, ({one}) => 
 
 export const achievementRelations = relations(achievement, ({many}) => ({
 	userAchievements: many(userAchievements),
+}));
+
+export const conversationParticipantsUserRelations = relations(conversationParticipantsUser, ({one}) => ({
+	conversation: one(conversation, {
+		fields: [conversationParticipantsUser.conversationId],
+		references: [conversation.id]
+	}),
+	user: one(user, {
+		fields: [conversationParticipantsUser.userId],
+		references: [user.id]
+	}),
 }));

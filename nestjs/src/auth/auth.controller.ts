@@ -91,6 +91,8 @@ export class AuthController {
     const redirectUri = 'http://localhost:3000/auth/getJwt';
     const code = res.req.query.code;
 
+    // console.log('Code:', code);
+    // console.log('Redirect URI:', redirectUri);
     if (!code || !redirectUri) {
       return res
         .status(400)
@@ -125,7 +127,7 @@ export class AuthController {
       const existingUser = await this.userRepository.findOne({
         where: { intraId: userInfo.id },
       });
-	//   console.log('Existing User:', existingUser);
+      //   console.log('Existing User:', existingUser);
       let user;
       if (!existingUser) {
         // I ALREADY EXIST USE NEW USER DATAS
@@ -137,7 +139,7 @@ export class AuthController {
           lastName: userInfo.last_name,
           username: userInfo.login,
           image: userInfo.image,
-		  avatar: userInfo.image.link,
+          avatar: userInfo.image.link,
         });
 
         console.log(user);
@@ -147,7 +149,12 @@ export class AuthController {
         where: { intraId: userInfo.id },
       });
       if (!userr) {
-        throw new InternalServerErrorException();
+        console.log(
+          ' auth controller: InternalServerErrorException: user not found',
+        );
+        throw new InternalServerErrorException(
+          'auth controller: user not found',
+        );
       }
 
       // Generate a JWT token with username
@@ -186,7 +193,7 @@ export class AuthController {
       // Redirect to the specific user page //! MAX REDIRECT HERE
       return res.redirect(`http://localhost:3001/user/${userr.id}`);
     } catch (error) {
-      console.error();
+      console.error(error.message);
       return res.status(500).json({ message: 'Failed to fetch JWT.' });
     }
   }
@@ -224,7 +231,7 @@ export class AuthController {
 
     try {
       // Verify the token
-      jwt.verify(token, this.configService.get<string>('JWT_SECRET')); // Use your secret or key here
+      jwt.verify(token, this.configService.getOrThrow<string>('JWT_SECRET')); // Use your secret or key here
       return res.json({ authenticated: true });
     } catch (error) {
       console.log('Wrong token used to check the jwt');
@@ -254,6 +261,7 @@ export class AuthController {
       });
 
       if (!user) {
+        console.log('Internal Server Error: User not found');
         throw new InternalServerErrorException('User not found');
       }
       const payload = typeof TokenPayload;
@@ -263,7 +271,7 @@ export class AuthController {
         email: user.email,
       };
 
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
+      const jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
       console.log('JWT_SECRET:', jwtSecret);
       const jwt = this.jwtService.sign(p, { secret: jwtSecret });
 
@@ -276,7 +284,7 @@ export class AuthController {
           path: '/',
         }),
       ]);
-	  return res.json({ message: 'Login successful' });
+      return res.json({ message: 'Login successful' });
     } catch (error) {
       console.error(
         'Failed to fetch JWT:',

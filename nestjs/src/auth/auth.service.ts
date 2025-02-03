@@ -89,7 +89,7 @@ export class AuthService {
         username: user.username,
         email: user.email,
       };
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
+      const jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
       console.log('JWT_SECRET:', jwtSecret);
       const jwt = this.jwtService.sign(p, { secret: jwtSecret });
 

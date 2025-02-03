@@ -50,6 +50,8 @@ export const PublicUserInfoSchema = z.object({
   wins: z.number(),
   losses: z.number(),
   ladderLevel: z.number(),
+
+  groupRole: z.string(),
 });
 
 export type PublicUserInfo = z.infer<typeof PublicUserInfoSchema>;

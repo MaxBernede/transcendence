@@ -81,4 +81,20 @@ export class UserConversation {
   @ManyToOne(() => Conversation, (conversation) => conversation.id)
   @JoinColumn({ name: 'conversationId' })
   conversation: Conversation; // Optional, if you need to join with the conversation
+
+  @Column({ type: 'boolean', default: false })
+  banned: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  banEnd: Date | null; // for permanent bans set date to +999 years?
+
+  @Column({ type: 'timestamp', nullable: true })
+  mutedUntil: Date | null;
+
+  @Column({
+    type: 'enum',
+    enum: ['MEMBER', 'ADMIN', 'OWNER'],
+    default: 'MEMBER',
+  })
+  role: 'MEMBER' | 'ADMIN' | 'OWNER';
 }
