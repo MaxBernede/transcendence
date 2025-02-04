@@ -35,31 +35,22 @@ const Pong = () => {
 
   const fetchUserName = async () => {
 	try {
-	  const jwt = localStorage.getItem("jwt");
-	  
-	  if (!jwt) {
-		console.error("❌ No JWT found in local storage. User is not logged in.");
-		return;
-	  }
-  
-	  console.log("📢 Sending request with JWT:", jwt);
-  
+	  // Request user info (JWT will be sent automatically if cookies are set properly)
 	  const response = await axios.get("http://localhost:3000/api/users/me", {
-		headers: { Authorization: `Bearer ${jwt}` },
+		withCredentials: true, // ✅ Allow sending cookies with requests
 	  });
   
 	  console.log("✅ API Response:", response);
 	  console.log("✅ Fetched username:", response.data.username);
-	  
-	  setLoggedInUser(response.data.username || "PLAYER 1");
   
+	  setLoggedInUser(response.data.username || "PLAYER 1");
 	} catch (error) {
 	  console.error("❌ Error fetching user:", error);
   
 	  if (axios.isAxiosError(error) && error.response) {
 		console.error("🔴 Server Response:", error.response.data);
 		if (error.response.status === 401) {
-		  console.error("🚨 Unauthorized! Check if your JWT is valid or expired.");
+		  console.error("🚨 Unauthorized! Check if your session is still valid.");
 		}
 	  }
   
