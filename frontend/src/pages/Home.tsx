@@ -1,7 +1,6 @@
  
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import { Link } from 'react-router-dom';
 import LoginButton from '../components/Loginbutton';
 
 const Home: React.FC = () => {

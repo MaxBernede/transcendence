@@ -79,21 +79,6 @@ export class UserService {
     return user;
   }
 
-  // async updateFields(id: string, data: Partial<User>) {
-  //   // Remove fields that are undefined (only update provided fields)
-  //   const filteredData = {};
-  //   for (const key in data) {
-  //     if (data[key] !== undefined) {
-  //       filteredData[key] = data[key];
-  //     }
-  //   }
-  
-  //   // If there are fields to update, update the database
-  //   if (Object.keys(filteredData).length > 0) {
-  //     await this.userRepository.update(id, filteredData);
-  //   }
-  // }
-
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: +id },
@@ -299,5 +284,13 @@ export class UserService {
   async findOneById(id: number): Promise<User> {
     return this.userRepository.findOne({ where: { id } });
   }
-  
+ 
+  async getUserIdByUsername(friendUsername: string): Promise<number | null> {
+    const user = await this.userRepository.findOne({ where: { username: friendUsername } });
+    if (!user) {
+      return null;
+    }
+    return user.id;
+  }
+
 }

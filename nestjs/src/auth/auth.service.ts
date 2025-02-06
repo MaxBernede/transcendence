@@ -12,8 +12,6 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as cookie from 'cookie';
 import { TokenPayload } from './dto/token-payload';
-import { use } from 'passport';
-import { User } from 'src/user/user.entity';
 
 @Injectable()
 export class AuthService {

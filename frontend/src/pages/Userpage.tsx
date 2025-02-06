@@ -8,19 +8,10 @@ import LogoutButton from '../components/Logoutbutton';
 import { handleImageChange } from '../utils/UserHandlers';
 import { updateUserUsername, UserData, fetchUserData } from '../utils/UserLogic';
 import { UserContext } from '../App'; // Import UserContext
-import { Link } from 'react-router-dom';
-import Component from '../components/LinkButton';
 
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { userData, setUserData, loading, error, achievements, setAchievements, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
-
-  useEffect(() => {
-    if (!userData) {
-      // If userData is not available, fetch it
-      fetchUserData(setUserData, setAchievements, setMatchHistory, () => {}, () => {});
-    }
-  }, [userData, setUserData, setAchievements, setMatchHistory]);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;

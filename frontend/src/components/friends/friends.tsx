@@ -1,7 +1,8 @@
-// FriendsSheet.tsx
-import React, { useState, useEffect } from 'react';
-import { removeFriend, removeRequest, removeBlocked } from './friendsApi'; // Assume you have API functions for removal
+
+import React, { useState, useEffect, useContext } from 'react';
+import { removeFriend, removeRequest, removeBlocked } from './friendsApi';
 import ThreeColumnLayout from './friendsColumns';
+import { UserContext } from '../../App'; 
 // import '../../styles/FriendsSheet.css'; // The CSS file where styles for .card are defined
 
 
@@ -9,6 +10,7 @@ const FriendsSheet: React.FC = () => {
     const [friends, setFriends] = useState<any[]>([]);
     const [friendRequests, setFriendRequests] = useState<any[]>([]);
     const [blocked, setBlocked] = useState<any[]>([]);
+	const { userData } = useContext(UserContext); // Access userData from context
 
     // Fetch the data (example)
     useEffect(() => {
@@ -35,11 +37,11 @@ const FriendsSheet: React.FC = () => {
             setBlocked(blocked.filter(user => user.id !== id));
         }
     };
-
+{/* <p>userId: {userData?.intraId}</p> */}
     return (
         <div className="min-h-screen">
             <ThreeColumnLayout>
-                <div className="card-column"> 🫂 Friends
+                <div className="card-column"> 🫂 Friends 
                     {friends.map(friend => (
                         <div key={friend.id} className="card">
                             {friend.name}
@@ -48,7 +50,7 @@ const FriendsSheet: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="card-column"> 🤝 Friends Requests
+                <div className="card-column"> 🤝 Friends Requests 
                     {friendRequests.map(request => (
                         <div key={request.id} className="card">
                             {request.name}

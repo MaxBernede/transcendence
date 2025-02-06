@@ -1,34 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body} from '@nestjs/common';
 import { FriendsService } from './friends.service';
-import { CreateFriendDto } from './dto/create-friend.dto';
-import { UpdateFriendDto } from './dto/update-friend.dto';
+import { FriendsEntity } from './entities/friends.entity';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt.guard';
 
 @Controller('friends')
 export class FriendsController {
   constructor(private readonly friendsService: FriendsService) {}
 
-  @Post()
-  create(@Body() createFriendDto: CreateFriendDto) {
-    return this.friendsService.create(createFriendDto);
-  }
+  @UseGuards(JwtAuthGuard)
+  @Post('addFriends')	
+	async addFriends(@Body() body: { mainId: number, friendUsername: string, action: string}) {
+		const { mainId, friendUsername, action } = body;
+    return await this.friendsService.handleFriendAction(mainId, friendUsername, action);
+	}
 
   @Get()
-  findAll() {
+  async getAllFriends(): Promise<FriendsEntity[]> {
     return this.friendsService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.friendsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFriendDto: UpdateFriendDto) {
-    return this.friendsService.update(+id, updateFriendDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.friendsService.remove(+id);
+  @Post()
+  async createFriendship(@Body() createFriendDto: { mainUserId: number; secondUserId: number }): Promise<FriendsEntity> {
+    return this.friendsService.create(createFriendDto);
   }
 }
+

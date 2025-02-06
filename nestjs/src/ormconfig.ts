@@ -6,6 +6,7 @@ import {
 import { User } from './user/user.entity';
 import { Match } from './match/match.entity';
 import { Chat, Conversation, UserConversation } from './conversations/entities/conversation.entity';
+import { FriendsEntity } from './friends/entities/friends.entity';
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -14,7 +15,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   username: process.env.POSTGRES_USER || 'user',
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   database: process.env.POSTGRES_DB || 'postgresdbb',
-  entities: [AchievementEntity, UserAchievementEntity, User, Match, Chat, Conversation, UserConversation],
+  entities: [AchievementEntity, UserAchievementEntity, User, Match, Chat, Conversation, UserConversation, FriendsEntity],
   synchronize: true, // For development only
   migrations: ['dist/migrations/*.js'],
   migrationsRun: true,
