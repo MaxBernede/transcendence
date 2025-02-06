@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import '../styles/App.css'
 import axios from 'axios'
 
+
+// Not used ?
+
 interface CreationProps {
 	setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
 	setEmail: React.Dispatch<React.SetStateAction<string>>;

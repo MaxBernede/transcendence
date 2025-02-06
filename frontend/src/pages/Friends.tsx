@@ -2,10 +2,9 @@ import React, { useContext, useEffect } from 'react';
 import TwoFactorAuth from '../components/2FA/2FA';
 import { UserContext } from '../App'; // Import UserContext
 import { fetchUserData } from '../utils/UserLogic';
-import { Box, Typography, Button } from '@mui/material';
-import TwoFactorAuthLogin from '../components/2FA/2FALogin';
+import AddFriend from '../components/friends/addFriend';
 
-const TwoFA: React.FC = () => {
+const Friends: React.FC = () => {
 
   const { userData, setUserData, loading, error, achievements, setAchievements, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
 
@@ -18,11 +17,9 @@ const TwoFA: React.FC = () => {
 
   return (
 	<div>
-		<TwoFactorAuth></TwoFactorAuth>
-		<TwoFactorAuthLogin userId={String(userData?.id)}></TwoFactorAuthLogin>
-		{/* Below to check if the usercontext work */}
+		<AddFriend></AddFriend>
 	</div>
   );
 };
 
-export default TwoFA;
+export default Friends;

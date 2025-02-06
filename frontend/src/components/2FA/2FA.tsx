@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import useAuth from '../../utils/useAuth';
 import { UserContext } from '../../App';
 import { fetchUserData } from '../../utils/UserLogic';
+import ButtonComponent from '../../utils/ButtonCompo'; 
 // Show the QR with a random generated secret
 // If QR is validated : save it in the DBB for the user
 // If not, refuse the login and ask again until it works
@@ -82,17 +83,14 @@ const TwoFactorAuth = () => {
 
 	return (
 		<div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-			<h1>Two-Factor Authentication</h1>
-			<button onClick={generate2FA} style={{ padding: '10px', marginBottom: '20px' }}>
-				Generate QR Code
-			</button>
+			<ButtonComponent onClick={generate2FA}>Generate QR Code</ButtonComponent>
 
 			{qrCode && (
 				<div>
-					<h3>Scan this QR Code to add or change your user 2FA secret</h3>
+					<h1>Scan this QR Code to add or change your user 2FA secret</h1>
 					<img src={qrCode} alt="QR Code" style={{ border: '1px solid #ddd', padding: '10px' }} />
 					{/* Remove the secret after, just for debugging */}
-					<p>Secret: <strong>{secret}</strong></p>
+					{/* <p>Secret: <strong>{secret}</strong></p> */}
 				</div>
 			)}
 

@@ -3,9 +3,8 @@ import React, { useContext } from 'react';
 import { UserContext } from '../../App';
 import EditableFieldButton from '../../utils/EditButton';
 import axios from 'axios';
-import Component from '../../components/LinkButton';
-import TwoFA from '../TwoFA';
 import Remove2FAButton from '../../components/2FA/2FARemove';
+import TwoFactorAuth from '../../components/2FA/2FA';
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -74,7 +73,7 @@ const UserPage: React.FC = () => {
 		)}
       <Remove2FAButton></Remove2FAButton>
       {/* <Component></Component> */}
-      <TwoFA></TwoFA>
+      <TwoFactorAuth></TwoFactorAuth>
     </div>
   );
 };

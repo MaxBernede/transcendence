@@ -13,6 +13,7 @@ import ChatPage from "./pages/chat/chat-page";
 import ChatLayout from "./components/chat/layout/chatList";
 import { UserProvider } from "./context";
 import PongPage from './game/PongPage';
+import Friends from './pages/Friends';
 
 
 export const UserContext = createContext<{
@@ -65,8 +66,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/user/:id" element={<UserPage />} />
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
-          <Route path="/2FA" element={<TwoFactorAuth />} />
           <Route path="/2FASetup" element={<TwoFASetup />} />
+          <Route path="/Friends" element={<Friends />} />
 		  <Route path="/pong" element={<PongPage />} /> 
 		          {/* Only wrap /chat route with UserProvider */}
 				  <Route path="/chat/*" element={<UserProviderWrapper />}>
