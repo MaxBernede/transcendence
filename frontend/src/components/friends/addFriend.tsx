@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ButtonComponent from "../../utils/ButtonCompo";
+import InputComponent from "../../utils/InputCompo";
 
 type AddFriendProps = {};
 
@@ -7,6 +8,7 @@ const AddFriend: React.FC<AddFriendProps> = () => {
 	const [friend, setFriend] = useState("");
 
 	const addFriend = async () => {
+
 		if (!friend) return;
 		try {
 			const response = await fetch("/api/add-friend", {
@@ -26,16 +28,14 @@ const AddFriend: React.FC<AddFriendProps> = () => {
 	};
 
 	return (
-		<div className="flex items-center justify-center h-screen">
+		<div className="flex items-center justify-center">
 			<div className="p-6 w-96 text-center shadow-lg border rounded-lg">
 				<h2 className="text-xl font-semibold mb-4">Add a Friend</h2>
-				<input
-					type="text"
+				<InputComponent
 					value={friend}
 					onChange={(e) => setFriend(e.target.value)}
 					placeholder="Enter friend username"
-					className="mb-4 w-full p-2 border rounded"
-				/>
+				></InputComponent>
 				<ButtonComponent onClick={addFriend}>Add Friend</ButtonComponent>
 			</div>
 		</div>

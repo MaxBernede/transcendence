@@ -1,0 +1,34 @@
+/* FriendsSheet.css */
+.card-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.card:hover {
+    background-color: #f1f1f1;
+}
+
+.remove-btn {
+    background-color: transparent;
+    border: none;
+    color: red;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.remove-btn:hover {
+    color: darkred;
+}

@@ -9,6 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { AppService } from './app.service';
+import { FriendsModule } from './friends/friends.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AppService } from './app.service';
 	  UsersModule,
     TwoFactorAuthModule,
     ConversationsModule,
+    FriendsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

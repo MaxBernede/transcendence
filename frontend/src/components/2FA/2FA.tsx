@@ -3,6 +3,7 @@ import useAuth from '../../utils/useAuth';
 import { UserContext } from '../../App';
 import { fetchUserData } from '../../utils/UserLogic';
 import ButtonComponent from '../../utils/ButtonCompo'; 
+import InputComponent from '../../utils/InputCompo';
 // Show the QR with a random generated secret
 // If QR is validated : save it in the DBB for the user
 // If not, refuse the login and ask again until it works
@@ -97,21 +98,12 @@ const TwoFactorAuth = () => {
 			{secret && (
 				<div style={{ marginTop: '20px' }}>
 					<h2>Verify OTP to add or change Auth code</h2>
-					<input
-						type="text"
-						placeholder="Enter OTP"
+					<InputComponent
 						value={otp}
 						onChange={(e) => setOtp(e.target.value)}
-						style={{
-							color: 'black', // Ensure text is visible
-							backgroundColor: 'white', // Set a clear background
-							border: '1px solid black', // Make it stand out
-							padding: '5px',
-						  }}
-					/>
-					<button onClick={verify2FA} style={{ padding: '10px' }}>
-						Verify
-					</button>
+						placeholder="Enter OTP"
+					></InputComponent >
+					<ButtonComponent onClick={verify2FA}>Verify</ButtonComponent>
 				</div>
 			)}
 			{isValid !== null && (
