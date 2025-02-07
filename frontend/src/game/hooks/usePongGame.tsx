@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { usePowerUp } from "./usePowerUp";
 import { useShrinkPaddle } from "./useShrinkPaddle";
+import { Socket } from "socket.io-client";
 
-export const usePongGame = () => {
+export const usePongGame = (socket : Socket) => {
   const [paddle1Y, setPaddle1Y] = useState<number>(250);
   const [paddle2Y, setPaddle2Y] = useState<number>(250);
   const paddleHeightBase = 100;
@@ -21,6 +22,8 @@ export const usePongGame = () => {
   const [winner, setWinner] = useState<string | null>(null); // New winner state
   const [collisionHandled, setCollisionHandled] = useState(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
+
+  const [ballStarted, setBallStarted] = useState(false);
 
   const isScoringRef = useRef(false);
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -108,33 +111,46 @@ export const usePongGame = () => {
   };
 
   const resetGame = () => {
-    setScore1(0);
-    setScore2(0);
-    setWinner(null);
-    resetBallAndPaddles();
+	setBallX(390);
+	setBallY(294);
+	setPaddle1Y(250);
+	setPaddle2Y(250);
+	setBallStarted(false);
+	setWinner(null);
+	setScore1(0);
+	setScore2(0);
   };
+  
 
   const handleScore = (player: number) => {
-    if (isScoringRef.current || winner) return;
-
-    isScoringRef.current = true;
-
-    if (player === 1) {
-      setScore1((prev) => {
-        const newScore = prev + 1;
-        if (newScore === 3) setWinner("PLAYER 1");
-        return newScore;
-      });
-    } else if (player === 2) {
-      setScore2((prev) => {
-        const newScore = prev + 1;
-        if (newScore === 3) setWinner("PLAYER 2");
-        return newScore;
-      });
-    }
-
-    resetBallAndPaddles();
+	if (isScoringRef.current || winner) return;
+  
+	isScoringRef.current = true;
+  
+	if (player === 1) {
+	  setScore1((prev) => {
+		const newScore = prev + 1;
+		if (newScore === 3) {
+		  setWinner("PLAYER 1");
+		  console.log("Emitting updateScore for PLAYER 1");
+		  socket.emit("updateScore", { player: 1 }); 
+		}
+		return newScore;
+	  });
+	} else if (player === 2) {
+	  setScore2((prev) => {
+		const newScore = prev + 1;
+		if (newScore === 3) {
+		  setWinner("PLAYER 2");
+		  socket.emit("updateScore", { player: 2 }); 
+		}
+		return newScore;
+	  });
+	}
+  
+	resetBallAndPaddles();
   };
+  
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -261,5 +277,11 @@ export const usePongGame = () => {
     score2,
     winner,
     resetGame,
+	setBallX, 
+    setBallY, 
+    setPaddle1Y, 
+    setPaddle2Y, 
+    ballStarted, 
+    setBallStarted,
   };
 };

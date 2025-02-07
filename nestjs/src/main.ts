@@ -8,6 +8,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import * as path from 'path';
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import { PongGateway } from './game/pong.gateway';
 
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
@@ -94,8 +96,13 @@ async function bootstrap() {
   console.log('CORS enabled for origin:', 'http://localhost:3001');
 
   // Log server listening port
+  app.useWebSocketAdapter(new IoAdapter(app));
+  const pongGateway = app.get(PongGateway);
+  console.log("✅ WebSocket Gateway is Running:", pongGateway ? "YES" : "NO");
+
   const port = 3000;
   await app.listen(port);
   console.log(`Server is running on http://localhost:${port}`);
 }
+
 bootstrap();

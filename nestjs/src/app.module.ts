@@ -2,17 +2,18 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { typeOrmConfig } from './ormconfig';
-import { DatabasesModule } from './database/database.module';
+import { DatabasesModule } from './database/database.module'; // ✅ Fixed import
 import { UsersModule } from './user/user.module';
 import { AchievementModule } from './achievement/achievement.module';
 import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
-// import { AuthGuard } from './auth/auth.guard';
 import { ConfigModule } from '@nestjs/config';
 import { User } from './user/user.entity';
 import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { AppService } from './app.service';
+import { PongGateway } from './game/pong.gateway';
+import { GameModule } from './game/game.module'; // ✅ Ensure GameModule is imported
 
 @Module({
   imports: [
@@ -20,17 +21,16 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: '../.env',
     }),
+    TypeOrmModule.forFeature([User]),
     TypeOrmModule.forRoot(typeOrmConfig),
-    // TypeOrmModule.forFeature([User]),
-    DatabasesModule,
-    // UsersModule,
     AuthModule,
-	UsersModule,
-    // AchievementModule,
+    UsersModule,
     TwoFactorAuthModule,
     ConversationsModule,
+    DatabasesModule, // ✅ Fixed name (was DatabaseModule)
+    GameModule, // ✅ GameModule is correctly imported
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PongGateway],
 })
 export class AppModule {}
