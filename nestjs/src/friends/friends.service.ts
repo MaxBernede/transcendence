@@ -124,9 +124,13 @@ export class FriendsService {
 
   // Gives all the friends info needed
   async getFriendsByUserId(userId: number): Promise<FriendsResponse> {
+    console.log("USER ID :", userId)
     // Fetch data from the database based on the status
     const friends = await this.friendsRepository.find({
-      where: { mainUserId: userId, status: 'friends' },
+      where: [
+            { mainUserId: userId, status: 'friends' },
+            { secondUserId: userId, status: 'friends' }
+        ]
     });
   
     const requests = await this.friendsRepository.find({
@@ -142,10 +146,21 @@ export class FriendsService {
     });
 
     // Function to add the username and structure the data for friends and blocked
-    const addUsername = async (entries: FriendsEntity[], isMainUser: boolean): Promise<FriendData[]> => {
+    const addUsername = async (entries: FriendsEntity[], userId: number): Promise<FriendData[]> => {
       return Promise.all(entries.map(async (entry) => {
-        const userId = isMainUser ? entry.secondUserId : entry.mainUserId;
-        const username = await this.userService.getUsernameById(userId);
+        let otherUserId : number;
+
+        console.log(userId, '=', entry.mainUserId)
+        if (entry.mainUserId == userId)
+          otherUserId = entry.secondUserId;
+        else
+          otherUserId = entry.mainUserId;
+
+        console.log(`userId: ${userId}, mainUserId: ${entry.mainUserId}, secondUserId: ${entry.secondUserId}, otherUserId: ${otherUserId}`);
+        
+        const username = await this.userService.getUsernameById(otherUserId);
+        console.log('Username:', username); // Log to check the fetched username
+        
         return { id: entry.id, username, status: entry.status } as FriendData;
       }));
     };
@@ -180,8 +195,8 @@ export class FriendsService {
     };
 
     // Get enriched data for friends and blocked users
-    const friendsData = await addUsername(friends, true);
-    const blockedData = await addUsername(blocked, true);
+    const friendsData = await addUsername(friends, userId);
+    const blockedData = await addUsername(blocked, userId);
     const requestData = await addRequestUsernames(requests, requested);
 
     // Return structured data with enriched username
