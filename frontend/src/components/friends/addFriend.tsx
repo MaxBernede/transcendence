@@ -51,7 +51,6 @@ const AddFriend: React.FC<AddFriendProps> = () => {
 				></InputComponent>
 				<ButtonComponent onClick={addFriend}>Add Friend</ButtonComponent>
 				{errorMessage && <ErrorMessage message={errorMessage} />}
-				{errorMessage && <ErrorMessage message={errorMessage} />}
 			</div>
 		</div>
 	);

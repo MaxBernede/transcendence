@@ -293,4 +293,12 @@ export class UserService {
     return user.id;
   }
 
+  async getUsernameById(userId: number): Promise<string> {
+		const user = await this.userRepository.findOne({
+			where: { id: userId },
+			select: ['username'],
+		});
+		return user ? user.username : 'Unknown';
+	}
+
 }

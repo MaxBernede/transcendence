@@ -1,75 +1,60 @@
-
 import React, { useState, useEffect, useContext } from 'react';
 import { removeFriend, removeRequest, removeBlocked } from './friendsApi';
 import ThreeColumnLayout from './friendsColumns';
-import { UserContext } from '../../App'; 
-// import '../../styles/FriendsSheet.css'; // The CSS file where styles for .card are defined
-
+import { UserContext } from '../../App';
+import FriendsList from './friendsList';
 
 const FriendsSheet: React.FC = () => {
-    const [friends, setFriends] = useState<any[]>([]);
-    const [friendRequests, setFriendRequests] = useState<any[]>([]);
-    const [blocked, setBlocked] = useState<any[]>([]);
-	const { userData } = useContext(UserContext); // Access userData from context
+	const [friends, setFriends] = useState<any[]>([]);
+	const [friendRequests, setFriendRequests] = useState<any[]>([]);
+    const [requested, setRequested] = useState<any[]>([]);
+	const [blocked, setBlocked] = useState<any[]>([]);
+	const { userData } = useContext(UserContext);
 
-    // Fetch the data (example)
     useEffect(() => {
         const fetchData = async () => {
-            // Replace with your actual API calls to get friends, requests, and blocked
-            // setFriends(await getFriends());
-            // setFriendRequests(await getFriendRequests());
-            // setBlocked(await getBlockedUsers());
+            try {
+                const response = await fetch(`friends/getFriends/${userData?.id}`);
+                if (!response.ok) throw new Error('Failed to fetch friends data');
+                
+                const data = await response.json();
+                setFriends(data.friends || []);
+                setFriendRequests(data.requests || []);
+                setBlocked(data.blocked || []);
+            } catch (error) {
+                console.error('Error fetching friends data:', error);
+            }
         };
-        
-        fetchData();
-    }, []);
-
-    // Handle the removal of a friend/request/blocked user
-    const handleRemove = async (type: string, id: number) => {
-        if (type === 'friend') {
-            await removeFriend(id);
-            setFriends(friends.filter(friend => friend.id !== id));
-        } else if (type === 'request') {
-            await removeRequest(id);
-            setFriendRequests(friendRequests.filter(request => request.id !== id));
-        } else if (type === 'blocked') {
-            await removeBlocked(id);
-            setBlocked(blocked.filter(user => user.id !== id));
+    
+        if (userData?.id) {
+            fetchData();
         }
-    };
-{/* <p>userId: {userData?.intraId}</p> */}
-    return (
-        <div className="min-h-screen">
-            <ThreeColumnLayout>
-                <div className="card-column"> 🫂 Friends 
-                    {friends.map(friend => (
-                        <div key={friend.id} className="card">
-                            {friend.name}
-                            <button onClick={() => handleRemove('friend', friend.id)} className="remove-btn">❌</button>
-                        </div>
-                    ))}
-                </div>
+    }, [userData]);
 
-                <div className="card-column"> 🤝 Friends Requests 
-                    {friendRequests.map(request => (
-                        <div key={request.id} className="card">
-                            {request.name}
-                            <button onClick={() => handleRemove('request', request.id)} className="remove-btn">❌</button>
-                        </div>
-                    ))}
-                </div>
+	const handleRemoveFriend = async (id: number) => {
+		await removeFriend(id);
+		setFriends(friends.filter(friend => friend.id !== id));
+	};
 
-                <div className="card-column"> 🚫 Blocked
-                    {blocked.map(user => (
-                        <div key={user.id} className="card">
-                            {user.name}
-                            <button onClick={() => handleRemove('blocked', user.id)} className="remove-btn">❌</button>
-                        </div>
-                    ))}
-                </div>
-            </ThreeColumnLayout>
-        </div>
-    );
+	const handleRemoveRequest = async (id: number) => {
+		await removeRequest(id);
+		setFriendRequests(friendRequests.filter(request => request.id !== id));
+	};
+
+	const handleRemoveBlocked = async (id: number) => {
+		await removeBlocked(id);
+		setBlocked(blocked.filter(user => user.id !== id));
+	};
+
+	return (
+		<div className="min-h-screen">
+			<ThreeColumnLayout>
+				<FriendsList title="Friends" items={friends} onRemove={handleRemoveFriend} emoji="🫂" />
+				<FriendsList title="Friend Requests" items={friendRequests} onRemove={handleRemoveRequest} emoji="🤝" />
+				<FriendsList title="Blocked" items={blocked} onRemove={handleRemoveBlocked} emoji="🚫" />
+			</ThreeColumnLayout>
+		</div>
+	);
 };
 
 export default FriendsSheet;

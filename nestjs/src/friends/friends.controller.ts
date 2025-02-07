@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param} from '@nestjs/common';
 import { FriendsService } from './friends.service';
 import { FriendsEntity } from './entities/friends.entity';
 import { UseGuards } from '@nestjs/common';
@@ -15,14 +15,12 @@ export class FriendsController {
     return await this.friendsService.handleFriendAction(mainId, friendUsername, action);
 	}
 
-  @Get()
-  async getAllFriends(): Promise<FriendsEntity[]> {
-    return this.friendsService.findAll();
+  @UseGuards(JwtAuthGuard)
+  @Get('getFriends/:userId')	
+	async getFriends(@Param('userId') userId: number) {
+    return await this.friendsService.getFriendsByUserId(userId);
   }
 
-  @Post()
-  async createFriendship(@Body() createFriendDto: { mainUserId: number; secondUserId: number }): Promise<FriendsEntity> {
-    return this.friendsService.create(createFriendDto);
-  }
+
 }
 

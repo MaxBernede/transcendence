@@ -31,6 +31,8 @@ export class FriendsService {
     const friendId = await this.userService.getUserIdByUsername(friendUsername)
     if (!friendId) throw new ConflictException('Friend username not found');
 
+    if (friendId === mainId) throw new ConflictException('Cannot add yourself as friend');
+
     if (!['request', 'friends', 'blocked'].includes(action)) throw new ConflictException('Invalid action')
 
     // Check if the users already have a relationship (friendship, request, or blocked)
@@ -64,4 +66,42 @@ export class FriendsService {
     }
   }
   // Add more methods as needed for updating or removing friendships
+
+
+  // Gives all the friends info needed
+  async getFriendsByUserId(userId: number) {
+    const friends = await this.friendsRepository.find({
+      where: { mainUserId: userId, status: 'friends' },
+    });
+  
+    const requests = await this.friendsRepository.find({
+      where: { mainUserId: userId, status: 'request' },
+    });
+
+    const requested = await this.friendsRepository.find({
+      where: { secondUserId: userId, status: 'request' },
+    });
+  
+    const blocked = await this.friendsRepository.find({
+      where: { mainUserId: userId, status: 'blocked' },
+    });
+  
+    // Add the username
+		const addUsername = async (entries: FriendsEntity[], isMainUser: boolean) => {
+			return Promise.all(entries.map(async (entry) => {
+				const userId = isMainUser ? entry.secondUserId : entry.mainUserId;
+				const username = await this.userService.getUsernameById(userId);
+				return { id: entry.id, username, status: entry.status };
+			}));
+		};
+
+		return {
+			friends: await addUsername(friends, true),
+			requests: await addUsername(requests, true),
+			requested: await addUsername(requested, false),
+			blocked: await addUsername(blocked, true),
+		};
+  }
+  
+
 }
