@@ -106,6 +106,21 @@ export class FriendsService {
     }
   }
 
+  async addFriend(id: number) {
+    const existingRelationship = await this.friendsRepository.findOne({
+        where: { id } 
+    });
+
+    if (!existingRelationship) {
+        throw new Error('Friend request not found');
+    }
+
+    existingRelationship.status = 'friends';
+
+    await this.friendsRepository.save(existingRelationship);
+
+    return { message: 'Friend added successfully' };
+}
 
   // Gives all the friends info needed
   async getFriendsByUserId(userId: number): Promise<FriendsResponse> {

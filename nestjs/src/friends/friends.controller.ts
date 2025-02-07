@@ -16,6 +16,12 @@ export class FriendsController {
 	}
 
   @UseGuards(JwtAuthGuard)
+  @Post('acceptFriend/:id')
+  async acceptFriend(@Param('id') id: number) {
+    return await this.friendsService.addFriend(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('blockUser')	
 	async blockUser(@Body() body: { mainId: number, friendUsername: string}) {
 		const { mainId, friendUsername } = body;

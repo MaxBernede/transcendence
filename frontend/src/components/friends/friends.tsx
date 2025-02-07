@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { removeEntity } from './friendsApi';
+import { removeEntity, acceptFriendRequest } from './friendsApi';
 import ThreeColumnLayout from './friendsColumns';
 import { UserContext } from '../../App';
 import FriendsList from './friendsList';
@@ -60,12 +60,17 @@ const FriendsSheet: React.FC = () => {
         }
       };
 
-      const handleAcceptRequest = (id: number) => {
-        // Logic to accept the friend request
-        alert(`Friend request from user ${id} accepted!`);
-        // Update the status of the friend to 'friends'
-        setFriends(friends.map(friend => friend.id === id ? { ...friend, status: 'friends' } : friend));
-      };
+      const handleAcceptRequest = async (id: number) => {
+        try {
+            // Make the request to accept the friend
+            const result = await acceptFriendRequest(id);
+            
+            window.location.reload();
+        } catch (error) {
+            console.error('Error accepting friend request:', error);
+            alert('Failed to accept friend request');
+        }
+    };
 
 	return (
 		<div className="min-h-screen">
