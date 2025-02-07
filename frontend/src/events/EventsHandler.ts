@@ -1,9 +1,9 @@
 // eventsHandler.ts
 import { io, Socket } from "socket.io-client";
 
-enum EventType {
-  USER_ADDED_TO_CHAT = "USER_ADDED_TO_CHAT",
-}
+// enum EventType {
+//   USER_ADDED_TO_CHAT = "USER_ADDED_TO_CHAT",
+// }
 
 class EventsHandler {
   private static instance: EventsHandler;
@@ -13,6 +13,14 @@ class EventsHandler {
     this.socket = io("http://localhost:3000/events", {
       withCredentials: true,
     });
+    // this.socket = io("http://localhost:3000/events", {
+    //   withCredentials: true,
+    //   reconnection: true, // Enable reconnection
+    //   reconnectionAttempts: Infinity, // Try to reconnect indefinitely
+    //   reconnectionDelay: 1000, // Delay between reconnection attempts (1 second)
+    //   reconnectionDelayMax: 5000, // Max delay between reconnection attempts (5 seconds)
+    //   randomizationFactor: 0.5, // Random factor for reconnection delay
+    // });
 
     this.setupListeners();
   }
@@ -40,7 +48,7 @@ class EventsHandler {
       console.log("Socket disconnected");
     });
 
-	//? Add any global listeners here, notifications?
+    //? Add any global listeners here, notifications?
 
     // this.socket.on(EventType.USER_ADDED_TO_CHAT, (data: any) => {
     //   console.log(`${EventType.USER_ADDED_TO_CHAT} received:`, data);

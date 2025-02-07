@@ -138,10 +138,24 @@ export class ConversationsGateway
     // console.log('Init socket server');
   }
 
-  saveChat(message: ChatDto) {
+  async saveChat(message: ChatDto) {
     try {
       const chat: Chat = plainToInstance(Chat, message);
       const savedChat = this.chatRepository.save(chat);
+
+      // Find the associated conversation
+      const conversation = await this.conversationRepository.findOne({
+        where: { id: chat.conversationId },
+      });
+
+      if (!conversation) {
+        throw new BadRequestException('Conversation not found');
+      }
+
+      conversation.lastActivity = new Date();
+
+      await this.conversationRepository.save(conversation);
+
       return savedChat;
     } catch (error) {
       console.error('Error saving chat:', error);
@@ -152,7 +166,9 @@ export class ConversationsGateway
   addUserToRoom(userId: number, conversationId: string) {
     try {
       const socket: Socket = this.userIdSocketMap.get(userId);
-      socket.join(conversationId);
+      if (socket) {
+        socket.join(conversationId);
+      }
     } catch (error) {
       console.error('Error adding user to room:', error);
     }
@@ -161,9 +177,12 @@ export class ConversationsGateway
   removeUserFromRoom(userId: number, conversationId: string) {
     try {
       const socket: Socket = this.userIdSocketMap.get(userId);
-      socket.leave(conversationId);
+      if (socket) {
+        socket.leave(conversationId);
+      }
     } catch (error) {
       console.error('Error removing user from room:', error);
+      console.error(userId, conversationId);
     }
   }
 

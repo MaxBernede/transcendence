@@ -15,10 +15,13 @@ import { ConversationsGateway } from 'src/conversations/conversations.gateway';
 import { User } from 'src/user/user.entity';
 import { Repository } from 'typeorm';
 
-enum EvensType {
-  USER_ADDED_TO_CHAT = 'USER_ADDED_TO_CHAT',
-  USER_REMOVED_FROM_CHAT = 'USER_REMOVED_FROM_CHAT',
-}
+import { EventsType } from "../../common/types/event-type"
+
+
+// enum EvensType {
+//   USER_ADDED_TO_CHAT = 'USER_ADDED_TO_CHAT',
+//   USER_REMOVED_FROM_CHAT = 'USER_REMOVED_FROM_CHAT',
+// }
 
 @WebSocketGateway({
   // path: '/socket.io',
@@ -117,7 +120,7 @@ export class EventsGateway
   @SubscribeMessage('clientToServer')
   async handleMessage() {}
 
-  sendEventToUser(type: EvensType, userIds: number[], data: any) {
+  sendEventToUser(type: EventsType, userIds: number[], data: any) {
     userIds.forEach((userId) => {
       const socketId = this.userSocketMap.get(userId);
       if (socketId) {

@@ -27,11 +27,17 @@ import { chat } from 'drizzle/schema';
 import { INJECTABLE_WATERMARK } from '@nestjs/common/constants';
 import { User } from 'src/user/user.entity';
 import { EventsGateway } from 'src/events/events.gateway';
+import { last } from 'rxjs';
 
-enum EvensType {
-  USER_ADDED_TO_CHAT = 'USER_ADDED_TO_CHAT',
-  USER_REMOVED_FROM_CHAT = 'USER_REMOVED_FROM_CHAT',
-}
+import { z } from 'zod';
+
+//TODO: fix this shit, monorepo?
+import {
+  AddConversationToListSchema,
+  EventsType,
+  RemoveConversationFromListSchema,
+  RemoveParticipantFromConversationSchema,
+} from '../../common/types/event-type';
 
 @Injectable()
 export class ConversationsService {
@@ -133,12 +139,14 @@ export class ConversationsService {
 
     console.log(participantIds);
 
+    const d: z.infer<typeof AddConversationToListSchema> = {
+      conversationId: newConversation.id,
+    };
+    //? send event to the removed user to remove the conversation from their list
     this.eventsGateway.sendEventToUser(
-      EvensType.USER_ADDED_TO_CHAT,
+      EventsType.ADD_CONVERSATION_TO_LIST,
       participantIds,
-      {
-        message: 'You have been added to a group chat',
-      },
+      d,
     );
 
     for (const p of participantIds) {
@@ -271,46 +279,6 @@ export class ConversationsService {
     return formattedConversations;
   }
 
-  //   async getChatHistory(user: TokenPayload) {
-  //     const userId = user.sub;
-
-  //     const conversations = await this.conversationRepository.find({
-  //       relations: [
-  //         'chats', // include the chats in the conversation
-  //         'chats.userId', // load userId (user details)
-  //         'chats.conversationId',
-  //       ],
-  //     });
-
-  //     // console.log('conversations:', conversations);
-
-  //     // Process the conversations and format the response as needed
-  //     const formattedConversations = await Promise.all(
-  //       conversations.map(async (conversation) => {
-  //         const chatWithUserDetails = await Promise.all(
-  //           conversation.chats.map(async (chat: any) => {
-  //             return {
-  //               text: chat.text,
-  //               createdAt: chat.createdAt,
-  //               senderUser: {
-  //                 userId: chat.userId.id, // Now the user is fetched from the database
-  //                 username: chat.userId.username,
-  //                 avatar: chat.userId.avatar,
-  //               },
-  //             };
-  //           }),
-  //         );
-
-  //         return {
-  //           conversationId: conversation.id,
-  //           chat: chatWithUserDetails,
-  //         };
-  //       }),
-  //     );
-
-  //     return formattedConversations;
-  //   }
-
   async getConversationsWithParticipants(user: TokenPayload) {
     const userId = user.sub;
 
@@ -357,42 +325,58 @@ export class ConversationsService {
         type,
         name,
         participants, // Return the filtered user objects (participants)
+        lastActivity: userConvo.conversation.lastActivity,
       };
     });
   }
 
-  //   async getParticipants(conversationId: string, user: TokenPayload) {
-  //     try {
-  //       const userConversations = await this.userConversationRepository.find({
-  //         where: { conversationId },
-  //         relations: ['user'],
-  //       });
+  async getConversationById(user: TokenPayload, conversationId: string) {
+    const userId = user.sub;
 
-  //       //? Check if the user is part of the conversation
-  //       const userInConversation = userConversations.some(
-  //         (userConvo) => userConvo.user.id === user.sub,
-  //       );
+    // Fetch the conversation by ID, including participants and chats
+    const userConversation = await this.userConversationRepository.findOne({
+      where: {
+        userId,
+        conversation: { id: conversationId },
+      },
+      relations: [
+        'conversation',
+        'conversation.userConversations',
+        'conversation.userConversations.user',
+        'conversation.chats',
+      ],
+    });
 
-  //       if (!userInConversation) {
-  //         throw new UnauthorizedException(
-  //           'You are not authorized to view participants of this conversation',
-  //         );
-  //       }
+    if (!userConversation) {
+      throw new Error(
+        'Conversation not found or user is not part of this conversation',
+      );
+    }
 
-  //       return userConversations.map((userConvo) => userConvo.user);
-  //     } catch (error) {
-  //       if (error.code === '22P02') {
-  //         console.error(
-  //           'Error fetching participants:',
-  //           error.message,
-  //           error.code,
-  //         );
-  //         throw new BadRequestException('Invalid conversation ID');
-  //       }
-  //       console.error('Error fetching participants:', error.message, error.code);
-  //       throw new BadRequestException('Error fetching participants');
-  //     }
-  //   }
+    const conversation = userConversation.conversation;
+
+    // Filter participants to exclude the current user
+    const participants = conversation.userConversations
+      .map((uc) => uc.user)
+      .filter((participant) => participant.id !== userId);
+
+    const chats = conversation.chats.map((chat) => ({
+      id: chat.id,
+      userId: chat.userId,
+      text: chat.text,
+      edited: chat.edited,
+      createdAt: chat.createdAt,
+    }));
+
+    return {
+      conversationId: conversation.id,
+      type: conversation.type,
+      name: conversation.name,
+      participants,
+      chats,
+      lastActivity: conversation.lastActivity,
+    };
+  }
 
   async getParticipants(conversationId: string, user: TokenPayload) {
     try {
@@ -494,23 +478,43 @@ export class ConversationsService {
       });
       console.log('User removed from conversation:', targetUser.username);
 
+      //   const participantIds = participants.map((p) => p.id);
       //   this.eventsGateway.sendEventToUser(
-      //     EvensType.USER_REMOVED_FROM_CHAT,
-      //     [targetUser.id],
+      //     EventsType.USER_REMOVED_FROM_CHAT,
+      //     participantIds,
       //     {
       //       message: 'You have been removed from the conversation',
-      // 	  id: conversationId,
+      //       id: conversationId,
+      //       userId: targetUser.id,
       //     },
       //   );
-      const participantIds = participants.map((p) => p.id);
+
+      //   const d: z.infer<typeof RemoveConversationFromListSchema> = {
+      //     data: { conversationId },
+      //   };
+
+      const d: z.infer<typeof RemoveConversationFromListSchema> = {
+        conversationId: conversationId,
+      };
+      //? send event to the removed user to remove the conversation from their list
       this.eventsGateway.sendEventToUser(
-        EvensType.USER_REMOVED_FROM_CHAT,
-        participantIds,
-        {
-          message: 'You have been removed from the conversation',
-          id: conversationId,
-		  userId: targetUser.id,
-        },
+        EventsType.REMOVE_CONVERSATION_FROM_LIST,
+        [targetUser.id],
+        d,
+      );
+
+      //? send event to all participants to update the chat participants list
+      const dd: z.infer<typeof RemoveParticipantFromConversationSchema> = {
+        conversationId: conversationId,
+        userId: targetUser.id,
+      };
+      const remainingParticipants = participants.filter(
+        (p) => p.id !== targetUser.id,
+      );
+      this.eventsGateway.sendEventToUser(
+        EventsType.REMOVE_PARTICIPANT_FROM_CONVERSATION,
+        remainingParticipants.map((p) => p.id),
+        dd,
       );
 
       this.conversationsGateway.removeUserFromRoom(
