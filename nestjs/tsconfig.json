@@ -10,7 +10,9 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": ".",
-    "paths": {},
+    "paths": {
+      "@/*": ["src/*"], // This resolves @ to src/ (used in your imports)
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
