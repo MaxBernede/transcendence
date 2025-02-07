@@ -60,12 +60,19 @@ const FriendsSheet: React.FC = () => {
         }
       };
 
+      const handleAcceptRequest = (id: number) => {
+        // Logic to accept the friend request
+        alert(`Friend request from user ${id} accepted!`);
+        // Update the status of the friend to 'friends'
+        setFriends(friends.map(friend => friend.id === id ? { ...friend, status: 'friends' } : friend));
+      };
+
 	return (
 		<div className="min-h-screen">
 			<ThreeColumnLayout>
-				<FriendsList title="Friends" items={friends} onRemove={handleRemoveFriend} emoji="🫂" />
-				<FriendsList title="Friend Requests" items={friendRequests} onRemove={handleRemoveRequest} emoji="🤝" />
-				<FriendsList title="Blocked" items={blocked} onRemove={handleRemoveBlocked} emoji="🚫" />
+				<FriendsList title="Friends" items={friends} onAcceptRequest={handleAcceptRequest} onRemove={handleRemoveFriend} emoji="🫂" />
+				<FriendsList title="Friend Requests" items={friendRequests} onAcceptRequest={handleAcceptRequest} onRemove={handleRemoveRequest} emoji="🤝" />
+				<FriendsList title="Blocked" items={blocked} onAcceptRequest={handleAcceptRequest} onRemove={handleRemoveBlocked} emoji="🚫" />
 			</ThreeColumnLayout>
 		</div>
 	);
