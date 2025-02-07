@@ -1,14 +1,15 @@
-// api.ts (example for API functions)
+// API functions for removing friends, requests, and blocked users
 
-export const removeFriend = async (id: number) => {
-    await fetch(`/api/friends/${id}`, { method: 'DELETE' });
-};
-
-export const removeRequest = async (id: number) => {
-    await fetch(`/api/friend-requests/${id}`, { method: 'DELETE' });
-};
-
-export const removeBlocked = async (id: number) => {
-    await fetch(`/api/blocked/${id}`, { method: 'DELETE' });
-};
-
+// Remove a friend
+export const removeEntity = async (type: string, id: number) => {
+    const response = await fetch(`/friends/removeFriend/${id}`, {
+      method: 'DELETE',
+    });
+  
+    if (!response.ok) {
+      throw new Error(`Failed to remove ${type}`);
+    }
+  
+    return response.json(); // Optionally, return the response message or data if needed
+  };
+  

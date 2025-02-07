@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param} from '@nestjs/common';
+import { Controller, Delete, Get, Post, Body, Param} from '@nestjs/common';
 import { FriendsService } from './friends.service';
 import { FriendsEntity } from './entities/friends.entity';
 import { UseGuards } from '@nestjs/common';
@@ -16,11 +16,23 @@ export class FriendsController {
 	}
 
   @UseGuards(JwtAuthGuard)
+  @Post('blockUser')	
+	async blockUser(@Body() body: { mainId: number, friendUsername: string}) {
+		const { mainId, friendUsername } = body;
+    return await this.friendsService.handleBlocked(mainId, friendUsername);
+	}
+
+  @UseGuards(JwtAuthGuard)
   @Get('getFriends/:userId')	
 	async getFriends(@Param('userId') userId: number) {
     return await this.friendsService.getFriendsByUserId(userId);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Delete('removeFriend/:id')
+  async removeFriend(@Param('id') id: number) {
+    return await this.friendsService.removeFriend(id);
+  }
 
 }
 

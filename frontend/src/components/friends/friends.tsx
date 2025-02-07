@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { removeFriend, removeRequest, removeBlocked } from './friendsApi';
+import { removeEntity } from './friendsApi';
 import ThreeColumnLayout from './friendsColumns';
 import { UserContext } from '../../App';
 import FriendsList from './friendsList';
@@ -7,7 +7,6 @@ import FriendsList from './friendsList';
 const FriendsSheet: React.FC = () => {
 	const [friends, setFriends] = useState<any[]>([]);
 	const [friendRequests, setFriendRequests] = useState<any[]>([]);
-    const [requested, setRequested] = useState<any[]>([]);
 	const [blocked, setBlocked] = useState<any[]>([]);
 	const { userData } = useContext(UserContext);
 
@@ -31,20 +30,35 @@ const FriendsSheet: React.FC = () => {
         }
     }, [userData]);
 
-	const handleRemoveFriend = async (id: number) => {
-		await removeFriend(id);
-		setFriends(friends.filter(friend => friend.id !== id));
-	};
-
-	const handleRemoveRequest = async (id: number) => {
-		await removeRequest(id);
-		setFriendRequests(friendRequests.filter(request => request.id !== id));
-	};
-
-	const handleRemoveBlocked = async (id: number) => {
-		await removeBlocked(id);
-		setBlocked(blocked.filter(user => user.id !== id));
-	};
+    const handleRemoveFriend = async (id: number) => {
+        try {
+          await removeEntity("Friend", id);
+          setFriends(friends.filter(friend => friend.id !== id));
+        } catch (error) {
+          window.location.reload();
+          console.error('Error removing friend:', error);
+        }
+      };
+    
+      const handleRemoveRequest = async (id: number) => {
+        try {
+            await removeEntity("Request", id);
+          setFriendRequests(friendRequests.filter(request => request.id !== id));
+        } catch (error) {
+            window.location.reload();
+            console.error('Error removing request:', error);
+        }
+      };
+    
+      const handleRemoveBlocked = async (id: number) => {
+        try {
+            await removeEntity("Blocked", id);
+          setBlocked(blocked.filter(user => user.id !== id));
+        } catch (error) {
+            window.location.reload();
+            console.error('Error removing blocked user:', error);
+        }
+      };
 
 	return (
 		<div className="min-h-screen">

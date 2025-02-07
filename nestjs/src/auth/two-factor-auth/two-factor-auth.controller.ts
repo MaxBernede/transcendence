@@ -27,6 +27,7 @@ export class TwoFactorAuthController {
 		const { token, intraId } = body;
 
 		// console.log(intraId)
+		//check if intraid or id ?? omg im so fcked
 		const user = await this.userService.findOneById(intraId)
 
 		if (!user) return { isValid: false, message: 'User not found' };
