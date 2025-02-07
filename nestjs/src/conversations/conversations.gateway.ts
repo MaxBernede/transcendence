@@ -32,7 +32,7 @@ import { User } from 'src/user/user.entity';
 import { z } from 'zod';
 import { ChatDto } from './dto/chat.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
-import { user } from 'drizzle/schema';
+// import { user } from 'drizzle/schema';
 import { plainToInstance } from 'class-transformer';
 // import { SocketAuthMiddleware } from 'src/auth/ws.mw';
 

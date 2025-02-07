@@ -7,6 +7,9 @@ import ChannelParticipants from "../../components/chat/chat-participants";
 import EventsHandler from "../../events/EventsHandler";
 import { Socket } from "socket.io-client";
 import { ChatMessageType } from "../../components/chat/types";
+import { RemoveConversationFromListSchema } from "../../common/types/event-type"; // Import the schema
+
+import { z } from "zod";
 
 // Define types and schemas
 type PublicUserInfoDto = { id: number; username: string; avatar: string };
@@ -48,15 +51,25 @@ const ChatPage = () => {
   useEffect(() => {
     const eventsHandler = EventsHandler.getInstance();
     const handleUserRemoved = (data: any) => {
-      if (data.id === channelId && data.userId === currentUserId) {
+      const result = RemoveConversationFromListSchema.safeParse(data);
+
+      if (!result.success) {
+        console.error("Invalid data received:", result.error);
+        return;
+      }
+
+      const validatedData: z.infer<typeof RemoveConversationFromListSchema> =
+        result.data;
+
+      if (validatedData.conversationId === channelId) {
         navigate("/chat"); // Redirect if the user is removed from the conversation
       }
     };
 
-    eventsHandler.on("USER_REMOVED_FROM_CHAT", handleUserRemoved);
+    eventsHandler.on("REMOVE_CONVERSATION_FROM_LIST", handleUserRemoved);
 
     return () => {
-      eventsHandler.off("USER_REMOVED_FROM_CHAT", handleUserRemoved);
+      eventsHandler.off("REMOVE_CONVERSATION_FROM_LIST", handleUserRemoved);
     };
   }, [channelId, navigate, currentUserId]);
 

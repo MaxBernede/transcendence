@@ -23,7 +23,7 @@ import {
   ConversationsGateway,
   serverToClientDto,
 } from './conversations.gateway';
-import { chat } from 'drizzle/schema';
+// import { chat } from 'drizzle/schema';
 import { INJECTABLE_WATERMARK } from '@nestjs/common/constants';
 import { User } from 'src/user/user.entity';
 import { EventsGateway } from 'src/events/events.gateway';
