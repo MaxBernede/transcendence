@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import ButtonComponent from "../../utils/ButtonCompo";
 import InputComponent from "../../utils/InputCompo";
 import ErrorMessage from "../../utils/ErrorMessage";
+import { UserContext } from '../../App';
 
 type AddFriendProps = {};
 
 const BlockUser: React.FC<AddFriendProps> = () => {
 	const [username, setUsername] = useState("");
-	const [mainId, setMainId] = useState<number>(1);
+	const { userData } = useContext(UserContext);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	
 	const addFriend = async () => {
@@ -19,8 +20,8 @@ const BlockUser: React.FC<AddFriendProps> = () => {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-			  mainId,
-			  friendUsername: username,
+				mainId: userData?.id,
+				friendUsername: username,
 			}),
 		  });
 	

@@ -150,16 +150,16 @@ export class FriendsService {
       return Promise.all(entries.map(async (entry) => {
         let otherUserId : number;
 
-        console.log(userId, '=', entry.mainUserId)
+        // console.log(userId, '=', entry.mainUserId)
         if (entry.mainUserId == userId)
           otherUserId = entry.secondUserId;
         else
           otherUserId = entry.mainUserId;
 
-        console.log(`userId: ${userId}, mainUserId: ${entry.mainUserId}, secondUserId: ${entry.secondUserId}, otherUserId: ${otherUserId}`);
+        // console.log(`userId: ${userId}, mainUserId: ${entry.mainUserId}, secondUserId: ${entry.secondUserId}, otherUserId: ${otherUserId}`);
         
         const username = await this.userService.getUsernameById(otherUserId);
-        console.log('Username:', username); // Log to check the fetched username
+        // console.log('Username:', username); // Log to check the fetched username
         
         return { id: entry.id, username, status: entry.status } as FriendData;
       }));
