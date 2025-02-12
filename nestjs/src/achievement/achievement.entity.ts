@@ -1,32 +1,37 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 import { User } from '../user/user.entity';
+import { OneToMany, ManyToOne } from 'typeorm';
 
-@Entity('achievement')
+@Entity()
 export class AchievementEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true, name: 'achievement_name' })
+  @Column()
   achievementName: string;
 
-  @Column()
+  @Column({ nullable: true })
   description: string;
 
-  @Column({ default: null })
+  @Column()
   filename: string;
 
-  @ManyToMany(() => User, (user) => user.achievements)
-  users: User[];
+  @OneToMany(() => UserAchievementEntity, (userAchievement) => userAchievement.achievement)
+  userAchievements: UserAchievementEntity[]; // List of users who have this achievement
 }
+
 
 @Entity()
 export class UserAchievementEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  userId: number;
+  @ManyToOne(() => User, (user) => user.userAchievements)
+  user: User; // User relation
+
+  @ManyToOne(() => AchievementEntity, (achievement) => achievement.userAchievements)
+  achievement: AchievementEntity;
 
   @Column()
-  achievementId: number;
+  userId: string; // User ID
 }

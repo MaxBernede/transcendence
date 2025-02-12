@@ -3,6 +3,20 @@ import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import LoginButton from '../components/Loginbutton';
 
+// for image 
+// import background from file
+// sx={{
+//   display: 'flex',
+//   flexDirection: 'column',
+//   alignItems: 'center',
+//   justifyContent: 'center',
+//   height: '100vh',
+//   backgroundImage: `url(${background})`,
+//   backgroundSize: 'cover',
+//   backgroundPosition: 'center',
+//   backgroundRepeat: 'no-repeat',
+// }}
+
 const Home: React.FC = () => {
   return (
     <Box

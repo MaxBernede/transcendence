@@ -37,13 +37,23 @@ export const fetchUserData = async (
 		ladderLevel: user.ladderLevel || user.ladder_level || 0,
 	  });
   
-	  setAchievements(
-		user.achievements?.map((achievement: any) => ({
-		  id: achievement.id,
-		  achievementName: achievement.achievementName,
-		  description: achievement.description || 'No description available',
-		})) || []
-	  );
+	  try {
+		const achievementsResponse = await axios.get(`http://localhost:3000/api/users/${user.id}/achievements`, {
+			withCredentials: true,
+		});
+
+		setAchievements(
+			achievementsResponse.data?.map((achievement: any) => ({
+				id: achievement.id,
+				achievementName: achievement.achievementName,
+				description: achievement.description || 'No description available',
+				filename: achievement.filename || '', // Assuming filename is included for images
+			})) || []
+		);
+	} catch (achievementsError) {
+		console.error('Error fetching achievements:', achievementsError);
+		setAchievements([]);
+	}
   
 	  setMatchHistory(user.matchHistory || []);
   

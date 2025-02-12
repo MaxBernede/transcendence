@@ -17,17 +17,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { extname } from 'path';
 import { UserService } from './user.service';
 import { MatchService } from '../match/match.service';
-import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { CreateUserDto } from './dto/createUser.dto';
 import { Match } from '../match/match.entity';
-import { Public } from 'src/decorators/public.decorator';
 // import { AuthGuard } from 'src/auth/auth.guard';
 import axios from 'axios';
 import { Response } from 'express';
-import * as fs from 'fs';
 import * as cookie from 'cookie';
 // import { JwtAuthGuard } from 'src/temp-jwt.guard';
 import { GetUserPayload } from 'src/test.decorator';
@@ -36,13 +33,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { UserAchievementService } from 'src/achievement/achievement.service';
 
 @Controller('api/users')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly matchService: MatchService,
-
+    private readonly userAchievementService: UserAchievementService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
@@ -263,17 +261,8 @@ export class UserController {
     return this.matchService.updateMatchHistory(userId, matchUpdates);
   }
 
-  @Put(':id/achievement')
-  async updateAchievements(
-    @Param('id', ParseIntPipe) userId: number,
-    @Body('achievements') achievementIds: number[],
-  ) {
-    return this.userService.updateAchievements(userId, achievementIds);
-  }
-
-  @Get(':id/achievements')
-  async getUserAchievements(@Param('id', ParseIntPipe) id: number) {
-    const user = await this.userService.getUserWithAchievements(id);
-    return user.achievements;
+  @Get(':userId/achievements')
+  async getUserAchievements(@Param('userId') userId: string) {
+    return this.userAchievementService.findUserAchievements(userId); // Fetch user achievements
   }
 }

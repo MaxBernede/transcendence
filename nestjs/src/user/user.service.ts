@@ -210,43 +210,6 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async findAchievementsForUser(userId: number): Promise<AchievementEntity[]> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['achievements'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID "${userId}" not found`);
-    }
-
-    return user.achievements;
-  }
-
-  async updateAchievements(
-    userId: number,
-    achievementIds: number[],
-  ): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['achievements'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID "${userId}" not found`);
-    }
-
-    const achievements =
-      await this.achievementRepository.findByIds(achievementIds);
-
-    if (achievements.length !== achievementIds.length) {
-      throw new BadRequestException('Some achievements not found');
-    }
-
-    user.achievements = achievements;
-    return this.userRepository.save(user);
-  }
-
   async doesUserExist(identifier: string): Promise<boolean> {
     if (!identifier) {
       throw new Error('Identifier is required');

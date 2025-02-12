@@ -8,6 +8,7 @@ import LogoutButton from '../components/Logoutbutton';
 import { handleImageChange } from '../utils/UserHandlers';
 import { updateUserUsername, UserData, fetchUserData } from '../utils/UserLogic';
 import { UserContext } from '../App'; // Import UserContext
+import Achievements from '../utils/UserAchievements';
 
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +39,7 @@ const UserPage: React.FC = () => {
           ladderLevel={userData?.ladderLevel || 0}
           achievements={achievements}
         />
+        <Achievements userId={userData?.id} />
         <MatchHistory matchHistory={matchHistory} />
       </div>
     </div>

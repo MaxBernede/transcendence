@@ -2,10 +2,6 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AchievementEntity, UserAchievementEntity } from './achievement.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  CreateAchievementDto,
-  CreateUserAchievementDto,
-} from './dto/createAchievement.dto';
 import { BaseService } from 'src/base/base.service';
 
 // Implements keyword call the function at module startup, making sure achievements
@@ -32,25 +28,33 @@ export class AchievementService
       const achievements = await this.achievementRepository.find();
 
       // Define the picture linked for each achievement
-      if (achievements.length === 0) {
+      if (achievements.length !== 5) {
         const achievementsToCreate = [
           {
             achievementName: 'UserCreated',
             description: 'Yay, you created your user',
-            filename: 'user_created.jpg', // Add a relevant filename for this achievement
+            filename: 'icons/user_created.jpg',
           },
           {
-            achievementName: 'LuckyUser',
-            description: 'You got lucky somehow',
-            filename: 'lucky_user.jpg', // Add a relevant filename for this achievement
+            achievementName: 'AddFriend',
+            description: 'You added your first friend',
+            filename: 'icons/add_friend.png',
           },
-          // {achievementName: 'UserCreated', description: 'Yay, you created your user', filename: 'null'},
-          // {achievementName: 'randomAchievement', description: 'You got lucky somehow', filename: 'null'},
-          // {achievementName: 'ach1', description: 'ach1'},
-          // {achievementName: 'ach2', description: 'ach2'},
-          // {achievementName: 'ach3', description: 'ach3'},
-          // {achievementName: 'ach4', description: 'ach4'},
-          // {achievementName: 'ach5', description: 'ach5'},
+          {
+            achievementName: 'HaveFriend',
+            description: 'You now have a friend!',
+            filename: 'icons/have_friend.jpg',
+          },
+          {
+            achievementName: 'BlockUser',
+            description: 'You blocked a user',
+            filename: 'icons/block_user.jpg',
+          },
+          {
+            achievementName: 'WinGame',
+            description: 'You won a game, congrats!',
+            filename: 'icons/win_game.jpg',
+          },
         ];
 
         // Save all achievements to the database
@@ -69,35 +73,40 @@ export class AchievementService
   async findAll(): Promise<AchievementEntity[]> {
     try {
       return this.achievementRepository.find(); // Fetch all achievements
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error fetching achievements:', error.message);
       throw error;
     }
   }
-
-  // Method to create a new achievement if required
-  // async create(createAchievementDto: CreateAchievementDto): Promise<AchievementEntity> {
-  // 	const newAch = this.achievementRepository.create(createAchievementDto);
-  // 	return this.achievementRepository.save(newAch);
-  // }
 }
 
 @Injectable()
 export class UserAchievementService extends BaseService<UserAchievementEntity> {
   constructor(
     @InjectRepository(UserAchievementEntity)
-    private readonly userAchievementRepository: Repository<UserAchievementEntity>, // Inject UserAchievement Repository
+    private readonly userAchievementRepository: Repository<UserAchievementEntity>,
+    @InjectRepository(AchievementEntity)
+    private readonly achievementRepository: Repository<AchievementEntity>, // Inject Achievement Repository
   ) {
-    super(userAchievementRepository); // Pass repository to the BaseService
+    super(userAchievementRepository);
   }
 
-  // Use the correct property: userAchievementRepository
-  async findAll(): Promise<UserAchievementEntity[]> {
+  // Fetch all achievements for a specific user
+  async findUserAchievements(userId: string): Promise<AchievementEntity[]> {
     try {
-      return this.userAchievementRepository.find(); // Fetch all user achievements
+      // Get the user achievements from the userAchievementRepository
+      const userAchievements = await this.userAchievementRepository.find({
+        where: { userId },
+        relations: ['achievement'], // Make sure to load the related achievement data
+      });
+
+      // Return the linked achievements
+      return userAchievements.map((userAchievement) => userAchievement.achievement);
     } catch (error) {
       console.error('Error fetching user achievements:', error.message);
       throw error;
     }
   }
 }
+
