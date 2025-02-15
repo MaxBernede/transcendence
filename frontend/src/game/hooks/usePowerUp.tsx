@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Socket } from "socket.io-client";
 
 type UsePowerUpReturn = {
   powerUpX: number | null;
@@ -16,7 +17,8 @@ type UsePowerUpReturn = {
 export const usePowerUp = (
   gameContainerRef: React.RefObject<HTMLDivElement>,
   onPowerUpCollected: (player: number, type: "shrinkOpponent" | "speedBoost" | "enlargePaddle") => void,
-  enableMovement: boolean = true
+  enableMovement: boolean = true,
+  socket: Socket // ✅ Added WebSocket as a parameter
 ): UsePowerUpReturn => {
   const [powerUpX, setPowerUpX] = useState<number | null>(null);
   const [powerUpY, setPowerUpY] = useState<number | null>(null);
@@ -25,31 +27,28 @@ export const usePowerUp = (
   const [powerUpVX, setPowerUpVX] = useState(3);
   const [powerUpVY, setPowerUpVY] = useState(2);
 
+  // ✅ WebSocket: Listen for power-up events from the server
   useEffect(() => {
-    const spawnPowerUp = () => {
-      if (!gameContainerRef.current) return;
-
-      const rect = gameContainerRef.current.getBoundingClientRect();
-      const x = Math.random() * (rect.width - 30);
-      const y = Math.random() * (rect.height - 30);
-
-      setPowerUpX(x);
-      setPowerUpY(y);
-
-      const randomType = Math.random();
-      if (randomType < 0.33) setPowerUpType("shrinkOpponent");
-      else if (randomType < 0.66) setPowerUpType("speedBoost");
-      else setPowerUpType("enlargePaddle");
-
+    socket.on("powerUpSpawned", (data) => {
+      console.log("Power-up received from server:", data);
+      setPowerUpX(data.x);
+      setPowerUpY(data.y);
+      setPowerUpType(data.type);
       setIsPowerUpActive(true);
+    });
+
+    socket.on("powerUpCleared", () => {
+      setPowerUpX(null);
+      setPowerUpY(null);
+      setPowerUpType(null);
+      setIsPowerUpActive(false);
+    });
+
+    return () => {
+      socket.off("powerUpSpawned");
+      socket.off("powerUpCleared");
     };
-
-    const interval = setInterval(() => {
-      if (!isPowerUpActive) spawnPowerUp();
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [isPowerUpActive, gameContainerRef]);
+  }, [socket]);
 
   useEffect(() => {
     if (!enableMovement || !isPowerUpActive) return;
@@ -97,6 +96,7 @@ export const usePowerUp = (
     if (powerUpX <= 30 && powerUpY >= paddle1Top && powerUpY <= paddle1Bottom) {
       onPowerUpCollected(1, powerUpType!);
       setIsPowerUpActive(false);
+      socket.emit("powerUpCollected", { player: 1 }); // ✅ Notify server
       return;
     }
 
@@ -107,6 +107,7 @@ export const usePowerUp = (
     ) {
       onPowerUpCollected(2, powerUpType!);
       setIsPowerUpActive(false);
+      socket.emit("powerUpCollected", { player: 2 }); // ✅ Notify server
     }
   };
 

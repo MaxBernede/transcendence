@@ -44,6 +44,7 @@ export const useShrinkPaddle = (
       );
     }
   };
+  
 
   return { shrinkPaddle, isPaddleShrunk1, isPaddleShrunk2 };
 };

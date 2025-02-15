@@ -46,39 +46,41 @@ export const usePongGame = (socket : Socket) => {
   );
 
   const {
-    powerUpX,
-    powerUpY,
-    powerUpType,
-    isPowerUpActive,
-    handlePowerUpCollision,
+	powerUpX,
+	powerUpY,
+	powerUpType,
+	isPowerUpActive,
+	handlePowerUpCollision,
   } = usePowerUp(
-    gameContainerRef,
-    (player, type) => {
-      if (type === "shrinkOpponent") {
-        if (player === 1) shrinkPaddle(2);
-        else if (player === 2) shrinkPaddle(1);
-      } else if (type === "speedBoost") {
-        const boostMultiplier = 1.2;
-        setBallVX((prev) => prev * boostMultiplier);
-        setBallVY((prev) => prev * boostMultiplier);
-
-        setTimeout(() => {
-          const { vx, vy } = normalizeSpeed(ballVX, ballVY, targetBallSpeed);
-          setBallVX(vx);
-          setBallVY(vy);
-        }, 5000);
-      } else if (type === "enlargePaddle") {
-        if (player === 1) setPaddleHeight1((prev) => prev + 50);
-        else if (player === 2) setPaddleHeight2((prev) => prev + 50);
-
-        setTimeout(() => {
-          if (player === 1) setPaddleHeight1(paddleHeightBase);
-          else if (player === 2) setPaddleHeight2(paddleHeightBase);
-        }, 5000);
-      }
-    },
-    true
+	gameContainerRef,
+	(player, type) => {
+	  if (type === "shrinkOpponent") {
+		if (player === 1) shrinkPaddle(2);
+		else if (player === 2) shrinkPaddle(1);
+	  } else if (type === "speedBoost") {
+		const boostMultiplier = 1.2;
+		setBallVX((prev) => prev * boostMultiplier);
+		setBallVY((prev) => prev * boostMultiplier);
+  
+		setTimeout(() => {
+		  const { vx, vy } = normalizeSpeed(ballVX, ballVY, targetBallSpeed);
+		  setBallVX(vx);
+		  setBallVY(vy);
+		}, 5000);
+	  } else if (type === "enlargePaddle") {
+		if (player === 1) setPaddleHeight1((prev) => prev + 50);
+		else if (player === 2) setPaddleHeight2((prev) => prev + 50);
+  
+		setTimeout(() => {
+		  if (player === 1) setPaddleHeight1(paddleHeightBase);
+		  else if (player === 2) setPaddleHeight2(paddleHeightBase);
+		}, 5000);
+	  }
+	},
+	true,
+	socket 
   );
+  
 
   const resetBallAndPaddles = () => {
     if (resetTimerRef.current) clearTimeout(resetTimerRef.current);

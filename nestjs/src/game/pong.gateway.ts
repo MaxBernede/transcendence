@@ -12,11 +12,11 @@ import {
   
   @WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
   export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
-	private players = new Map<string, number>(); // ✅ Must be inside the class	  
-	constructor(private readonly databaseService: DatabasesService) {} 	
 	@WebSocketServer()
 	server: Server;
   
+	private players = new Map<string, { username: string; playerNumber: number }>();
+	
 	private gameState = {
 	  ball: { x: 390, y: 294, vx: 5, vy: 5 },
 	  paddle1: { y: 250 },
@@ -24,25 +24,104 @@ import {
 	  score: { player1: 0, player2: 0 },
 	};
   
+	private powerUpState = {
+	  x: null as number | null,
+	  y: null as number | null,
+	  type: null as "shrinkOpponent" | "speedBoost" | "enlargePaddle" | null,
+	  isActive: false,
+	};
+  
 	private gameLoopInterval: NodeJS.Timeout | null = null;
   
-	// Handle WebSocket Connection
-	handleConnection(client: Socket) {
-		console.log(`New player connected: ${client.id}`);
-	
-		client.on("registerUser", (playerNumber: number) => {
-		  this.players.set(client.id, playerNumber); // ✅ Store player number instead of username
-		  console.log(`🔗 Registered player ${playerNumber} (Socket: ${client.id})`);
-		});
-	
-		if (this.players.size === 1) {
-		  console.log("Starting game loop...");
-		  this.startGameLoop();
-		}
-	  }
-	  
+	constructor(private readonly databaseService: DatabasesService) {}
   
-	// Handle WebSocket Disconnection
+	/** ✅ FUNCTION: Spawns a power-up randomly on the field */
+	private spawnPowerUp() {
+	  if (this.powerUpState.isActive) return; // Prevent multiple active power-ups
+  
+	  const randomX = Math.floor(Math.random() * 600) + 100; // Adjust range as needed
+	  const randomY = Math.floor(Math.random() * 300) + 50;
+	  const powerUpTypes = ["shrinkOpponent", "speedBoost", "enlargePaddle"];
+	  const randomType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+  
+	  this.powerUpState = {
+		x: randomX,
+		y: randomY,
+		type: randomType as "shrinkOpponent" | "speedBoost" | "enlargePaddle",
+		isActive: true,
+	  };
+  
+	  console.log(`🟢 Power-up spawned: ${randomType} at (${randomX}, ${randomY})`);
+  
+	  // Send power-up data to all clients
+	  this.server.emit("powerUpSpawned", this.powerUpState);
+	}
+  
+	/** ✅ FUNCTION: Resets the ball position after scoring */
+	private resetBall(direction: number) {
+	  this.gameState.ball.x = 390;
+	  this.gameState.ball.y = 294;
+	  this.gameState.ball.vx = direction;
+	  this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+  
+	  this.server.emit("gameState", this.gameState);
+	  console.log("🔄 Ball reset and broadcasted to clients");
+	}
+  
+	/** ✅ FUNCTION: Game loop that updates ball movement and spawns power-ups */
+	private startGameLoop() {
+	  if (!this.gameLoopInterval) {
+		console.log("Game loop started!");
+		this.gameLoopInterval = setInterval(() => {
+		  this.updateGameState();
+  
+		  // 🔥 Randomly spawn a power-up every 10 seconds (adjust frequency as needed)
+		  if (Math.random() < 0.01) { // 1% chance every frame (~30FPS)
+			this.spawnPowerUp();
+		  }
+		}, 1000 / 30);
+	  } else {
+		console.log("Game loop is already running.");
+	  }
+	}
+  
+	/** ✅ FUNCTION: Updates ball and collision detection */
+	private updateGameState() {
+	  const { ball } = this.gameState;
+  
+	  // Ball collision with walls
+	  if (ball.x <= 0) {
+		this.gameState.score.player2++;
+		console.log("Player 2 Scores!");
+		this.resetBall(-5);
+	  } else if (ball.x >= 800) {
+		this.gameState.score.player1++;
+		console.log("Player 1 Scores!");
+		this.resetBall(5);
+	  }
+  
+	  this.server.emit("gameState", this.gameState);
+	}
+  
+	/** ✅ FUNCTION: Handles WebSocket connection */
+	handleConnection(client: Socket) {
+	  console.log(`New player connected: ${client.id}`);
+  
+	  client.on("registerUser", (username: string) => {
+		const playerNumber = this.players.size === 0 ? 1 : 2;
+		this.players.set(client.id, { username, playerNumber });
+  
+		console.log(`🔗 Registered ${username} as Player ${playerNumber} (Socket: ${client.id})`);
+		this.server.emit("playerInfo", [...this.players.values()]); // Broadcast all players
+	  });
+  
+	  if (this.players.size === 2) {
+		console.log("Starting game loop...");
+		this.startGameLoop();
+	  }
+	}
+  
+	/** ✅ FUNCTION: Handles WebSocket disconnection */
 	handleDisconnect(client: Socket) {
 	  console.log(`Player disconnected: ${client.id}`);
 	  this.players.delete(client.id);
@@ -54,7 +133,7 @@ import {
 	  }
 	}
   
-	// Handle Paddle Movement
+	/** ✅ FUNCTION: Handles player movement */
 	@SubscribeMessage('playerMove')
 	handlePlayerMove(@MessageBody() data: { player: number; y: number }) {
 	  console.log(`Player ${data.player} moved to Y=${data.y}`);
@@ -62,122 +141,29 @@ import {
 	  if (data.player === 1) this.gameState.paddle1.y = data.y;
 	  if (data.player === 2) this.gameState.paddle2.y = data.y;
   
-	  console.log("Updated GameState:", JSON.stringify(this.gameState, null, 2));
+	  // 🔥 Broadcast updated state to all players
+	  this.server.emit("gameState", this.gameState);
 	}
   
-	// Update Game State (Moves Ball, Handles Collisions)
-	private updateGameState() {
-		const { ball } = this.gameState;
-	  
-		if (ball.x <= 0) {
-		  this.gameState.score.player2++; 
-		  console.log("Player 2 Scores!");
-	  
-		  // ✅ Find Player 2's socket ID and update DB
-		  const winnerSocketId = [...this.players.entries()]
-			.find(([_, playerNumber]) => playerNumber === 2)?.[0];
-	  
-		  if (winnerSocketId) {
-			this.updateDatabase(2, winnerSocketId); // ✅ Pass socketId
-		  }
-	  
-		  this.resetBall(-5);
-		} else if (ball.x >= 800) {
-		  this.gameState.score.player1++;
-		  console.log("Player 1 Scores!");
-	  
-		  // ✅ Find Player 1's socket ID and update DB
-		  const winnerSocketId = [...this.players.entries()]
-			.find(([_, playerNumber]) => playerNumber === 1)?.[0];
-	  
-		  if (winnerSocketId) {
-			this.updateDatabase(1, winnerSocketId); // ✅ Pass socketId
-		  }
-	  
-		  this.resetBall(5);
-		}
-	  
-		this.server.emit("gameState", this.gameState);
-	  }
-	  
-	  
-	
-	  private async updateDatabase(winner: number, socketId: string) {
-		try {
-		  const user = await this.databaseService.findUserBySocketId(socketId);
-		  if (!user) {
-			console.error(`❌ User with socket ID ${socketId} not found in DB!`);
-			return;
-		  }
-	  
-		  const winnerUsername = user.username;
-		  const loserSocketId = [...this.players.entries()]
-			.find(([_, playerNumber]) => playerNumber !== winner)?.[0];
-	  
-		  if (!loserSocketId) {
-			console.error("❌ No opponent found to update losses!");
-			return;
-		  }
-	  
-		  const loserUser = await this.databaseService.findUserBySocketId(loserSocketId);
-		  if (!loserUser) {
-			console.error(`❌ Opponent with socket ID ${loserSocketId} not found in DB!`);
-			return;
-		  }
-	  
-		  const loserUsername = loserUser.username;
-	  
-		  console.log(`✅ Updating database: ${winnerUsername} won, ${loserUsername} lost`);
-	  
-		  await this.databaseService.incrementWins(winnerUsername);
-		  await this.databaseService.incrementLosses(loserUsername);
-	  
-		  console.log("✅ Database updated successfully!");
-		} catch (error) {
-		  console.error("❌ Database update failed:", error);
-		}
-	  }
-	  
-	// Reset Ball After Scoring
-	private resetBall(direction: number) {
-	  console.log(`Resetting Ball! Direction: ${direction}`);
-	  this.gameState.ball = { x: 390, y: 294, vx: direction, vy: 5 };
-	}
-	@SubscribeMessage("resetGame")
-	handleResetGame() {
-    console.log("Game reset requested!");
-    this.gameState = {
-    ball: { x: 600, y: 294, vx: 5, vy: 5 },
-    paddle1: { y: 250 },
-    paddle2: { y: 250 },
-    score: { player1: 0, player2: 0 },
-  };
-  this.server.emit("gameState", this.gameState);
-}
-
+	/** ✅ FUNCTION: Handles when a power-up is collected */
+	@SubscribeMessage("powerUpCollected")
+	handlePowerUpCollected(@MessageBody() data: { player: number }) {
+	  console.log(`⚡ Player ${data.player} collected power-up: ${this.powerUpState.type}`);
   
-	// Start Game Loop
-	private startGameLoop() {
-	  if (!this.gameLoopInterval) {
-		console.log("Game loop started!");
-		this.gameLoopInterval = setInterval(() => {
-		//   console.log("Running game loop iteration...");
-		  this.updateGameState();
-		}, 1000 / 30);
-	  } else {
-		console.log("Game loop is already running.");
+	  if (!this.powerUpState.isActive) return;
+  
+	  // Apply power-up effect
+	  if (this.powerUpState.type === "shrinkOpponent") {
+		this.server.emit("shrinkPaddle", { player: data.player === 1 ? 2 : 1 });
+	  } else if (this.powerUpState.type === "speedBoost") {
+		this.server.emit("increaseBallSpeed");
+	  } else if (this.powerUpState.type === "enlargePaddle") {
+		this.server.emit("enlargePaddle", { player: data.player });
 	  }
+  
+	  // Reset power-up state
+	  this.powerUpState = { x: null, y: null, type: null, isActive: false };
+	  this.server.emit("powerUpCleared"); // Notify clients to remove power-up from screen
 	}
-
-	@SubscribeMessage("updateScore")
-	async handleUpdateScore(
-	  @ConnectedSocket() client: Socket,
-	  @MessageBody() data: { player: number }
-	) {
-	  console.log(`⚡ Received updateScore event for Player ${data.player} (Socket: ${client.id})`);
-	  await this.updateDatabase(data.player, client.id);
-	}
-	
-
   }
   

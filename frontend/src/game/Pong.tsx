@@ -39,8 +39,9 @@ const Pong = () => {
   const [darkBackground, setDarkBackground] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<string>("PLAYER 1");
   const hasListener = useRef(false);  
+  const [opponentUsername, setOpponentUsername] = useState<string>("PLAYER 2");
 
-  // ✅ Fetch logged-in user
+  // Fetch logged-in user
   useEffect(() => {
     axios
       .get("http://localhost:3000/api/users/me", { withCredentials: true })
@@ -75,7 +76,7 @@ const Pong = () => {
 
   useEffect(() => {
     socket.onAny((event, ...args) => {
-      console.log(`Received WebSocket event: ${event}`, args);
+    //   console.log(`Received WebSocket event: ${event}`, args);
     });
 
     return () => {
@@ -83,7 +84,7 @@ const Pong = () => {
     };
   }, []);
 
-  // ✅ Handle player movement and send to WebSocket
+  // Handle player movement and send to WebSocket
   const handleKeyDown = (event: KeyboardEvent) => {
     let newY = 0;
 
@@ -115,7 +116,17 @@ const Pong = () => {
 	  socket.off("connect");
 	};
   }, [loggedInUser]);
+
+  useEffect(() => {
+	socket.on("playerInfo", (players: { username: string; playerNumber: number }[]) => {
+	  const opponent = players.find(p => p.playerNumber !== 1); 
+	  if (opponent) setOpponentUsername(opponent.username);
+	});
   
+	return () => {
+	  socket.off("playerInfo");
+	};
+  }, []);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -132,7 +143,13 @@ const Pong = () => {
 		  style={{ backgroundColor: backgroundColor }}
 		>
 	  
-      <Scoreboard score1={score1} score2={score2} darkMode={darkBackground} loggedInUser={loggedInUser} />
+	  <Scoreboard 
+		score1={score1} 
+		score2={score2} 
+		darkMode={darkBackground} 
+		loggedInUser={loggedInUser} 
+		opponentUsername={opponentUsername}
+		/>
 
 	  <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
 	  <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
