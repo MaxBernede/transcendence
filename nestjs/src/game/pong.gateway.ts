@@ -103,25 +103,36 @@ import {
 	  this.server.emit("gameState", this.gameState);
 	}
   
-	/** ✅ FUNCTION: Handles WebSocket connection */
+	// Handles WebSocket connection
 	handleConnection(client: Socket) {
-	  console.log(`New player connected: ${client.id}`);
-  
-	  client.on("registerUser", (username: string) => {
-		const playerNumber = this.players.size === 0 ? 1 : 2;
-		this.players.set(client.id, { username, playerNumber });
-  
-		console.log(`🔗 Registered ${username} as Player ${playerNumber} (Socket: ${client.id})`);
-		this.server.emit("playerInfo", [...this.players.values()]); // Broadcast all players
-	  });
-  
-	  if (this.players.size === 2) {
-		console.log("Starting game loop...");
-		this.startGameLoop();
+		console.log(`New player connected: ${client.id}`);
+	  
+		client.on("registerUser", (username: string) => {
+		  if (!username || typeof username !== "string") {
+			console.error("Received invalid username:", username);
+			return;
+		  }
+	  
+		  const playerNumber = this.players.size === 0 ? 1 : 2;
+		  this.players.set(client.id, { username, playerNumber });
+	  
+		  console.log(`🔗 Registered ${username} as Player ${playerNumber} (Socket: ${client.id})`);
+		  this.server.emit("playerInfo", Array.from(this.players.values())); // Broadcast all players
+		});
+	  
+		client.on("requestPlayers", () => {
+		  console.log("📢 Sending current players to new connection.");
+		  client.emit("playerInfo", Array.from(this.players.values())); //  Send to requesting client
+		});
+	  
+		if (this.players.size === 2) {
+		  console.log("Starting game loop...");
+		  this.startGameLoop();
+		}
 	  }
-	}
+	  
   
-	/** ✅ FUNCTION: Handles WebSocket disconnection */
+	/** Handles WebSocket disconnection */
 	handleDisconnect(client: Socket) {
 	  console.log(`Player disconnected: ${client.id}`);
 	  this.players.delete(client.id);

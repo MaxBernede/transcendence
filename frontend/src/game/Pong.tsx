@@ -49,6 +49,14 @@ const Pong = () => {
       .catch(() => setLoggedInUser("PLAYER 1"));
   }, []);
 
+  // Register user with WebSocket when loggedInUser is updated
+	useEffect(() => {
+		if (loggedInUser && loggedInUser !== "PLAYER 1") {
+		console.log("Registering user with WebSocket:", loggedInUser);
+		socket.emit("registerUser", loggedInUser);
+		}
+	}, [loggedInUser]);
+  
   // WebSocket connection and event handling
   useEffect(() => {
     if (!hasListener.current) {
@@ -109,24 +117,35 @@ const Pong = () => {
   useEffect(() => {
 	socket.on("connect", () => {
 	  console.log("WebSocket Connected!", socket.id);
-	  socket.emit("registerUser", loggedInUser); // ✅ Send username
+	  socket.emit("registerUser", loggedInUser);
+	  socket.emit("requestPlayers"); 
 	});
   
 	return () => {
 	  socket.off("connect");
 	};
   }, [loggedInUser]);
+  
 
   useEffect(() => {
 	socket.on("playerInfo", (players: { username: string; playerNumber: number }[]) => {
-	  const opponent = players.find(p => p.playerNumber !== 1); 
-	  if (opponent) setOpponentUsername(opponent.username);
+	  console.log("Received player info update:", players);
+  
+	  const currentPlayer = players.find(p => p.username === loggedInUser);
+	  const opponent = players.find(p => p.username !== loggedInUser);
+  
+	  if (opponent) {
+		setOpponentUsername(opponent.username);
+		console.log("Updated opponent username:", opponent.username);
+	  }
 	});
   
 	return () => {
 	  socket.off("playerInfo");
 	};
-  }, []);
+  }, [loggedInUser]);
+  
+  
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
