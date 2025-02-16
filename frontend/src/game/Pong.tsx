@@ -58,29 +58,64 @@ const Pong = () => {
 	}, [loggedInUser]);
   
   // WebSocket connection and event handling
-  useEffect(() => {
-    if (!hasListener.current) {
-      socket.on("gameState", (state: any) => {
-        console.log("Received game state:", state);
+//   useEffect(() => {
+//     if (!hasListener.current) {
+//       socket.on("gameState", (state: any) => {
+//         console.log("Received game state:", state);
 
-        if (!state?.ball) {
-          console.error("gameState is undefined or missing ball data!");
-          return;
-        }
+//         if (!state?.ball) {
+//           console.error("gameState is undefined or missing ball data!");
+//           return;
+//         }
 			
-        setBallX(state.ball.x);
-        setBallY(state.ball.y);
-        setPaddle1Y(state.paddle1.y);
-        setPaddle2Y(state.paddle2.y);
-      });
+//         // setPaddle1Y(state.paddle1.y);
+//         // setPaddle2Y(state.paddle2.y);
 
-      hasListener.current = true;
-    }
+// 		console.log("🎯 Current Paddle Y positions -> Paddle 1:", paddle1Y, "Paddle 2:", paddle2Y);
+//         console.log("🎯 New Paddle Y positions -> Paddle 1:", state.paddle1.y, "Paddle 2:", state.paddle2.y);
 
-    return () => {
-      socket.off("gameState");
-    };
+// 		if (paddle1Y !== state.paddle1.y) setPaddle1Y(state.paddle1.y);
+//         if (paddle2Y !== state.paddle2.y) setPaddle2Y(state.paddle2.y);
+
+//         setBallX(state.ball.x);
+//         setBallY(state.ball.y);
+//       });
+
+//       hasListener.current = true;
+//     }
+
+//     return () => {
+//       socket.off("gameState");
+//     };
+//   }, [paddle1Y, paddle2Y]); 
+
+useEffect(() => {
+	if (!hasListener.current) {
+	  socket.on("gameState", (state: any) => {
+		console.log("Received game state:", state);
+  
+		if (!state?.ball) {
+		  console.error("gameState is undefined or missing ball data!");
+		  return;
+		}
+  
+		// console.log("Current Paddle Y positions -> Paddle 1:", paddle1Y, "Paddle 2:", paddle2Y);
+		// console.log("New Paddle Y positions -> Paddle 1:", state.paddle1.y, "Paddle 2:", state.paddle2.y);
+  
+		setPaddle1Y(state.paddle1.y);
+		setPaddle2Y(state.paddle2.y);
+		setBallX(state.ball.x);
+		setBallY(state.ball.y);
+	  });
+  
+	  hasListener.current = true;
+	}
+  
+	return () => {
+	  socket.off("gameState");
+	};
   }, []);
+  
 
   useEffect(() => {
     socket.onAny((event, ...args) => {
@@ -93,29 +128,60 @@ const Pong = () => {
   }, []);
 
   // Handle player movement and send to WebSocket
-  const handleKeyDown = (event: KeyboardEvent) => {
+//   const handleKeyDown = (event: KeyboardEvent) => {
+//     let newY = 0;
+
+//     if (event.key === "w" || event.key === "s") {
+//       newY = event.key === "w" ? Math.max(paddle1Y - 20, 0) : Math.min(paddle1Y + 20, 500);
+//       setPaddle1Y(newY);
+// 	  console.log(`Emitting playerMove: Player 1 moved to Y=${newY}`);
+//       socket.emit("playerMove", { player: 1, y: newY });
+//     } 
+//     else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+//       newY = event.key === "ArrowUp" ? Math.max(paddle2Y - 20, 0) : Math.min(paddle2Y + 20, 500);
+//       setPaddle2Y(newY);
+// 	  console.log(`Emitting playerMove: Player 2 moved to Y=${newY}`);
+//       socket.emit("playerMove", { player: 2, y: newY });
+//     }
+
+//     // Start the ball movement on the first paddle move
+//     if (!ballStarted) {
+//       setBallStarted(true);
+//     }
+//   };
+
+const handleKeyDown = (event: KeyboardEvent) => {
     let newY = 0;
+    const isPlayer1 = loggedInUser === "PLAYER 1"; // Determine which player
+    const isPlayer2 = loggedInUser !== "PLAYER 1";
 
     if (event.key === "w" || event.key === "s") {
-      newY = event.key === "w" ? Math.max(paddle1Y - 20, 0) : Math.min(paddle1Y + 20, 500);
-      setPaddle1Y(newY);
-      socket.emit("playerMove", { player: 1, y: newY });
+        if (!isPlayer1) return; // Prevent Player 2 from moving Player 1's paddle
+
+        newY = event.key === "w" ? Math.max(paddle1Y - 20, 0) : Math.min(paddle1Y + 20, 500);
+        setPaddle1Y(newY);
+		console.log(`Emitting playerMove for Player 1: Y=${newY}`);
+        socket.emit("playerMove", { player: 1, y: newY });
     } 
     else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-      newY = event.key === "ArrowUp" ? Math.max(paddle2Y - 20, 0) : Math.min(paddle2Y + 20, 500);
-      setPaddle2Y(newY);
-      socket.emit("playerMove", { player: 2, y: newY });
+        if (!isPlayer2) return; // Prevent Player 1 from moving Player 2's paddle
+
+        newY = event.key === "ArrowUp" ? Math.max(paddle2Y - 20, 0) : Math.min(paddle2Y + 20, 500);
+        setPaddle2Y(newY);
+		console.log(`Emitting playerMove for Player 2: Y=${newY}`);
+        socket.emit("playerMove", { player: 2, y: newY });
     }
 
-    // Start the ball movement on the first paddle move
     if (!ballStarted) {
-      setBallStarted(true);
+        setBallStarted(true);
     }
-  };
+};
+
 
   // Ensure WebSocket connects/disconnects properly
   useEffect(() => {
 	socket.on("connect", () => {
+	  console.log("WebSocket Connected! Socket ID:", socket.id);
 	  console.log("WebSocket Connected!", socket.id);
 	  socket.emit("registerUser", loggedInUser);
 	  socket.emit("requestPlayers"); 
@@ -127,16 +193,48 @@ const Pong = () => {
   }, [loggedInUser]);
   
 
-  useEffect(() => {
+//   useEffect(() => {
+// 	socket.on("playerInfo", (players: { username: string; playerNumber: number }[]) => {
+// 	  console.log("Received player info update:", players);
+  
+// 	  const currentPlayer = players.find(p => p.username === loggedInUser);
+// 	  const opponent = players.find(p => p.username !== loggedInUser);
+  
+// 	  if (opponent) {
+// 		setOpponentUsername(opponent.username);
+// 		console.log("Updated opponent username:", opponent.username);
+// 	  }
+// 	});
+  
+// 	return () => {
+// 	  socket.off("playerInfo");
+// 	};
+//   }, [loggedInUser]);
+
+useEffect(() => {
 	socket.on("playerInfo", (players: { username: string; playerNumber: number }[]) => {
 	  console.log("Received player info update:", players);
   
-	  const currentPlayer = players.find(p => p.username === loggedInUser);
-	  const opponent = players.find(p => p.username !== loggedInUser);
+	  // Find the current player
+	  const currentPlayer = players.find((p) => p.username === loggedInUser);
+	  // Find the opponent
+	  const opponent = players.find((p) => p.username !== loggedInUser);
+  
+	  if (currentPlayer) {
+		console.log("✅ Current Player:", currentPlayer.username, "Player Number:", currentPlayer.playerNumber);
+	  }
   
 	  if (opponent) {
 		setOpponentUsername(opponent.username);
-		console.log("Updated opponent username:", opponent.username);
+		console.log("✅ Opponent found:", opponent.username, "Player Number:", opponent.playerNumber);
+	  }
+  
+	  // Set player numbers locally: Always make the logged-in user Player 1
+	  if (currentPlayer) {
+		if (currentPlayer.playerNumber === 2) {
+		  console.log("🔄 Adjusting player numbers: Making logged-in user Player 1 locally");
+		  currentPlayer.playerNumber = 1;
+		}
 	  }
 	});
   
@@ -144,7 +242,6 @@ const Pong = () => {
 	  socket.off("playerInfo");
 	};
   }, [loggedInUser]);
-  
   
 
   useEffect(() => {
@@ -173,8 +270,23 @@ const Pong = () => {
 	  <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
 	  <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
 
-        <Paddle position="left" top={paddle1Y ?? 0} height={paddleHeight1} color={paddleColor} />
-        <Paddle position="right" top={paddle2Y ?? 0} height={paddleHeight2} color={paddleColor} />
+        {/* <Paddle position="left" top={paddle1Y ?? 0} height={paddleHeight1} color={paddleColor} />
+        <Paddle position="right" top={paddle2Y ?? 0} height={paddleHeight2} color={paddleColor} /> */}
+
+			<Paddle 
+			key={`left-${paddle1Y}`} // ✅ Forces React to re-render
+			position="left" 
+			top={paddle1Y ?? 0} 
+			height={paddleHeight1} 
+			color={paddleColor} 
+			/>
+			<Paddle 
+			key={`right-${paddle2Y}`} // ✅ Forces React to re-render
+			position="right" 
+			top={paddle2Y ?? 0} 
+			height={paddleHeight2} 
+			color={paddleColor} 
+			/>
 
         <Ball x={ballX} y={ballY} color={ballColor} />
 

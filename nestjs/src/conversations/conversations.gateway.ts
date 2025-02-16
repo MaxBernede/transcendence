@@ -159,32 +159,71 @@ export class ConversationsGateway
     console.log('Client disconnected:', client.id);
   }
 
-  async handleConnection(client: Socket, ...args: any[]) {
-    const isValid = await this.validateClient(client);
-    if (isValid === false) {
-      return;
+//   async handleConnection(client: Socket, ...args: any[]) {
+//     const isValid = await this.validateClient(client);
+//     if (isValid === false) {
+//       return;
+//     }
+//     console.log('Client connected:', client.id);
+
+//     const payload: TokenPayload = client['user'];
+//     // console.log('User:', client['user']);
+
+//     //? get all conversations for this user
+//     const conversations = await this.userConversationRepository.find({
+//       where: {
+//         userId: payload.sub,
+//       },
+//     });
+
+//     conversations.forEach((conversation) => {
+//       client.join(conversation.conversationId);
+//       console.log(
+//         payload.username,
+//         'joined room:',
+//         conversation.conversationId,
+//       );
+//     });
+//   }
+
+handleConnection(client: Socket) {
+    console.log(`New player connected: ${client.id}`);
+
+    client.on("registerUser", (username: string) => {
+        if (!username || typeof username !== "string") {
+            console.error("Received invalid username:", username);
+            return;
+        }
+
+        // Check if the player is already registered
+        if (this.players.has(client.id)) {
+            console.warn(`Player ${username} is already registered.`);
+            return;
+        }
+
+        // Assign player numbers correctly
+        let playerNumber = 1;
+        if (this.players.size >= 1) {
+            playerNumber = 2;
+        }
+
+        this.players.set(client.id, { username, playerNumber });
+
+        console.log(`🔗 Registered ${username} as Player ${playerNumber} (Socket: ${client.id})`);
+        this.server.emit("playerInfo", Array.from(this.players.values())); // Broadcast player info
+    });
+
+    client.on("requestPlayers", () => {
+        console.log("📢 Sending current players to new connection.");
+        client.emit("playerInfo", Array.from(this.players.values())); // Send to requesting client
+    });
+
+    if (this.players.size === 2) {
+        console.log("Starting game loop...");
+        this.startGameLoop();
     }
-    console.log('Client connected:', client.id);
+}
 
-    const payload: TokenPayload = client['user'];
-    // console.log('User:', client['user']);
-
-    //? get all conversations for this user
-    const conversations = await this.userConversationRepository.find({
-      where: {
-        userId: payload.sub,
-      },
-    });
-
-    conversations.forEach((conversation) => {
-      client.join(conversation.conversationId);
-      console.log(
-        payload.username,
-        'joined room:',
-        conversation.conversationId,
-      );
-    });
-  }
 
   // @UseGuards(SocketAuthGuard)
   @SubscribeMessage('chatToServer')

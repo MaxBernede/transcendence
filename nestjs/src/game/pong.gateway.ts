@@ -144,19 +144,20 @@ import {
 	  }
 	}
   
-	/** ✅ FUNCTION: Handles player movement */
+	// Handles player movement
 	@SubscribeMessage('playerMove')
 	handlePlayerMove(@MessageBody() data: { player: number; y: number }) {
-	  console.log(`Player ${data.player} moved to Y=${data.y}`);
+		console.log(`Server received playerMove: Player ${data.player} moved to Y=${data.y}`);
   
 	  if (data.player === 1) this.gameState.paddle1.y = data.y;
 	  if (data.player === 2) this.gameState.paddle2.y = data.y;
   
-	  // 🔥 Broadcast updated state to all players
+	  // Broadcast updated state to all players
+	  console.log("Broadcasting updated gameState:", this.gameState);
 	  this.server.emit("gameState", this.gameState);
 	}
   
-	/** ✅ FUNCTION: Handles when a power-up is collected */
+	// Handles when a power-up is collected
 	@SubscribeMessage("powerUpCollected")
 	handlePowerUpCollected(@MessageBody() data: { player: number }) {
 	  console.log(`⚡ Player ${data.player} collected power-up: ${this.powerUpState.type}`);
@@ -176,5 +177,12 @@ import {
 	  this.powerUpState = { x: null, y: null, type: null, isActive: false };
 	  this.server.emit("powerUpCleared"); // Notify clients to remove power-up from screen
 	}
+
+	@SubscribeMessage("requestGameState")
+	handleRequestGameState(@ConnectedSocket() client: Socket) {
+    console.log(`📢 ${client.id} requested the latest game state.`);
+    client.emit("gameState", this.gameState); // Send the latest state to the specific client
+}
+
   }
   
