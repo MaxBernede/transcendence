@@ -112,7 +112,9 @@ import { MenuList } from '@mui/material';
 	
 			// Remove duplicate players with the same username
 			for (const [socketId, player] of players.entries()) {
-				if (player.username === username) {Game loop
+				if (player.username === username) {
+					players.delete(socketId);
+					break; // Ensure we don't iterate further
 				}
 			}
 	
