@@ -11,14 +11,12 @@ import axios from "axios";
 const socket = io("http://localhost:3000/pong");
 
 const Pong = () => {
-	const {
+  const {
     gameContainerRef,
     paddle1Y,
     paddle2Y,
     paddleHeight1,
     paddleHeight2,
-    ballX,
-    ballY,
     powerUpX,
     powerUpY,
     powerUpType,
@@ -26,9 +24,7 @@ const Pong = () => {
     score1,
     score2,
     winner,
-    resetGame,
-    setBallX,
-    setBallY,
+    // resetGame,
     setPaddle1Y,
     setPaddle2Y,
     ballStarted,
@@ -42,7 +38,9 @@ const Pong = () => {
   const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
   const hasListener = useRef(false);
 
-  // Fetch logged-in user
+  // Store ball position from WebSocket updates
+  const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
+
   useEffect(() => {
     axios
       .get("http://localhost:3000/api/users/me", { withCredentials: true })
@@ -52,77 +50,51 @@ const Pong = () => {
         }
       })
       .catch(() => console.error("Failed to fetch user data"));
-	  console.log("CHECK");
   }, []);
 
   // Register user with WebSocket when loggedInUser is updated
   useEffect(() => {
     if (loggedInUser) {
-      console.log("Registering user with WebSocket:", loggedInUser);
       socket.emit("registerUser", loggedInUser);
       socket.emit("requestPlayers");
-	  socket.emit("gameState");
+      socket.emit("gameState");
     }
   }, [loggedInUser]);
 
   // Handle game state updates
   useEffect(() => {
-	console.log("haslistener: ", hasListener.current);
-	if (!hasListener.current) {
-	  socket.on("gameState", (state: any) => {
-		console.log("Received game state:", state);
+	socket.on("gameState", (state: any) => {
+	  if (!state?.paddle1 || !state?.paddle2 || !state?.ball) {
+		console.error("Invalid game state received!");
+		return;
+	  }
   
-		if (!state?.ball) {
-		  console.error("gameState is undefined or missing ball data!");
-		  return;
-		}
-  
-		console.log("Current Paddle Y positions -> Paddle 1:", paddle1Y, "Paddle 2:", paddle2Y);
-		console.log("New Paddle Y positions -> Paddle 1:", state.paddle1.y, "Paddle 2:", state.paddle2.y);
-  
-		setPaddle1Y(state.paddle1.y);
+	  // ✅ Only update opponent's paddle, allow local control of own paddle
+	  if (playerNumber === 1) {
 		setPaddle2Y(state.paddle2.y);
-		setBallX(state.ball.x);
-		setBallY(state.ball.y);
-	  });
-  
-	  hasListener.current = true;
-	}
+	  } else if (playerNumber === 2) {
+		setPaddle1Y(state.paddle1.y);
+	  }
+
+	  setBallPosition({ x: state.ball.x, y: state.ball.y }); 
+	});
   
 	return () => {
 	  socket.off("gameState");
 	};
-  }, []);
+  }, [playerNumber]);
   
-
-  useEffect(() => {
-    socket.onAny((event, ...args) => {
-    //   console.log(`Received WebSocket event: ${event}`, args);
-    });
-
-    return () => {
-      socket.offAny();
-    };
-  }, []);
-
+  
+  
 
   // Track player information
   useEffect(() => {
     socket.on("playerInfo", (players: { username: string; playerNumber: number }[]) => {
-    //   console.log("Received player info update:", players);
-
       const currentPlayer = players.find((p) => p.username === loggedInUser);
       const opponent = players.find((p) => p.username !== loggedInUser);
 
-      if (currentPlayer) {
-        setPlayerNumber(currentPlayer.playerNumber);
-      }
-
-      if (opponent) {
-        setOpponentUsername(opponent.username);
-      } else {
-        setOpponentUsername("WAITING...");
-      }
+      if (currentPlayer) setPlayerNumber(currentPlayer.playerNumber);
+      setOpponentUsername(opponent ? opponent.username : "WAITING...");
     });
 
     return () => {
@@ -131,44 +103,72 @@ const Pong = () => {
   }, [loggedInUser]);
 
   // Handle paddle movement
-  const handleKeyDown = (event: KeyboardEvent) => {
-    let newY = 0;
-    const isPlayer1 = playerNumber === 1;
-    const isPlayer2 = playerNumber === 2;
+//   const handleKeyDown = (event: KeyboardEvent) => {
+//     let newY = 0;
+//     const isPlayer1 = playerNumber === 1;
+//     const isPlayer2 = playerNumber === 2;
 
-    if (event.key === "w" || event.key === "s") {
-        if (!isPlayer1) return;
-        newY = event.key === "w" ? Math.max(paddle1Y - 20, 0) : Math.min(paddle1Y + 20, 500);
-        setPaddle1Y(newY);
-        socket.emit("playerMove", { player: 1, y: newY });
-    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-        if (!isPlayer2) return;
-        newY = event.key === "ArrowUp" ? Math.max(paddle2Y - 20, 0) : Math.min(paddle2Y + 20, 500);
-        setPaddle2Y(newY);
-        socket.emit("playerMove", { player: 2, y: newY });
-    }
+//     if (event.key === "w" || event.key === "s") {
+//       if (!isPlayer1) return;
+//       newY = event.key === "w" ? Math.max(paddle1Y - 20, 0) : Math.min(paddle1Y + 20, 500);
+//       setPaddle1Y(newY);
+//       socket.emit("playerMove", { player: 1, y: newY });
+//     } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+//       if (!isPlayer2) return;
+//       newY = event.key === "ArrowUp" ? Math.max(paddle2Y - 20, 0) : Math.min(paddle2Y + 20, 500);
+//       setPaddle2Y(newY);
+//       socket.emit("playerMove", { player: 2, y: newY });
+//     }
 
-    if (!ballStarted) {
-        setBallStarted(true);
-    }
-};
+//     if (!ballStarted) {
+//       setBallStarted(true);
+//     }
+//   };
 
-useEffect(() => {
-    socket.on("gameState", (state) => {
-        // console.log("TEST: Received gameState", state);
-    });
-
-    return () => {
-        socket.off("gameState");
-    };
-}, []);
-
-
-  // Attach event listener for paddle movement
+const handleKeyDown = (event: KeyboardEvent) => {
+	let newY = 0;
+  
+	if (playerNumber === 1) {
+	  if (event.key === "w") {
+		newY = Math.max(paddle1Y - 20, 0);
+		setPaddle1Y(newY);
+		socket.emit("playerMove", { player: 1, y: newY });
+	  } else if (event.key === "s") {
+		newY = Math.min(paddle1Y + 20, 500);
+		setPaddle1Y(newY);
+		socket.emit("playerMove", { player: 1, y: newY });
+	  }
+	} else if (playerNumber === 2) {
+	  if (event.key === "ArrowUp") {
+		newY = Math.max(paddle2Y - 20, 0);
+		setPaddle2Y(newY);
+		socket.emit("playerMove", { player: 2, y: newY });
+	  } else if (event.key === "ArrowDown") {
+		newY = Math.min(paddle2Y + 20, 500);
+		setPaddle2Y(newY);
+		socket.emit("playerMove", { player: 2, y: newY });
+	  }
+	}
+  };
+  
+  
+  // Attach event listener
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+	window.addEventListener("keydown", handleKeyDown);
+	return () => window.removeEventListener("keydown", handleKeyDown);
   }, [paddle1Y, paddle2Y]);
+  
+  
+  // Add event listener
+  useEffect(() => {
+	window.addEventListener("keydown", handleKeyDown);
+	return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [paddle1Y, paddle2Y]);
+  
+  const handleResetGame = () => {
+	socket.emit("resetGame"); // Emit reset event to the backend
+  };
+  
 
   const paddleColor = darkBackground ? "#555555" : "#ff66b2";
   const ballColor = darkBackground ? "#666666" : "#ff3385";
@@ -190,17 +190,25 @@ useEffect(() => {
         <Paddle key={`left-${paddle1Y}`} position="left" top={paddle1Y ?? 0} height={paddleHeight1} color={paddleColor} />
         <Paddle key={`right-${paddle2Y}`} position="right" top={paddle2Y ?? 0} height={paddleHeight2} color={paddleColor} />
 
-        <Ball x={ballX} y={ballY} color={ballColor} />
+        <Ball x={ballPosition.x} y={ballPosition.y} color={ballColor} />
 
         {powerUpsEnabled && isPowerUpActive && powerUpType && (
-          <PowerUp x={powerUpX ?? 0} y={powerUpY ?? 0} isActive={isPowerUpActive} type={powerUpType} darkMode={darkBackground} />
+       <PowerUp 
+		x={powerUpX ?? 0} 
+		y={powerUpY ?? 0} 
+		isActive={isPowerUpActive} 
+		type={powerUpType as "shrinkOpponent" | "speedBoost" | "enlargePaddle" | null} 
+		darkMode={darkBackground} 
+		/>
         )}
       </div>
 
       {winner && (
         <div className="pong-winner-popup">
           <h2>{winner} WINS! 🎉</h2>
-          <button className="play-again-button" onClick={() => resetGame()}>PLAY AGAIN</button>
+		  <button className="play-again-button" onClick={handleResetGame}>
+			PLAY AGAIN
+			</button>
         </div>
       )}
 
