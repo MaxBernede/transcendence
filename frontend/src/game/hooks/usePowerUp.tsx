@@ -18,7 +18,7 @@ export const usePowerUp = (
   gameContainerRef: React.RefObject<HTMLDivElement>,
   onPowerUpCollected: (player: number, type: "shrinkOpponent" | "speedBoost" | "enlargePaddle") => void,
   enableMovement: boolean = true,
-  socket: Socket // ✅ Added WebSocket as a parameter
+  socket: Socket // Added WebSocket as a parameter
 ): UsePowerUpReturn => {
   const [powerUpX, setPowerUpX] = useState<number | null>(null);
   const [powerUpY, setPowerUpY] = useState<number | null>(null);
@@ -27,7 +27,7 @@ export const usePowerUp = (
   const [powerUpVX, setPowerUpVX] = useState(3);
   const [powerUpVY, setPowerUpVY] = useState(2);
 
-  // ✅ WebSocket: Listen for power-up events from the server
+  // WebSocket: Listen for power-up events from the server
   useEffect(() => {
     socket.on("powerUpSpawned", (data) => {
       console.log("Power-up received from server:", data);
@@ -96,7 +96,7 @@ export const usePowerUp = (
     if (powerUpX <= 30 && powerUpY >= paddle1Top && powerUpY <= paddle1Bottom) {
       onPowerUpCollected(1, powerUpType!);
       setIsPowerUpActive(false);
-      socket.emit("powerUpCollected", { player: 1 }); // ✅ Notify server
+      socket.emit("powerUpCollected", { player: 1 }); // Notify server
       return;
     }
 
@@ -107,7 +107,7 @@ export const usePowerUp = (
     ) {
       onPowerUpCollected(2, powerUpType!);
       setIsPowerUpActive(false);
-      socket.emit("powerUpCollected", { player: 2 }); // ✅ Notify server
+      socket.emit("powerUpCollected", { player: 2 }); // Notify server
     }
   };
 

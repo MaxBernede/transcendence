@@ -3,7 +3,7 @@ import { usePowerUp } from "./usePowerUp";
 import { useShrinkPaddle } from "./useShrinkPaddle";
 import { Socket } from "socket.io-client";
 
-export const usePongGame = (socket : Socket) => {
+export const usePongGame = (socket:Socket) => {
   const [paddle1Y, setPaddle1Y] = useState<number>(250);
   const [paddle2Y, setPaddle2Y] = useState<number>(250);
   const paddleHeightBase = 100;
