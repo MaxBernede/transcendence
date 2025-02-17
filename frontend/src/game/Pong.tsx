@@ -63,28 +63,31 @@ const Pong = () => {
 
   // Handle game state updates
   useEffect(() => {
-	socket.on("gameState", (state: any) => {
-	  if (!state?.paddle1 || !state?.paddle2 || !state?.ball) {
-		console.error("Invalid game state received!");
-		return;
-	  }
-  
-	  // ✅ Only update opponent's paddle, allow local control of own paddle
-	  if (playerNumber === 1) {
-		setPaddle2Y(state.paddle2.y);
-	  } else if (playerNumber === 2) {
-		setPaddle1Y(state.paddle1.y);
-	  }
+    socket.on("gameState", (state: any) => {
+        if (!state?.paddle1 || !state?.paddle2 || !state?.ball) {
+            console.error("Invalid game state received!");
+            return;
+        }
 
-	  setBallPosition({ x: state.ball.x, y: state.ball.y }); 
-	});
-  
-	return () => {
-	  socket.off("gameState");
-	};
-  }, [playerNumber]);
-  
-  
+        // Only update the opponent's paddle
+        if (playerNumber === 1) {
+            setPaddle2Y(state.paddle2.y); // Opponent's paddle
+        } else if (playerNumber === 2) {
+            setPaddle1Y(state.paddle1.y); // Opponent's paddle
+        }
+
+        // Ball updates for both players
+        setBallPosition({ x: state.ball.x, y: state.ball.y });
+    });
+
+    return () => {
+        socket.off("gameState");
+    };
+}, [playerNumber]);
+
+
+
+
   
 
   // Track player information
@@ -125,31 +128,57 @@ const Pong = () => {
 //     }
 //   };
 
-const handleKeyDown = (event: KeyboardEvent) => {
-	let newY = 0;
+// const handleKeyDown = (event: KeyboardEvent) => {
+// 	let newY = 0;
   
-	if (playerNumber === 1) {
-	  if (event.key === "w") {
-		newY = Math.max(paddle1Y - 20, 0);
-		setPaddle1Y(newY);
-		socket.emit("playerMove", { player: 1, y: newY });
-	  } else if (event.key === "s") {
-		newY = Math.min(paddle1Y + 20, 500);
-		setPaddle1Y(newY);
-		socket.emit("playerMove", { player: 1, y: newY });
-	  }
-	} else if (playerNumber === 2) {
-	  if (event.key === "ArrowUp") {
-		newY = Math.max(paddle2Y - 20, 0);
-		setPaddle2Y(newY);
-		socket.emit("playerMove", { player: 2, y: newY });
-	  } else if (event.key === "ArrowDown") {
-		newY = Math.min(paddle2Y + 20, 500);
-		setPaddle2Y(newY);
-		socket.emit("playerMove", { player: 2, y: newY });
-	  }
-	}
-  };
+// 	if (playerNumber === 1) {
+// 	  if (event.key === "w") {
+// 		newY = Math.max(paddle1Y - 20, 0);
+// 		setPaddle1Y(newY);
+// 		socket.emit("playerMove", { player: 1, y: newY });
+// 	  } else if (event.key === "s") {
+// 		newY = Math.min(paddle1Y + 20, 500);
+// 		setPaddle1Y(newY);
+// 		socket.emit("playerMove", { player: 1, y: newY });
+// 	  }
+// 	} else if (playerNumber === 2) {
+// 	  if (event.key === "ArrowUp") {
+// 		newY = Math.max(paddle2Y - 20, 0);
+// 		setPaddle2Y(newY);
+// 		socket.emit("playerMove", { player: 2, y: newY });
+// 	  } else if (event.key === "ArrowDown") {
+// 		newY = Math.min(paddle2Y + 20, 500);
+// 		setPaddle2Y(newY);
+// 		socket.emit("playerMove", { player: 2, y: newY });
+// 	  }
+// 	}
+//   };
+
+const handleKeyDown = (event: KeyboardEvent) => {
+    let newY = 0;
+
+    if (playerNumber === 1) {
+        if (event.key === "w" || event.key === "ArrowUp") {
+            newY = Math.max(paddle1Y - 20, 0);
+            setPaddle1Y(newY);
+            socket.emit("playerMove", { player: 1, y: newY });
+        } else if (event.key === "s" || event.key === "ArrowDown") {
+            newY = Math.min(paddle1Y + 20, 500);
+            setPaddle1Y(newY);
+            socket.emit("playerMove", { player: 1, y: newY }); 
+        }
+    } else if (playerNumber === 2) {
+        if (event.key === "w" || event.key === "ArrowUp") {
+            newY = Math.max(paddle2Y - 20, 0);
+            setPaddle2Y(newY);
+            socket.emit("playerMove", { player: 2, y: newY }); 
+        } else if (event.key === "s" || event.key === "ArrowDown") {
+            newY = Math.min(paddle2Y + 20, 500);
+            setPaddle2Y(newY);
+            socket.emit("playerMove", { player: 2, y: newY }); 
+        }
+    }
+};
   
   
   // Attach event listener

@@ -280,7 +280,7 @@ import { MenuList } from '@mui/material';
 		return;
 	  }
 	
-	  // Correctly update paddles in gameState
+	  //  Ensure correct paddle updates
 	  if (data.player === 1) {
 		this.gameState.paddle1.y = data.y;
 		console.log(`Player 1 moved to Y=${data.y}`);
@@ -289,9 +289,10 @@ import { MenuList } from '@mui/material';
 		console.log(`Player 2 moved to Y=${data.y}`);
 	  }
 	
-	  //  Send updated game state to ALL players
+	  // Broadcast updated state to all clients
 	  this.server.emit("gameState", this.gameState);
 	}
+	
 	
 	@SubscribeMessage("startBall")
 	handleStartBall() {
