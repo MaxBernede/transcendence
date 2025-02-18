@@ -62,48 +62,80 @@ const Pong = () => {
   }, [loggedInUser]);
 
   // Handle game state updates
-  useEffect(() => {
-    socket.on("gameState", (state: any) => {
+//   useEffect(() => {
+//     socket.on("gameState", (state: any) => {
+//         if (!state?.paddle1 || !state?.paddle2 || !state?.ball) {
+//             console.error("Invalid game state received!");
+//             return;
+//         }
+
+//         // Only update the opponent's paddle
+//         if (playerNumber === 1) {
+//             setPaddle2Y(state.paddle2.y); // Opponent's paddle
+//         } else if (playerNumber === 2) {
+//             setPaddle1Y(state.paddle1.y); // Opponent's paddle
+//         }
+
+//         // Ball updates for both players
+//         setBallPosition({ x: state.ball.x, y: state.ball.y });
+//     });
+
+//     return () => {
+//         socket.off("gameState");
+//     };
+// }, [playerNumber]);
+
+useEffect(() => {
+    const handleGameState = (state: any) => {
         if (!state?.paddle1 || !state?.paddle2 || !state?.ball) {
             console.error("Invalid game state received!");
             return;
         }
 
-        // Only update the opponent's paddle
+        // Update opponent's paddle
         if (playerNumber === 1) {
-            setPaddle2Y(state.paddle2.y); // Opponent's paddle
+            setPaddle2Y(state.paddle2.y);
         } else if (playerNumber === 2) {
-            setPaddle1Y(state.paddle1.y); // Opponent's paddle
+            setPaddle1Y(state.paddle1.y);
         }
 
-        // Ball updates for both players
-        setBallPosition({ x: state.ball.x, y: state.ball.y });
-    });
+        // Only update ball position if it actually moved
+        setBallPosition((prev) => {
+            if (prev.x !== state.ball.x || prev.y !== state.ball.y) {
+                return { x: state.ball.x, y: state.ball.y };
+            }
+            return prev;
+        });
+    };
+
+    socket.off("gameState"); // Remove previous listener
+    socket.on("gameState", handleGameState);
 
     return () => {
-        socket.off("gameState");
+        socket.off("gameState", handleGameState); // Cleanup on unmount
     };
-}, [playerNumber]);
-
-
-
+}, [playerNumber, ballPosition]); // Depend on `ballPosition` and `playerNumber`
 
   
 
   // Track player information
   useEffect(() => {
-    socket.on("playerInfo", (players: { username: string; playerNumber: number }[]) => {
-      const currentPlayer = players.find((p) => p.username === loggedInUser);
-      const opponent = players.find((p) => p.username !== loggedInUser);
+    const handlePlayerInfo = (players: { username: string; playerNumber: number }[]) => {
+        const currentPlayer = players.find((p) => p.username === loggedInUser);
+        const opponent = players.find((p) => p.username !== loggedInUser);
 
-      if (currentPlayer) setPlayerNumber(currentPlayer.playerNumber);
-      setOpponentUsername(opponent ? opponent.username : "WAITING...");
-    });
+        if (currentPlayer) setPlayerNumber(currentPlayer.playerNumber);
+        setOpponentUsername(opponent ? opponent.username : "WAITING...");
+    };
+
+    socket.off("playerInfo"); // Remove previous listener
+    socket.on("playerInfo", handlePlayerInfo);
 
     return () => {
-      socket.off("playerInfo");
+        socket.off("playerInfo", handlePlayerInfo); //  Cleanup
     };
-  }, [loggedInUser]);
+}, [loggedInUser]);
+
 
   // Handle paddle movement
 //   const handleKeyDown = (event: KeyboardEvent) => {
@@ -188,11 +220,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }, [paddle1Y, paddle2Y]);
   
   
-  // Add event listener
-  useEffect(() => {
-	window.addEventListener("keydown", handleKeyDown);
-	return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [paddle1Y, paddle2Y]);
+//   // Add event listener
+//   useEffect(() => {
+// 	window.addEventListener("keydown", handleKeyDown);
+// 	return () => window.removeEventListener("keydown", handleKeyDown);
+//   }, [paddle1Y, paddle2Y]);
   
   const handleResetGame = () => {
 	socket.emit("resetGame"); // Emit reset event to the backend

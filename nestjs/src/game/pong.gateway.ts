@@ -73,14 +73,13 @@ import { MenuList } from '@mui/material';
   
 	/** Resets the ball after scoring */
 	private resetBall(direction: number) {
-		this.gameState.ball.x = 390;
-		this.gameState.ball.y = 294;
-		this.gameState.ball.vx = direction;
-		this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+		console.log("Resetting ball...");
 	
-		this.server.emit("gameState", this.gameState);
-		console.log("Ball reset and broadcasted to clients");
-	  }
+		this.gameState.ball = { x: 390, y: 294, vx: direction, vy: Math.random() > 0.5 ? 5 : -5 };
+	
+		this.server.emit("gameState", this.gameState); // Immediately send updated game state
+	}
+	
   
 	/** Game loop */
 	private startGameLoop() {
@@ -157,6 +156,13 @@ import { MenuList } from '@mui/material';
 	
 	private updateGameState() {
 		const ball = this.gameState.ball;
+		console.log("Ball coordinates:", ball.x, ball.y); // Debugging
+	
+		// Ensure the ball is valid
+		if (ball.x === undefined || ball.y === undefined) {
+			console.warn("⚠️ Ball data is undefined!", this.gameState);
+			return;
+		}
 	
 		// Move the ball
 		ball.x += ball.vx;
@@ -170,19 +176,21 @@ import { MenuList } from '@mui/material';
 		const paddle1 = this.gameState.paddle1;
 		const paddle2 = this.gameState.paddle2;
 	
-		// Ball collision with paddles
+		// Fix ball getting stuck inside paddles
 		if (ball.x <= 30 && ball.y >= paddle1.y && ball.y <= paddle1.y + 100) {
 			ball.vx = Math.abs(ball.vx); // Bounce right
+			ball.x = 31; // Prevent sticking inside the paddle
 		} else if (ball.x >= 770 && ball.y >= paddle2.y && ball.y <= paddle2.y + 100) {
 			ball.vx = -Math.abs(ball.vx); // Bounce left
+			ball.x = 769; // Prevent sticking inside the paddle
 		}
 	
-		// Handle scoring
+		// Handle scoring and ensure game state is updated immediately
 		if (ball.x <= 0) {
 			this.gameState.score.player2++;
 			console.log("Player 2 Scores!");
 			this.resetBall(5);
-			this.checkGameOver(); // Check if someone won
+			this.checkGameOver();
 			return;
 		} else if (ball.x >= 800) {
 			this.gameState.score.player1++;
@@ -192,9 +200,10 @@ import { MenuList } from '@mui/material';
 			return;
 		}
 	
-		// **Emit updated game state to all clients**
-		this.server.emit("gameState", this.gameState);
+		// Ensure fresh state is sent to prevent ghost ball issues
+		this.server.emit("gameState", { ...this.gameState });
 	}
+	
 	
 	
 	
@@ -208,34 +217,25 @@ import { MenuList } from '@mui/material';
 				console.error("Invalid username received:", username);
 				return;
 			}
-	
-			// Remove duplicate usernames
-			for (const [socketId, player] of players.entries()) {
-				if (player.username === username) {
-					players.delete(socketId);
-					break;
-				}
+		
+			// Check if the player is already registered
+			const existingPlayer = Array.from(players.values()).find(p => p.username === username);
+			if (existingPlayer) {
+				console.log(`${username} is already registered, ignoring duplicate request.`);
+				return;
 			}
-	
-			// Assign player number
-			const currentPlayers = Array.from(players.values());
-			let playerNumber = 1;
-			if (currentPlayers.some(p => p.playerNumber === 1)) {
-				playerNumber = 2;
-			}
-	
+		
+			let playerNumber = players.size === 0 ? 1 : 2; // Assign player numbers
 			players.set(client.id, { username, playerNumber });
-	
+		
 			console.log(`Registered ${username} as Player ${playerNumber}`);
-	
-			// Notify clients about players
 			this.server.emit("playerInfo", Array.from(players.values()));
-	
-			// ✅ Start game loop when 2 players are connected
+		
 			if (players.size === 2) {
 				this.startGameLoop();
 			}
 		});
+		
 	
 		client.on("requestPlayers", () => {
 			client.emit("playerInfo", Array.from(players.values()));
@@ -274,24 +274,33 @@ import { MenuList } from '@mui/material';
 	  @MessageBody() data: { player: number; y: number },
 	  @ConnectedSocket() client: Socket
 	) {
-	  const playerInfo = players.get(client.id);
-	  if (!playerInfo) {
-		console.error(`Received move from unknown client: ${client.id}`);
-		return;
-	  }
+		const playerInfo = players.get(client.id);
+		if (!playerInfo) {
+			console.error(`Received move from unknown client: ${client.id}`);
+			return;
+		}
 	
-	  //  Ensure correct paddle updates
-	  if (data.player === 1) {
-		this.gameState.paddle1.y = data.y;
-		console.log(`Player 1 moved to Y=${data.y}`);
-	  } else if (data.player === 2) {
-		this.gameState.paddle2.y = data.y;
-		console.log(`Player 2 moved to Y=${data.y}`);
-	  }
+		const previousY = playerInfo.playerNumber === 1 ? this.gameState.paddle1.y : this.gameState.paddle2.y;
 	
-	  // Broadcast updated state to all clients
-	  this.server.emit("gameState", this.gameState);
+		// Only update if the position is actually different
+		if (previousY !== data.y) {
+			if (data.player === 1) {
+				this.gameState.paddle1.y = data.y;
+				console.log(`Player 1 moved to Y=${data.y}`);
+			} else if (data.player === 2) {
+				this.gameState.paddle2.y = data.y;
+				console.log(`Player 2 moved to Y=${data.y}`);
+			}
+	
+			// this.server.emit("gameState", this.gameState); // Broadcast update
+
+			this.server.emit("playerMoveUpdate", {
+				paddle1Y: this.gameState.paddle1.y,
+				paddle2Y: this.gameState.paddle2.y
+			});
+		}
 	}
+	
 	
 	
 	@SubscribeMessage("startBall")
