@@ -70,6 +70,29 @@ import { MenuList } from '@mui/material';
 	  this.powerUpState = { x: randomX, y: randomY, type: randomType as any, isActive: true };
 	  this.server.emit("powerUpSpawned", this.powerUpState);
 	}
+
+	@SubscribeMessage('registerUser')
+	handleRegisterUser(client: Socket, username: string) {
+		if (Array.from(players.values()).some(player => player.username === username)) {
+			console.log(`${username} is already registered, ignoring duplicate request.`);
+			return;
+		}
+		const playerNumber = players.size + 1;
+		players.set(client.id, { username, playerNumber });
+		this.broadcastPlayers();
+	}
+	
+
+@SubscribeMessage("requestPlayers")
+handleRequestPlayers(@ConnectedSocket() client: Socket) {
+    console.log("📌 Sending player info:", Array.from(players.values()));
+    client.emit("playerInfo", Array.from(players.values()));
+}
+
+private broadcastPlayers() {
+	this.server.emit('updatePlayers', Array.from(players.values()));
+}
+
   
 	/** Resets the ball after scoring */
 	private resetBall(direction: number) {
@@ -92,12 +115,19 @@ import { MenuList } from '@mui/material';
 				const [id1, player1Data] = player1Entry;
 				const [id2, player2Data] = player2Entry;
 
-			players.set(id1, { username: player1Data.username, playerNumber: 1 });
-            players.set(id2, { username: player2Data.username, playerNumber: 2 });
+				// Check if Player 1 already exists
+				const player1Exists = playerEntries.some(([_, player]) => player.playerNumber === 1);
+				
+				if (!player1Exists) {
+					players.set(id1, { username: player1Data.username, playerNumber: 1 });
+					players.set(id2, { username: player2Data.username, playerNumber: 2 });
+				} else {
+					players.set(id1, { username: player1Data.username, playerNumber: 2 });
+				}
 
-            console.log(`Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
+				console.log(` Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
 
-			this.server.emit("playerInfo", Array.from(players.values()));
+				this.server.emit("playerInfo", Array.from(players.values()));
 			}
 
 
@@ -260,26 +290,26 @@ import { MenuList } from '@mui/material';
 	/** WebSocket disconnection */
 	handleDisconnect(client: Socket) {
 		console.log(`Player disconnected: ${client.id}`);
-	
-		const removedPlayer = players.get(client.id);
-		players.delete(client.id);
-	
-		if (removedPlayer) {
-			console.log(`Removed player: ${removedPlayer.username}`);
+		
+		// Find the player by their socket ID
+		for (const [id, playerData] of players.entries()) {
+			if (id === client.id) {
+				console.log(`Removing player: ${playerData.username}`);
+				players.delete(id);
+				break;
+			}
 		}
 	
-		// If a player leaves, reset assignments
+		// Check if only one player remains
 		if (players.size < 2) {
 			console.log("Not enough players, resetting game.");
-			this.server.emit("playerInfo", Array.from(players.values())); // Update clients
+			this.resetGame();
 		}
 	
-		if (players.size === 0 && this.gameLoopInterval) {
-			console.log("No players left, stopping game loop.");
-			clearInterval(this.gameLoopInterval);
-			this.gameLoopInterval = null;
-		}
+		// Notify clients about updated player list
+		this.server.emit("playerInfo", Array.from(players.values()));
 	}
+	
 	
 	
 	@SubscribeMessage("playerMove")

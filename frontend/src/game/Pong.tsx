@@ -50,13 +50,28 @@ const Pong = () => {
       .catch(() => console.error("Failed to fetch user data"));
   }, []);
 
-  useEffect(() => {
+//   useEffect(() => {
+//     if (loggedInUser) {
+//       socket.emit("registerUser", loggedInUser);
+//       socket.emit("requestPlayers");
+//       socket.emit("gameState");
+//     }
+//   }, [loggedInUser]);
+
+useEffect(() => {
     if (loggedInUser) {
-      socket.emit("registerUser", loggedInUser);
-      socket.emit("requestPlayers");
-      socket.emit("gameState");
+        socket.emit("registerUser", loggedInUser);
+        
+        // Request player info every second until both players have joined
+        const interval = setInterval(() => {
+            console.log(" Requesting player info...");
+            socket.emit("requestPlayers");
+        }, 1000); // Polling every second
+
+        return () => clearInterval(interval); // Clean up when component unmounts
     }
-  }, [loggedInUser]);
+}, [loggedInUser]);
+
 
 // const hasRegistered = useRef(false);
 
@@ -91,23 +106,35 @@ const Pong = () => {
 
   useEffect(() => {
     const handlePlayerInfo = (players: { username: string; playerNumber: number }[]) => {
-      const currentPlayer = players.find((p) => p.username === loggedInUser);
-      const opponent = players.find((p) => p.username !== loggedInUser);
+        console.log("📡 Received player info:", players);
 
-      if (currentPlayer) {
-        setPlayerNumber(currentPlayer.playerNumber);
-      }
+        const currentPlayer = players.find((p) => p.username === loggedInUser);
+        const opponent = players.find((p) => p.username !== loggedInUser);
 
-      setOpponentUsername(opponent ? opponent.username : "WAITING...");
+        if (currentPlayer) {
+            console.log(`✅ Setting player number: ${currentPlayer.playerNumber}`);
+            setPlayerNumber(currentPlayer.playerNumber);
+        } else {
+            console.warn("⚠️ Current player not found in player list!");
+        }
+
+        if (opponent) {
+            console.log(`🎯 Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
+            setOpponentUsername(opponent.username);
+        } else {
+            console.warn("⚠️ Opponent not found in player list, setting to WAITING...");
+            setOpponentUsername("WAITING...");
+        }
     };
 
     socket.off("playerInfo");
     socket.on("playerInfo", handlePlayerInfo);
 
     return () => {
-      socket.off("playerInfo", handlePlayerInfo);
+        socket.off("playerInfo", handlePlayerInfo);
     };
-  }, [loggedInUser]);
+}, [loggedInUser]);
+
 
   const handleKeyDown = (event: KeyboardEvent) => {
     let newY = 0;
