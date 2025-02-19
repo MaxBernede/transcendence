@@ -17,6 +17,7 @@
 .pong-scoreboard {
 	display: flex;
 	justify-content: space-between;
+	align-items: center;
 	width: 800px; /* Match the game container width */
 	margin-bottom: 20px;
 	padding-top: 70px;

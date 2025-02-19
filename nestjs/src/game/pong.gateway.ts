@@ -35,7 +35,7 @@ import { MenuList } from '@mui/material';
 	private checkGameOver() {
 		if (this.gameState.score.player1 >= 3) {
 			this.server.emit("gameOver", { winner: "Player 1" });
-			this.resetGame(); // ✅ Reset game once someone wins
+			this.resetGame(); //  Reset game once someone wins
 		} else if (this.gameState.score.player2 >= 3) {
 			this.server.emit("gameOver", { winner: "Player 2" });
 			this.resetGame();
@@ -76,7 +76,6 @@ import { MenuList } from '@mui/material';
 		console.log("Resetting ball...");
 	
 		this.gameState.ball = { x: 390, y: 294, vx: direction, vy: Math.random() > 0.5 ? 5 : -5 };
-	
 		this.server.emit("gameState", this.gameState); // Immediately send updated game state
 	}
 	
@@ -85,6 +84,23 @@ import { MenuList } from '@mui/material';
 	private startGameLoop() {
 		if (!this.gameLoopInterval) {
 			console.log("Game loop started!");
+
+			const playerEntries = Array.from(players.entries());
+
+			if (playerEntries.length === 2) {
+				const [player1Entry, player2Entry] = playerEntries;
+				const [id1, player1Data] = player1Entry;
+				const [id2, player2Data] = player2Entry;
+
+			players.set(id1, { username: player1Data.username, playerNumber: 1 });
+            players.set(id2, { username: player2Data.username, playerNumber: 2 });
+
+            console.log(`Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
+
+			this.server.emit("playerInfo", Array.from(players.values()));
+			}
+
+
 			this.gameLoopInterval = setInterval(() => {
 				this.updateGameState();
 	
@@ -156,7 +172,7 @@ import { MenuList } from '@mui/material';
 	
 	private updateGameState() {
 		const ball = this.gameState.ball;
-		console.log("Ball coordinates:", ball.x, ball.y); // Debugging
+		// console.log("Ball coordinates:", ball.x, ball.y); // Debugging
 	
 		// Ensure the ball is valid
 		if (ball.x === undefined || ball.y === undefined) {
@@ -204,13 +220,9 @@ import { MenuList } from '@mui/material';
 		this.server.emit("gameState", { ...this.gameState });
 	}
 	
-	
-	
-	
-
 	/** WebSocket connection */
 	handleConnection(client: Socket) {
-		console.log(`New player connected: ${client.id}`);
+		console.log("New player connected: ${client.id}");
 	
 		client.on("registerUser", (username: string) => {
 			if (!username || typeof username !== "string") {
@@ -221,14 +233,16 @@ import { MenuList } from '@mui/material';
 			// Check if the player is already registered
 			const existingPlayer = Array.from(players.values()).find(p => p.username === username);
 			if (existingPlayer) {
-				console.log(`${username} is already registered, ignoring duplicate request.`);
+				console.log('${username} is already registered, ignoring duplicate request.');
 				return;
 			}
-		
+
 			let playerNumber = players.size === 0 ? 1 : 2; // Assign player numbers
+			console.log("player number: ", playerNumber);
+
 			players.set(client.id, { username, playerNumber });
 		
-			console.log(`Registered ${username} as Player ${playerNumber}`);
+			console.log('Registered ${username} as Player ${playerNumber}');
 			this.server.emit("playerInfo", Array.from(players.values()));
 		
 			if (players.size === 2) {
@@ -242,12 +256,10 @@ import { MenuList } from '@mui/material';
 		});
 	}
 	
-	
-	
   
 	/** WebSocket disconnection */
 	handleDisconnect(client: Socket) {
-		console.log(` Player disconnected: ${client.id}`);
+		console.log(`Player disconnected: ${client.id}`);
 	
 		const removedPlayer = players.get(client.id);
 		players.delete(client.id);
@@ -256,9 +268,9 @@ import { MenuList } from '@mui/material';
 			console.log(`Removed player: ${removedPlayer.username}`);
 		}
 	
-		// If there is only one player left, reset the game
+		// If a player leaves, reset assignments
 		if (players.size < 2) {
-			console.log(" Not enough players, resetting game.");
+			console.log("Not enough players, resetting game.");
 			this.server.emit("playerInfo", Array.from(players.values())); // Update clients
 		}
 	
@@ -269,38 +281,37 @@ import { MenuList } from '@mui/material';
 		}
 	}
 	
+	
 	@SubscribeMessage("playerMove")
-	handlePlayerMove(
-	  @MessageBody() data: { player: number; y: number },
-	  @ConnectedSocket() client: Socket
-	) {
-		const playerInfo = players.get(client.id);
-		if (!playerInfo) {
-			console.error(`Received move from unknown client: ${client.id}`);
-			return;
-		}
-	
-		const previousY = playerInfo.playerNumber === 1 ? this.gameState.paddle1.y : this.gameState.paddle2.y;
-	
-		// Only update if the position is actually different
-		if (previousY !== data.y) {
-			if (data.player === 1) {
-				this.gameState.paddle1.y = data.y;
-				console.log(`Player 1 moved to Y=${data.y}`);
-			} else if (data.player === 2) {
-				this.gameState.paddle2.y = data.y;
-				console.log(`Player 2 moved to Y=${data.y}`);
-			}
-	
-			// this.server.emit("gameState", this.gameState); // Broadcast update
+handlePlayerMove(
+    @MessageBody() data: { player: number; y: number },
+    @ConnectedSocket() client: Socket
+) {
+    const playerInfo = players.get(client.id);
+    if (!playerInfo) {
+        console.error("Received move from unknown client: ${client.id}");
+        return;
+    }
 
-			this.server.emit("playerMoveUpdate", {
-				paddle1Y: this.gameState.paddle1.y,
-				paddle2Y: this.gameState.paddle2.y
-			});
-		}
-	}
-	
+    // Ensure each player moves only their own paddle
+    if (data.player === 1 && playerInfo.playerNumber === 1) {
+        this.gameState.paddle1.y = data.y;
+        console.log("Player 1 moved paddle to Y=${data.y}");
+    } else if (data.player === 2 && playerInfo.playerNumber === 2) {
+        this.gameState.paddle2.y = data.y;
+        console.log("Player 2 moved paddle to Y=${data.y}");
+    } else {
+        console.warn("Invalid move detected! Player ${playerInfo.playerNumber} tried to move Player ${data.player}'s paddle.");
+        return; // Prevent Player 1 from moving Player 2's paddle and vice versa
+    }
+
+    // Send paddle update to all clients
+    // this.server.emit("playerMoveUpdate", {
+        // paddle1Y: this.gameState.paddle1.y,
+        // paddle2Y: this.gameState.paddle2.y
+    // });
+}
+
 	
 	
 	@SubscribeMessage("startBall")
@@ -329,4 +340,3 @@ import { MenuList } from '@mui/material';
 	  client.emit("gameState", this.gameState);
 	}
   }
-  
