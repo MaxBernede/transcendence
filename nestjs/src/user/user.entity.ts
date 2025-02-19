@@ -7,7 +7,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Match } from '../match/match.entity';
-import { AchievementEntity } from '../achievement/achievement.entity';
 import {
   Chat,
   UserConversation,
@@ -80,19 +79,6 @@ export class User {
 
   @OneToMany(() => Match, (match) => match.user)
   matchHistory: Match[];
-
-  @ManyToMany(() => AchievementEntity, (achievement) => achievement.users, {
-    cascade: true,
-  })
-  @JoinTable({
-    name: 'user_achievements',
-    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'achievement_id', referencedColumnName: 'id' },
-  })
-  achievements: AchievementEntity[];
-
-  //   @OneToMany(() => Chat, (chat) => chat.user)
-  //   chats: Chat[];
 
   @OneToMany(
     () => UserConversation,

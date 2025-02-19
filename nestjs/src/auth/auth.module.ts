@@ -10,7 +10,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from 'src/ormconfig';
 import { User } from 'src/user/user.entity';
 import { DatabasesModule } from 'src/database/database.module';
-import { AchievementModule } from 'src/achievement/achievement.module';
 import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
 
 @Module({
@@ -20,7 +19,6 @@ import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
 	DatabasesModule,
 	UsersModule,
 	AuthModule,
-	AchievementModule,
 	TwoFactorAuthModule,
     ConfigModule,
     forwardRef(() => UsersModule),

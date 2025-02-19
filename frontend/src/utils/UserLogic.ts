@@ -9,7 +9,6 @@ export type UserData = {
 	wins: number;
 	losses: number;
 	ladderLevel: number;
-	achievements: { id: number; achievementName: string; description: string }[]; // Add achievements here
 	matchHistory: any[]; // Add matchHistory here
 	[key: string]: any; // Optional if there are other dynamic fields
   };
@@ -17,7 +16,6 @@ export type UserData = {
 
 export const fetchUserData = async (
 	setUserData: React.Dispatch<React.SetStateAction<UserData | null>>,
-	setAchievements: React.Dispatch<React.SetStateAction<any[]>>,
 	setMatchHistory: React.Dispatch<React.SetStateAction<any[]>>,
 	setError: React.Dispatch<React.SetStateAction<string | null>>,
 	setLoading: React.Dispatch<React.SetStateAction<boolean>>
@@ -36,14 +34,6 @@ export const fetchUserData = async (
 		losses: user.losses || user.loose || 0,
 		ladderLevel: user.ladderLevel || user.ladder_level || 0,
 	  });
-  
-	  setAchievements(
-		user.achievements?.map((achievement: any) => ({
-		  id: achievement.id,
-		  achievementName: achievement.achievementName,
-		  description: achievement.description || 'No description available',
-		})) || []
-	  );
   
 	  setMatchHistory(user.matchHistory || []);
   

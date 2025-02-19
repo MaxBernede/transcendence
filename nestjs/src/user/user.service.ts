@@ -8,7 +8,6 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { Match } from '../match/match.entity';
 import { CreateUserDto } from './dto/createUser.dto';
-import { AchievementEntity } from '../achievement/achievement.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -19,8 +18,6 @@ export class UserService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Match)
     private readonly matchRepository: Repository<Match>,
-    @InjectRepository(AchievementEntity)
-    private readonly achievementRepository: Repository<AchievementEntity>,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -64,25 +61,10 @@ export class UserService {
     return user;
   }
 
-  async getUserWithAchievements(id: number): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id },
-      relations: ['achievements'],
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    user.avatar = user.image?.link || user.avatar || '/assets/Bat.jpg';
-
-    return user;
-  }
-
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: +id },
-      relations: ['achievements', 'matchHistory', 'friends'],
+      relations: ['matchHistory', 'friends'],
     });
 
     if (!user) {
@@ -163,7 +145,7 @@ export class UserService {
 
     const user = await this.userRepository.findOne({
       where: whereClause,
-      relations: ['friends', 'achievements', 'matchHistory'],
+      relations: ['friends', 'matchHistory'],
     });
 
     if (!user) {
@@ -207,43 +189,6 @@ export class UserService {
     }
 
     user.friends.push(friend);
-    return this.userRepository.save(user);
-  }
-
-  async findAchievementsForUser(userId: number): Promise<AchievementEntity[]> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['achievements'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID "${userId}" not found`);
-    }
-
-    return user.achievements;
-  }
-
-  async updateAchievements(
-    userId: number,
-    achievementIds: number[],
-  ): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['achievements'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID "${userId}" not found`);
-    }
-
-    const achievements =
-      await this.achievementRepository.findByIds(achievementIds);
-
-    if (achievements.length !== achievementIds.length) {
-      throw new BadRequestException('Some achievements not found');
-    }
-
-    user.achievements = achievements;
     return this.userRepository.save(user);
   }
 

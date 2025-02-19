@@ -21,8 +21,6 @@ export const UserContext = createContext<{
 	setUserData: React.Dispatch<React.SetStateAction<UserData | null>>;
 	loading: boolean;
 	error: string | null;
-	achievements: { id: number; achievementName: string; description: string }[];
-	setAchievements: React.Dispatch<React.SetStateAction<any[]>>;
 	matchHistory: any[];
 	setMatchHistory: React.Dispatch<React.SetStateAction<any[]>>;
   }>({
@@ -30,8 +28,6 @@ export const UserContext = createContext<{
 	setUserData: () => {},
 	loading: true,
 	error: null,
-	achievements: [],
-	setAchievements: () => {},
 	matchHistory: [],
 	setMatchHistory: () => {},
   });
@@ -40,12 +36,11 @@ function App() {
 	const [userData, setUserData] = useState<UserData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [achievements, setAchievements] = useState<any[]>([]); // Default as empty array
 	const [matchHistory, setMatchHistory] = useState<any[]>([]); // Default as empty array  
 	useEffect(() => {
 		// Fetch user data when the component mounts
 		//user, achi, match, error, loading
-		fetchUserData(setUserData, setAchievements, setMatchHistory, setError, setLoading);
+		fetchUserData(setUserData, setMatchHistory, setError, setLoading);
 	  },[]);
   return (
     <UserContext.Provider
@@ -54,8 +49,6 @@ function App() {
         setUserData,
         loading,
         error,
-        achievements,
-        setAchievements,
         matchHistory,
         setMatchHistory,
       }}

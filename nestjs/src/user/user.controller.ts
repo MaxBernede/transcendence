@@ -263,17 +263,4 @@ export class UserController {
     return this.matchService.updateMatchHistory(userId, matchUpdates);
   }
 
-  @Put(':id/achievement')
-  async updateAchievements(
-    @Param('id', ParseIntPipe) userId: number,
-    @Body('achievements') achievementIds: number[],
-  ) {
-    return this.userService.updateAchievements(userId, achievementIds);
-  }
-
-  @Get(':id/achievements')
-  async getUserAchievements(@Param('id', ParseIntPipe) id: number) {
-    const user = await this.userService.getUserWithAchievements(id);
-    return user.achievements;
-  }
 }

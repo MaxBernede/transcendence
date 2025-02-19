@@ -32,14 +32,14 @@ const TwoFactorAuth = () => {
 	const [secret, setSecret] = useState('');
 	const [otp, setOtp] = useState('');
 	const [isValid, setIsValid] = useState(null);
-	const { userData, setUserData, loading, error, achievements, setAchievements, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
+	const { userData, setUserData, loading, error, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
 
 	useEffect(() => {
 		if (!userData) {
 		// If userData is not available, fetch it
-		fetchUserData(setUserData, setAchievements, setMatchHistory, () => {}, () => {});
+		fetchUserData(setUserData, setMatchHistory, () => {}, () => {});
 		}
-	}, [userData, setUserData, setAchievements, setMatchHistory]);
+	}, [userData, setUserData, setMatchHistory]);
 
 	//! make it so no access if not logged in
 	const { isAuthenticated, isLoading } = useAuth();

@@ -6,12 +6,12 @@ import { Stats } from '../components/Stats';
 import { MatchHistory } from '../components/MatchHistory';
 import LogoutButton from '../components/Logoutbutton';
 import { handleImageChange } from '../utils/UserHandlers';
-import { updateUserUsername, UserData, fetchUserData } from '../utils/UserLogic';
+import { updateUserUsername } from '../utils/UserLogic';
 import { UserContext } from '../App'; // Import UserContext
 
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { userData, setUserData, loading, error, achievements, setAchievements, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
+  const { userData, setUserData, loading, error, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
@@ -35,8 +35,6 @@ const UserPage: React.FC = () => {
         <Stats
           wins={userData?.wins || 0}
           losses={userData?.losses || 0}
-          ladderLevel={userData?.ladderLevel || 0}
-          achievements={achievements}
         />
         <MatchHistory matchHistory={matchHistory} />
       </div>

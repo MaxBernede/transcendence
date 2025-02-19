@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { UserContext } from '../../App';
-import { fetchUserData } from '../../utils/UserLogic';
 
 interface TwoFactorAuthLoginProps {
 	userId: string | null;
