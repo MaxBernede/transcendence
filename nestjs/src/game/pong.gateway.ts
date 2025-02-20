@@ -70,19 +70,27 @@ import { MenuList } from '@mui/material';
 	  this.powerUpState = { x: randomX, y: randomY, type: randomType as any, isActive: true };
 	  this.server.emit("powerUpSpawned", this.powerUpState);
 	}
-
 	@SubscribeMessage('registerUser')
-	handleRegisterUser(client: Socket, username: string) {
-		if (Array.from(players.values()).some(player => player.username === username)) {
-			console.log(`${username} is already registered, ignoring duplicate request.`);
-			return;
-		}
-		const playerNumber = players.size + 1;
-		players.set(client.id, { username, playerNumber });
-		this.broadcastPlayers();
-	}
-	
+handleRegisterUser(client: Socket, username: string) {
+    console.log(`Registering player: ${username}`);
 
+    // Check if the player was previously assigned a number
+    let existingPlayerEntry = Array.from(players.entries()).find(([_, player]) => player.username === username);
+    
+    if (existingPlayerEntry) {
+        console.log(`✅ ${username} reconnected as Player ${existingPlayerEntry[1].playerNumber}`);
+        players.set(client.id, existingPlayerEntry[1]); // Keep the same player number
+    } else {
+        // Assign a new player number only if they are truly new
+        const playerNumber = players.size === 0 ? 1 : 2;
+        console.log(`🎮 New player: ${username} assigned as Player ${playerNumber}`);
+        players.set(client.id, { username, playerNumber });
+    }
+
+    this.server.emit("playerInfo", Array.from(players.values())); // Notify all clients
+}
+
+	
 @SubscribeMessage("requestPlayers")
 handleRequestPlayers(@ConnectedSocket() client: Socket) {
     console.log("📌 Sending player info:", Array.from(players.values()));
@@ -116,14 +124,23 @@ private broadcastPlayers() {
 				const [id2, player2Data] = player2Entry;
 
 				// Check if Player 1 already exists
-				const player1Exists = playerEntries.some(([_, player]) => player.playerNumber === 1);
+				const existingPlayer1 = playerEntries.find(([_, player]) => player.playerNumber === 1);
+				const existingPlayer2 = playerEntries.find(([_, player]) => player.playerNumber === 2);
 				
-				if (!player1Exists) {
+
+				console.log("existingPlayer1: ", existingPlayer1);
+				console.log("existingPlayer2: ", existingPlayer2);
+ 
+				if (!existingPlayer1 && !existingPlayer2) {
 					players.set(id1, { username: player1Data.username, playerNumber: 1 });
 					players.set(id2, { username: player2Data.username, playerNumber: 2 });
-				} else {
-					players.set(id1, { username: player1Data.username, playerNumber: 2 });
+				} else if (!existingPlayer1) {
+					players.set(id1, { username: player1Data.username, playerNumber: 1 });
+				} else if (!existingPlayer2) {
+					players.set(id2, { username: player2Data.username, playerNumber: 2 });
 				}
+				
+				
 
 				console.log(` Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
 
@@ -288,27 +305,37 @@ private broadcastPlayers() {
 	
   
 	/** WebSocket disconnection */
+	// handleDisconnect(client: Socket) {
+	// 	console.log(`Player disconnected: ${client.id}`);
+		
+	// 	const playerData = players.get(client.id);
+	// 	if (playerData) {
+	// 		console.log(`Removing player: ${playerData.username}`);
+	// 		players.delete(client.id);
+	// 	}
+	
+	// 	// Reassign player numbers if only one remains
+	// 	const remainingPlayers = Array.from(players.values());
+	// 	if (remainingPlayers.length === 1) {
+	// 		remainingPlayers[0].playerNumber = 1;  // Reset to Player 1
+	// 	}
+	
+	// 	this.server.emit("playerInfo", Array.from(players.values()));
+	// }
+	
+
 	handleDisconnect(client: Socket) {
 		console.log(`Player disconnected: ${client.id}`);
-		
-		// Find the player by their socket ID
-		for (const [id, playerData] of players.entries()) {
-			if (id === client.id) {
-				console.log(`Removing player: ${playerData.username}`);
-				players.delete(id);
-				break;
-			}
+	
+		const playerData = players.get(client.id);
+		if (playerData) {
+			console.log(`⚠️ Marking ${playerData.username} as disconnected (Player ${playerData.playerNumber})`);
+			players.set(client.id, { ...playerData }); // Keep their player number but remove active connection
 		}
 	
-		// Check if only one player remains
-		if (players.size < 2) {
-			console.log("Not enough players, resetting game.");
-			this.resetGame();
-		}
-	
-		// Notify clients about updated player list
+		// Notify remaining players that a player is disconnected
 		this.server.emit("playerInfo", Array.from(players.values()));
-	}
+	}	
 	
 	
 	

@@ -10,6 +10,12 @@ import axios from "axios";
 
 const socket = io("http://localhost:3000/pong");
 
+// Define the Player interface
+interface Player {
+  username: string;
+  playerNumber: number;
+}
+
 const Pong = () => {
   const [playerNumber, setPlayerNumber] = useState<number>(1);
 
@@ -34,7 +40,8 @@ const Pong = () => {
 
   const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
   const [darkBackground, setDarkBackground] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<string>("PLAYER 1");
+//   const [loggedInUser, setLoggedInUser] = useState<string>("PLAYER 1");
+const [loggedInUser, setLoggedInUser] = useState<string>("");
   const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
   const hasListener = useRef(false);
   const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
@@ -50,40 +57,19 @@ const Pong = () => {
       .catch(() => console.error("Failed to fetch user data"));
   }, []);
 
-//   useEffect(() => {
-//     if (loggedInUser) {
-//       socket.emit("registerUser", loggedInUser);
-//       socket.emit("requestPlayers");
-//       socket.emit("gameState");
-//     }
-//   }, [loggedInUser]);
-
 useEffect(() => {
     if (loggedInUser) {
         socket.emit("registerUser", loggedInUser);
-        
-        // Request player info every second until both players have joined
-        const interval = setInterval(() => {
-            console.log(" Requesting player info...");
-            socket.emit("requestPlayers");
-        }, 1000); // Polling every second
-
-        return () => clearInterval(interval); // Clean up when component unmounts
+        socket.emit("requestPlayers");
     }
 }, [loggedInUser]);
 
-
-// const hasRegistered = useRef(false);
-
-// useEffect(() => {
-//     if (loggedInUser && !hasRegistered.current) {
-//         socket.emit("registerUser", loggedInUser);
-//         socket.emit("requestPlayers");
-//         socket.emit("gameState");
-//         hasRegistered.current = true;
-//     }
-// }, [loggedInUser]);
-
+  useEffect(() => {
+    const storedPlayerNumber = localStorage.getItem("playerNumber");
+    if (storedPlayerNumber) {
+      setPlayerNumber(Number(storedPlayerNumber));
+    }
+  }, []);
 
   useEffect(() => {
     const handleGameState = (state: any) => {
@@ -105,41 +91,64 @@ useEffect(() => {
   }, [playerNumber]);
 
   useEffect(() => {
-    const handlePlayerInfo = (players: { username: string; playerNumber: number }[]) => {
-        console.log("📡 Received player info:", players);
-
-        const currentPlayer = players.find((p) => p.username === loggedInUser);
-        const opponent = players.find((p) => p.username !== loggedInUser);
-
-        if (currentPlayer) {
-            console.log(`✅ Setting player number: ${currentPlayer.playerNumber}`);
-            setPlayerNumber(currentPlayer.playerNumber);
-        } else {
-            console.warn("⚠️ Current player not found in player list!");
-        }
-
-        if (opponent) {
-            console.log(`🎯 Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
-            setOpponentUsername(opponent.username);
-        } else {
-            console.warn("⚠️ Opponent not found in player list, setting to WAITING...");
-            setOpponentUsername("WAITING...");
-        }
-    };
-
-    socket.off("playerInfo");
-    socket.on("playerInfo", handlePlayerInfo);
-
-    return () => {
-        socket.off("playerInfo", handlePlayerInfo);
-    };
-}, [loggedInUser]);
-
+	// Retrieve playerNumber from sessionStorage if available
+	const storedPlayerNumber = sessionStorage.getItem("playerNumber");
+	if (storedPlayerNumber) {
+	  setPlayerNumber(Number(storedPlayerNumber));
+	}
+  }, []);
+  
+  useEffect(() => {
+	const handlePlayerInfo = (players: Player[]) => {
+	  console.log("📡 Received player info:", players);
+  
+	  if (!loggedInUser) return; // Prevent running if loggedInUser isn't set yet
+  
+	  let storedPlayerNumber = Number(sessionStorage.getItem("playerNumber")) || 1;
+  
+	  const currentPlayer = players.find((p) => p.username === loggedInUser);
+	  const opponent = players.find((p) => p.username !== loggedInUser);
+  
+	  if (currentPlayer) {
+		console.log(`✅ Restoring stored player number: ${currentPlayer.playerNumber}`);
+		storedPlayerNumber = currentPlayer.playerNumber; // Preserve correct number
+	  } else if (players.length === 1) {
+		// Keep player 1 as player 1, avoid automatic swaps
+		if (players[0].playerNumber === 1) {
+		  storedPlayerNumber = 2;
+		} else {
+		  storedPlayerNumber = 1;
+		}
+		console.log(`🔄 Assigning opposite player number: ${storedPlayerNumber}`);
+	  }
+  
+	  // Prevent unnecessary re-renders
+	  if (playerNumber !== storedPlayerNumber) {
+		setPlayerNumber(storedPlayerNumber);
+		sessionStorage.setItem("playerNumber", String(storedPlayerNumber));
+	  }
+  
+	  if (opponent) {
+		console.log(`🎯 Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
+		setOpponentUsername(opponent.username);
+	  } else {
+		console.warn("⚠️ Opponent not found, setting to WAITING...");
+		setOpponentUsername("WAITING...");
+	  }
+	};
+  
+	socket.on("playerInfo", handlePlayerInfo);
+	return () => {
+	  socket.off("playerInfo", handlePlayerInfo);
+	};
+  }, [loggedInUser, playerNumber]); // Ensure playerNumber updates correctly
+  
+  
 
   const handleKeyDown = (event: KeyboardEvent) => {
     let newY = 0;
 
-	console.log("playerNumber: ", playerNumber);
+    console.log("playerNumber: ", playerNumber);
     if (playerNumber === 1) {
       if (event.key === "w" || event.key === "ArrowUp") {
         newY = Math.max(paddle1Y - 20, 0);
