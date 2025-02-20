@@ -183,14 +183,13 @@ useEffect(() => {
 
   return (
     <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
-      <Scoreboard
-        score1={playerNumber === 1 ? score1 : score2}
-        score2={playerNumber === 1 ? score2 : score1}
-        darkMode={darkBackground}
-        loggedInUser={loggedInUser}
-        opponentUsername={opponentUsername}
-      />
-
+		<Scoreboard
+		score1={score1}  // Player 1's score always on the left
+		score2={score2}  // Player 2's score always on the right
+		darkMode={darkBackground}
+		loggedInUser={playerNumber === 1 ? loggedInUser : opponentUsername} // Player 1 username
+		opponentUsername={playerNumber === 1 ? opponentUsername : loggedInUser} // Player 2 username
+		/>
       <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
         <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
 
