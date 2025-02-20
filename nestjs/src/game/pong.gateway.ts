@@ -42,19 +42,33 @@ import { MenuList } from '@mui/material';
 		}
 	}
 
-	private resetGame() {
-		console.log("Resetting game...");
-		
-		this.gameState = {
-			ball: { x: 390, y: 294, vx: 5, vy: 5 },
-			paddle1: { y: 250 },
-			paddle2: { y: 250 },
-			score: { player1: 0, player2: 0 },
-		};
-	
-		this.server.emit("gameState", this.gameState); // Send new game state to clients
-	}
-	
+/** Resets the entire game (after win or manual reset) */
+/** Resets the entire game (after win or manual reset) */
+private resetGame() {
+    console.log("🔄 Resetting entire game...");
+
+    this.ballMoving = false; // ✅ Stop the ball movement completely
+
+    // Reset game state
+    this.gameState = {
+        ball: { x: 390, y: 294, vx: 0, vy: 0 }, // ✅ Ensure velocity is zero
+        paddle1: { y: 250 },
+        paddle2: { y: 250 },
+        score: { player1: 0, player2: 0 }
+    };
+
+    if (this.gameLoopInterval) {
+        clearInterval(this.gameLoopInterval); // ✅ Stop game loop
+        this.gameLoopInterval = null;
+    }
+
+    this.server.emit("gameState", { ...this.gameState }); // ✅ Broadcast the reset game state
+}
+
+
+
+	private ballMoving: boolean = false; 
+
 	private gameLoopInterval: NodeJS.Timeout | null = null;
   
 	constructor(private readonly databaseService: DatabasesService) {}
@@ -101,65 +115,176 @@ private broadcastPlayers() {
 	this.server.emit('updatePlayers', Array.from(players.values()));
 }
 
+private stopBall() {
+    console.log("🛑 Stopping ball movement...");
+    this.ballMoving = false;
+    this.gameState.ball.vx = 0;
+    this.gameState.ball.vy = 0;
+}
+
   
 	/** Resets the ball after scoring */
-	private resetBall(direction: number) {
-		console.log("Resetting ball...");
-	
-		this.gameState.ball = { x: 390, y: 294, vx: direction, vy: Math.random() > 0.5 ? 5 : -5 };
-		this.server.emit("gameState", this.gameState); // Immediately send updated game state
-	}
+/** Resets the ball after scoring */
+private resetBall(direction: number) {
+    console.log("🏀 Resetting ball and stopping movement...");
+
+    // 🚨 STOP BALL MOVEMENT
+    this.ballMoving = false;
+
+    // Reset ball position **without velocity**
+    this.gameState.ball = { 
+        x: 390, 
+        y: 294, 
+        vx: 0,  // 🚨 Set to zero
+        vy: 0 
+    };
+
+    // Reset paddles to their default position
+    this.gameState.paddle1.y = 250;
+    this.gameState.paddle2.y = 250;
+
+    // Send the updated state to all players
+    this.server.emit("gameState", { ...this.gameState });
+}
+
 	
   
 	/** Game loop */
-	private startGameLoop() {
-		if (!this.gameLoopInterval) {
-			console.log("Game loop started!");
+	// private startGameLoop() {
+	// 	if (!this.gameLoopInterval) {
+	// 		console.log("Game loop started!");
 
-			const playerEntries = Array.from(players.entries());
+	// 		const playerEntries = Array.from(players.entries());
 
-			if (playerEntries.length === 2) {
-				const [player1Entry, player2Entry] = playerEntries;
-				const [id1, player1Data] = player1Entry;
-				const [id2, player2Data] = player2Entry;
+	// 		if (playerEntries.length === 2) {
+	// 			const [player1Entry, player2Entry] = playerEntries;
+	// 			const [id1, player1Data] = player1Entry;
+	// 			const [id2, player2Data] = player2Entry;
 
-				// Check if Player 1 already exists
-				const existingPlayer1 = playerEntries.find(([_, player]) => player.playerNumber === 1);
-				const existingPlayer2 = playerEntries.find(([_, player]) => player.playerNumber === 2);
+	// 			// Check if Player 1 already exists
+	// 			const existingPlayer1 = playerEntries.find(([_, player]) => player.playerNumber === 1);
+	// 			const existingPlayer2 = playerEntries.find(([_, player]) => player.playerNumber === 2);
 				
 
-				console.log("existingPlayer1: ", existingPlayer1);
-				console.log("existingPlayer2: ", existingPlayer2);
+	// 			console.log("existingPlayer1: ", existingPlayer1);
+	// 			console.log("existingPlayer2: ", existingPlayer2);
  
-				if (!existingPlayer1 && !existingPlayer2) {
-					players.set(id1, { username: player1Data.username, playerNumber: 1 });
-					players.set(id2, { username: player2Data.username, playerNumber: 2 });
-				} else if (!existingPlayer1) {
-					players.set(id1, { username: player1Data.username, playerNumber: 1 });
-				} else if (!existingPlayer2) {
-					players.set(id2, { username: player2Data.username, playerNumber: 2 });
-				}
+	// 			if (!existingPlayer1 && !existingPlayer2) {
+	// 				players.set(id1, { username: player1Data.username, playerNumber: 1 });
+	// 				players.set(id2, { username: player2Data.username, playerNumber: 2 });
+	// 			} else if (!existingPlayer1) {
+	// 				players.set(id1, { username: player1Data.username, playerNumber: 1 });
+	// 			} else if (!existingPlayer2) {
+	// 				players.set(id2, { username: player2Data.username, playerNumber: 2 });
+	// 			}
 				
 				
 
-				console.log(` Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
+	// 			console.log(` Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
 
-				this.server.emit("playerInfo", Array.from(players.values()));
-			}
+	// 			this.server.emit("playerInfo", Array.from(players.values()));
+	// 		}
 
 
-			this.gameLoopInterval = setInterval(() => {
-				this.updateGameState();
+	// 		this.gameLoopInterval = setInterval(() => {
+	// 			if (this.ballMoving) {
+	// 			this.updateGameState();
 	
-				// Randomly spawn a power-up every 10 seconds
-				if (Math.random() < 0.01) { 
-					this.spawnPowerUp();
-				}
-			}, 1000 / 30); // Run at 30 FPS
-		} else {
-			console.log("Game loop is already running.");
+	// 			// Randomly spawn a power-up every 10 seconds
+	// 			if (Math.random() < 0.01) { 
+	// 				this.spawnPowerUp();
+	// 			}
+	// 		}
+	// 		}, 1000 / 30); // Run at 30 FPS
+	// 	} else {
+	// 		console.log("Game loop is already running.");
+	// 	}
+	// }
+
+	// private startGameLoop() {
+	// 	if (this.gameLoopInterval) {
+	// 		console.log("⚠️ Game loop is already running. Skipping...");
+	// 		return;
+	// 	}
+	
+	// 	console.log("✅ Starting game loop...");
+	
+	// 	const playerEntries = Array.from(players.entries());
+	// 	if (playerEntries.length !== 2) {
+	// 		console.warn("⚠️ Not enough players to start game loop.");
+	// 		return;
+	// 	}
+	
+	// 	// ✅ Ensure correct player assignments
+	// 	const [player1Entry, player2Entry] = playerEntries;
+	// 	const [id1, player1Data] = player1Entry;
+	// 	const [id2, player2Data] = player2Entry;
+	
+	// 	if (!players.has(id1)) players.set(id1, { username: player1Data.username, playerNumber: 1 });
+	// 	if (!players.has(id2)) players.set(id2, { username: player2Data.username, playerNumber: 2 });
+	
+	// 	console.log(`🎮 Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
+	// 	this.server.emit("playerInfo", Array.from(players.values()));
+	
+	// 	// ✅ Start game loop but **DO NOT move ball until a player moves**
+	// 	this.gameLoopInterval = setInterval(() => {
+	// 		if (!this.ballMoving) return; // ⏸️ Prevents unnecessary updates when paused
+	
+	// 		console.log("🏀 Ball is moving, updating game state...");
+	// 		this.updateGameState();
+	
+	// 		// Randomly spawn a power-up every 10 seconds
+	// 		if (Math.random() < 0.01) {
+	// 			this.spawnPowerUp();
+	// 		}
+	// 	}, 1000 / 30); // Run at 30 FPS
+	// }
+	private startGameLoop() {
+		if (this.gameLoopInterval) {
+			console.log("⚠️ Game loop is already running. Skipping...");
+			return;
 		}
+	
+		console.log("✅ Starting game loop...");
+	
+		const playerEntries = Array.from(players.entries());
+		if (playerEntries.length !== 2) {
+			console.warn("⚠️ Not enough players to start game loop.");
+			return;
+		}
+	
+		// ✅ Ensure correct player assignments
+		const [player1Entry, player2Entry] = playerEntries;
+		const [id1, player1Data] = player1Entry;
+		const [id2, player2Data] = player2Entry;
+	
+		if (!players.has(id1)) players.set(id1, { username: player1Data.username, playerNumber: 1 });
+		if (!players.has(id2)) players.set(id2, { username: player2Data.username, playerNumber: 2 });
+	
+		console.log(`🎮 Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
+		this.server.emit("playerInfo", Array.from(players.values()));
+	
+		// ✅ STOP any existing game loop before starting a new one
+		if (this.gameLoopInterval) {
+			clearInterval(this.gameLoopInterval);
+			this.gameLoopInterval = null;
+		}
+	
+		// ✅ Start game loop but **DO NOT move ball until a player moves**
+		this.gameLoopInterval = setInterval(() => {
+			if (!this.ballMoving) return; // ⏸️ Prevents unnecessary updates when paused
+	
+			console.log("🏀 Ball is moving, updating game state...");
+			this.updateGameState();
+	
+			// Randomly spawn a power-up every 10 seconds
+			if (Math.random() < 0.01) {
+				this.spawnPowerUp();
+			}
+		}, 1000 / 30); // Run at 30 FPS
 	}
+	
+	
 	
   
 	/** Updates ball movement and collisions */
@@ -216,56 +341,44 @@ private broadcastPlayers() {
 	// 	// Continuously send ball updates
 	// 	this.server.emit("gameState", this.gameState);
 	//   }
-	
 	private updateGameState() {
+		if (!this.ballMoving) return; // ✅ Prevents ghost ball from moving
+	
 		const ball = this.gameState.ball;
-		// console.log("Ball coordinates:", ball.x, ball.y); // Debugging
-	
-		// Ensure the ball is valid
-		if (ball.x === undefined || ball.y === undefined) {
-			console.warn("⚠️ Ball data is undefined!", this.gameState);
-			return;
-		}
-	
-		// Move the ball
 		ball.x += ball.vx;
 		ball.y += ball.vy;
 	
-		// Bounce off top and bottom walls
-		if (ball.y <= 0 || ball.y >= 600) {
-			ball.vy = -ball.vy;
-		}
+		// Wall bounce logic
+		if (ball.y <= 0 || ball.y >= 600) ball.vy = -ball.vy;
 	
+		// Paddle collision logic
 		const paddle1 = this.gameState.paddle1;
 		const paddle2 = this.gameState.paddle2;
 	
-		// Fix ball getting stuck inside paddles
 		if (ball.x <= 30 && ball.y >= paddle1.y && ball.y <= paddle1.y + 100) {
-			ball.vx = Math.abs(ball.vx); // Bounce right
-			ball.x = 31; // Prevent sticking inside the paddle
+			ball.vx = Math.abs(ball.vx);
 		} else if (ball.x >= 770 && ball.y >= paddle2.y && ball.y <= paddle2.y + 100) {
-			ball.vx = -Math.abs(ball.vx); // Bounce left
-			ball.x = 769; // Prevent sticking inside the paddle
+			ball.vx = -Math.abs(ball.vx);
 		}
 	
-		// Handle scoring and ensure game state is updated immediately
+		// Scoring logic
 		if (ball.x <= 0) {
 			this.gameState.score.player2++;
-			console.log("Player 2 Scores!");
+			console.log("🎯 Player 2 Scores!");
 			this.resetBall(5);
-			this.checkGameOver();
 			return;
 		} else if (ball.x >= 800) {
 			this.gameState.score.player1++;
-			console.log("Player 1 Scores!");
+			console.log("🎯 Player 1 Scores!");
 			this.resetBall(-5);
-			this.checkGameOver();
 			return;
 		}
 	
-		// Ensure fresh state is sent to prevent ghost ball issues
+		// Broadcast updated game state
 		this.server.emit("gameState", { ...this.gameState });
 	}
+	
+	
 	
 	/** WebSocket connection */
 	handleConnection(client: Socket) {
@@ -337,63 +450,38 @@ private broadcastPlayers() {
 		this.server.emit("playerInfo", Array.from(players.values()));
 	}	
 	
-	
-	
 	@SubscribeMessage("playerMove")
-handlePlayerMove(
-    @MessageBody() data: { player: number; y: number },
-    @ConnectedSocket() client: Socket
-) {
-    const playerInfo = players.get(client.id);
-    if (!playerInfo) {
-        console.error("Received move from unknown client: ${client.id}");
-        return;
-    }
-
-    // Ensure each player moves only their own paddle
-    if (data.player === 1 && playerInfo.playerNumber === 1) {
-        this.gameState.paddle1.y = data.y;
-        console.log("Player 1 moved paddle to Y=${data.y}");
-    } else if (data.player === 2 && playerInfo.playerNumber === 2) {
-        this.gameState.paddle2.y = data.y;
-        console.log("Player 2 moved paddle to Y=${data.y}");
-    } else {
-        console.warn("Invalid move detected! Player ${playerInfo.playerNumber} tried to move Player ${data.player}'s paddle.");
-        return; // Prevent Player 1 from moving Player 2's paddle and vice versa
-    }
-
-    // Send paddle update to all clients
-    // this.server.emit("playerMoveUpdate", {
-        // paddle1Y: this.gameState.paddle1.y,
-        // paddle2Y: this.gameState.paddle2.y
-    // });
+	handlePlayerMove(
+		@MessageBody() data: { player: number; y: number },
+		@ConnectedSocket() client: Socket
+	) {
+		const playerInfo = players.get(client.id);
+		if (!playerInfo) {
+			console.error(`Received move from unknown client: ${client.id}`);
+			return;
+		}
+	
+		// Ensure only the correct player moves their paddle
+		if (data.player === 1 && playerInfo.playerNumber === 1) {
+			this.gameState.paddle1.y = data.y;
+			console.log(`🎮 Player 1 moved paddle to Y=${data.y}`);
+		} else if (data.player === 2 && playerInfo.playerNumber === 2) {
+			this.gameState.paddle2.y = data.y;
+			console.log(`🎮 Player 2 moved paddle to Y=${data.y}`);
+		} else {
+			console.warn(`⚠️ Invalid move detected! Player ${playerInfo.playerNumber} tried to move Player ${data.player}'s paddle.`);
+			return; 
+		}
+	
+		// ✅ Only start the ball movement **if it's NOT already moving**
+		if (!this.ballMoving) {
+			console.log("🚀 First paddle move detected, starting ball movement...");
+			this.ballMoving = true;
+			this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
+			this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+		}
+	
+		// Emit the updated game state to ALL players
+		this.server.emit("gameState", { ...this.gameState });
+	}
 }
-
-	
-	
-	@SubscribeMessage("startBall")
-	handleStartBall() {
-	if (!this.gameLoopInterval) {
-		console.log("Starting game loop...");
-		this.startGameLoop();
-	}
-	}
-  
-	/** Handles power-up collection */
-	@SubscribeMessage("powerUpCollected")
-	handlePowerUpCollected(@MessageBody() data: { player: number }) {
-	  if (!this.powerUpState.isActive) return;
-	  if (this.powerUpState.type === "shrinkOpponent") this.server.emit("shrinkPaddle", { player: data.player === 1 ? 2 : 1 });
-	  else if (this.powerUpState.type === "speedBoost") this.server.emit("increaseBallSpeed");
-	  else if (this.powerUpState.type === "enlargePaddle") this.server.emit("enlargePaddle", { player: data.player });
-  
-	  this.powerUpState = { x: null, y: null, type: null, isActive: false };
-	  this.server.emit("powerUpCleared");
-	}
-  
-	/** Sends latest game state */
-	@SubscribeMessage("requestGameState")
-	handleRequestGameState(@ConnectedSocket() client: Socket) {
-	  client.emit("gameState", this.gameState);
-	}
-  }
