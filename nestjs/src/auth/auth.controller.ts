@@ -61,6 +61,10 @@ export class AuthController {
         return res.redirect(`http://localhost:3001/2FASetup?id=${user.id}`);
 
       this.authService.setJwtCookie(res, jwt);
+      if (user && user.newUser){
+        await this.userService.updateUser(String(user.id), { newUser: false });
+        return res.redirect(`http://localhost:3001/user/profileupdate`); //if first login, needs to prompt to change infos :)
+      }
       return res.redirect(`http://localhost:3001/user/${this.authService.getUserIdFromJwt(jwt)}`);
     } 
     catch (error) {

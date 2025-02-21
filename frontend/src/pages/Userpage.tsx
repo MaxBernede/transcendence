@@ -8,6 +8,7 @@ import LogoutButton from '../components/Logoutbutton';
 import { handleImageChange } from '../utils/UserHandlers';
 import { updateUserUsername } from '../utils/UserLogic';
 import { UserContext } from '../App'; // Import UserContext
+import ProfileBanner from '../components/ProfileBanner';
 
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +19,8 @@ const UserPage: React.FC = () => {
 
   return (
     <div className="user-page-container">
-      <Header
+      <ProfileBanner></ProfileBanner>
+      {/* <Header
         id={userData?.id || ''}
         username={userData?.username || ''}
         avatar={userData?.avatar || ''}
@@ -26,7 +28,7 @@ const UserPage: React.FC = () => {
         setUsername={(newUsername) =>
           updateUserUsername(newUsername, userData?.id || '', setUserData, () => {}, () => {})
         }
-      />
+        /> */}
       <div className="content-container">
         <div className="user-info">
           <p>userId: {userData?.intraId}</p>

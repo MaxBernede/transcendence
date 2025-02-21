@@ -5,6 +5,7 @@ import EditableFieldButton from '../../utils/EditButton';
 import axios from 'axios';
 import Remove2FAButton from '../../components/2FA/2FARemove';
 import TwoFactorAuth from '../../components/2FA/2FA';
+import { Box } from '@mui/material';
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -36,7 +37,13 @@ const UserPage: React.FC = () => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div>
+    <Box
+    display="flex"
+    flexDirection="column"
+    alignItems="center"
+    justifyContent="center"
+    minHeight="100vh" // This ensures the content is vertically centered
+    padding="2rem" >
       <h1>User Profile</h1>
 
       {/* Editable username */}
@@ -74,7 +81,7 @@ const UserPage: React.FC = () => {
       <Remove2FAButton></Remove2FAButton>
       {/* <Component></Component> */}
       <TwoFactorAuth></TwoFactorAuth>
-    </div>
+    </Box>
   );
 };
 

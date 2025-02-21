@@ -56,6 +56,9 @@ export class User {
   @Column({ default: 0 })
   loose: number;
 
+  @Column({ default: true })
+  newUser: boolean;
+
   @Column({ default: 0 })
   ladder_level: number;
 

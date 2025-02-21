@@ -76,7 +76,7 @@ export class AuthService {
 	private async generateAndStoreJWT(user: any): Promise<string> {
 		const payload: TokenPayload = { sub: user.id, username: user.username, email: user.email };
 		const jwt = this.jwtService.sign(payload);
-    console.log("JWT: ", jwt);
+    // console.log("JWT: ", jwt);
 		await this.usersService.updateUser(user.id.toString(), { tempJWT: jwt });
 		return jwt;
 	}
