@@ -29,18 +29,6 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
         setWinner(state.winner || null);
     });
 
-    // socket.on("playerMoveUpdate", (data) => {
-    //     if (playerNumber === 1) {
-    //         // If we're Player 1, our paddle is "paddle1", opponent's is "paddle2"
-    //         setPaddle1Y(data.paddle1Y);
-    //         setPaddle2Y(data.paddle2Y);
-    //     } else if (playerNumber === 2) {
-    //         // If we're Player 2, our paddle is "paddle1" (for them), opponent's is "paddle2"
-    //         setPaddle1Y(data.paddle2Y); // Reverse the paddles
-    //         setPaddle2Y(data.paddle1Y);
-    //     }
-    // });
-
     return () => {
         socket.off("gameState");
         socket.off("playerMoveUpdate");

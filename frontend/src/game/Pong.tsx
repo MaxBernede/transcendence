@@ -8,9 +8,11 @@ import PowerUp from "./PowerUp";
 import { usePongGame } from "./hooks/usePongGame";
 import axios from "axios";
 
+// this file connects to a Websocket server to sync real time movement
+// and manages the game state (ball, paddle, scores) + handles player input
+
 const socket = io("http://localhost:3000/pong");
 
-// Define the Player interface
 interface Player {
   username: string;
   playerNumber: number;
@@ -40,12 +42,13 @@ const Pong = () => {
 
   const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
   const [darkBackground, setDarkBackground] = useState(false);
-//   const [loggedInUser, setLoggedInUser] = useState<string>("PLAYER 1");
-const [loggedInUser, setLoggedInUser] = useState<string>("");
+  const [loggedInUser, setLoggedInUser] = useState<string>("");
   const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
   const hasListener = useRef(false);
   const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
 
+
+  // fetch current user's name from users/me and store it in loggedinuser
   useEffect(() => {
     axios
       .get("http://localhost:3000/api/users/me", { withCredentials: true })
@@ -57,6 +60,8 @@ const [loggedInUser, setLoggedInUser] = useState<string>("");
       .catch(() => console.error("Failed to fetch user data"));
   }, []);
 
+
+// once loggedinuser is set it registers player to server and lists connected players
 useEffect(() => {
     if (loggedInUser) {
         socket.emit("registerUser", loggedInUser);
@@ -64,6 +69,9 @@ useEffect(() => {
     }
 }, [loggedInUser]);
 
+
+// when page is load this checks if playernumber is stored in local storage
+// and sets it if so
   useEffect(() => {
     const storedPlayerNumber = localStorage.getItem("playerNumber");
     if (storedPlayerNumber) {
@@ -71,6 +79,8 @@ useEffect(() => {
     }
   }, []);
 
+
+  // listens for gamestate updates from server and updates opponents paddle and ball position
   useEffect(() => {
     const handleGameState = (state: any) => {
       if (!state?.paddle1 || !state?.paddle2 || !state?.ball) return;
@@ -90,49 +100,57 @@ useEffect(() => {
     };
   }, [playerNumber]);
 
+
+// checks session storage for playernumber and restores it if exists
+// prevents player from being reassigned when refreshed
+// stores data until tab is closed
   useEffect(() => {
-	// Retrieve playerNumber from sessionStorage if available
 	const storedPlayerNumber = sessionStorage.getItem("playerNumber");
 	if (storedPlayerNumber) {
 	  setPlayerNumber(Number(storedPlayerNumber));
 	}
   }, []);
   
+
+  // listens to playerinfo updates from Websocket server
   useEffect(() => {
 	const handlePlayerInfo = (players: Player[]) => {
-	  console.log("📡 Received player info:", players);
+	  console.log("Received player info:", players);
   
-	  if (!loggedInUser) return; // Prevent running if loggedInUser isn't set yet
+	  if (!loggedInUser) return;
   
 	  let storedPlayerNumber = Number(sessionStorage.getItem("playerNumber")) || 1;
-  
+
+	  // finds current logged in user in list of players from websocket and assigns it
 	  const currentPlayer = players.find((p) => p.username === loggedInUser);
+	  // finds opponent that is not the logged in user, if alone opponent is undefined
 	  const opponent = players.find((p) => p.username !== loggedInUser);
-  
+
+	  // if currentplayer exists restore playernumber to receive data
 	  if (currentPlayer) {
-		console.log(`✅ Restoring stored player number: ${currentPlayer.playerNumber}`);
-		storedPlayerNumber = currentPlayer.playerNumber; // Preserve correct number
+		console.log(` Restoring stored player number: ${currentPlayer.playerNumber}`);
+		storedPlayerNumber = currentPlayer.playerNumber;
+		// if playernumber 1 is assigned make user player 2 and other gets opponent number
 	  } else if (players.length === 1) {
-		// Keep player 1 as player 1, avoid automatic swaps
 		if (players[0].playerNumber === 1) {
 		  storedPlayerNumber = 2;
 		} else {
 		  storedPlayerNumber = 1;
 		}
-		console.log(`🔄 Assigning opposite player number: ${storedPlayerNumber}`);
+		console.log(`Assigning opposite player number: ${storedPlayerNumber}`);
 	  }
-  
-	  // Prevent unnecessary re-renders
+	  // only updates playernumber if it has changed and saves it
 	  if (playerNumber !== storedPlayerNumber) {
 		setPlayerNumber(storedPlayerNumber);
 		sessionStorage.setItem("playerNumber", String(storedPlayerNumber));
 	  }
-  
+
+	  // if opponent exists update opponentusername, otherwise it is WAITING...
 	  if (opponent) {
-		console.log(`🎯 Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
+		console.log(`Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
 		setOpponentUsername(opponent.username);
 	  } else {
-		console.warn("⚠️ Opponent not found, setting to WAITING...");
+		console.warn("Opponent not found, setting to WAITING...");
 		setOpponentUsername("WAITING...");
 	  }
 	};
@@ -141,10 +159,10 @@ useEffect(() => {
 	return () => {
 	  socket.off("playerInfo", handlePlayerInfo);
 	};
-  }, [loggedInUser, playerNumber]); // Ensure playerNumber updates correctly
+  }, [loggedInUser, playerNumber]);
   
   
-
+// when user presses W / S / up / down it moves paddles and sends it to server
   const handleKeyDown = (event: KeyboardEvent) => {
     let newY = 0;
 
@@ -172,11 +190,14 @@ useEffect(() => {
     }
   };
 
+  // when user presses W / S / Up / Down it moves paddle and sends it to server
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [paddle1Y, paddle2Y]);
 
+
+  // restarts the game
   const handleResetGame = () => {
     socket.emit("resetGame");
   };
@@ -187,8 +208,8 @@ useEffect(() => {
 		score1={score1}  // Player 1's score always on the left
 		score2={score2}  // Player 2's score always on the right
 		darkMode={darkBackground}
-		loggedInUser={playerNumber === 1 ? loggedInUser : opponentUsername} // Player 1 username
-		opponentUsername={playerNumber === 1 ? opponentUsername : loggedInUser} // Player 2 username
+		loggedInUser={playerNumber === 1 ? loggedInUser : opponentUsername} 
+		opponentUsername={playerNumber === 1 ? opponentUsername : loggedInUser} 
 		/>
       <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
         <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
