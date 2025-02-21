@@ -124,29 +124,39 @@ private stopBall() {
 
   
 	/** Resets the ball after scoring */
-/** Resets the ball after scoring */
-private resetBall(direction: number) {
-    console.log("🏀 Resetting ball and stopping movement...");
-
-    // 🚨 STOP BALL MOVEMENT
-    this.ballMoving = false;
-
-    // Reset ball position **without velocity**
-    this.gameState.ball = { 
-        x: 390, 
-        y: 294, 
-        vx: 0,  // 🚨 Set to zero
-        vy: 0 
-    };
-
-    // Reset paddles to their default position
-    this.gameState.paddle1.y = 250;
-    this.gameState.paddle2.y = 250;
-
-    // Send the updated state to all players
-    this.server.emit("gameState", { ...this.gameState });
-}
-
+	private resetBall(direction: number) {
+		console.log("🏀 Resetting ball and stopping movement...");
+	
+		if (this.gameLoopInterval) {
+			console.log("🛑 Stopping game loop before resetting ball.");
+			clearInterval(this.gameLoopInterval);
+			this.gameLoopInterval = null;
+		}
+	
+		this.ballMoving = false;
+	
+		console.log(`🏀 Reset Ball after: X=${this.gameState.ball.x}, Y=${this.gameState.ball.y}, VX=${this.gameState.ball.vx}, VY=${this.gameState.ball.vy}, ballMoving=${this.ballMoving}`);
+	
+		this.gameState.ball = { 
+			x: 390, 
+			y: 294, 
+			vx: 0, 
+			vy: 0 
+		};
+	
+		this.gameState.paddle1.y = 250;
+		this.gameState.paddle2.y = 250;
+	
+		this.server.emit("gameState", { ...this.gameState });
+	
+		console.log("✅ Ball reset. Waiting for next movement...");
+	
+		// 🚀 Ensure the game loop starts after a short delay
+		setTimeout(() => {
+			console.log("🔄 Restarting game loop after ball reset...");
+			this.startGameLoop();
+		}, 2000);
+	}
 	
   
 	/** Game loop */
@@ -239,52 +249,25 @@ private resetBall(direction: number) {
 	// 		}
 	// 	}, 1000 / 30); // Run at 30 FPS
 	// }
+
 	private startGameLoop() {
-		if (this.gameLoopInterval) {
-			console.log("⚠️ Game loop is already running. Skipping...");
-			return;
-		}
-	
-		console.log("✅ Starting game loop...");
-	
-		const playerEntries = Array.from(players.entries());
-		if (playerEntries.length !== 2) {
-			console.warn("⚠️ Not enough players to start game loop.");
-			return;
-		}
-	
-		// ✅ Ensure correct player assignments
-		const [player1Entry, player2Entry] = playerEntries;
-		const [id1, player1Data] = player1Entry;
-		const [id2, player2Data] = player2Entry;
-	
-		if (!players.has(id1)) players.set(id1, { username: player1Data.username, playerNumber: 1 });
-		if (!players.has(id2)) players.set(id2, { username: player2Data.username, playerNumber: 2 });
-	
-		console.log(`🎮 Assigned ${player1Data.username} as Player 1 and ${player2Data.username} as Player 2`);
-		this.server.emit("playerInfo", Array.from(players.values()));
-	
-		// ✅ STOP any existing game loop before starting a new one
-		if (this.gameLoopInterval) {
-			clearInterval(this.gameLoopInterval);
-			this.gameLoopInterval = null;
-		}
-	
-		// ✅ Start game loop but **DO NOT move ball until a player moves**
-		this.gameLoopInterval = setInterval(() => {
-			if (!this.ballMoving) return; // ⏸️ Prevents unnecessary updates when paused
-	
-			console.log("🏀 Ball is moving, updating game state...");
-			this.updateGameState();
-	
-			// Randomly spawn a power-up every 10 seconds
-			if (Math.random() < 0.01) {
-				this.spawnPowerUp();
-			}
-		}, 1000 / 30); // Run at 30 FPS
-	}
-	
-	
+    if (this.gameLoopInterval) {
+        console.log("⚠️ Game loop already running. Skipping restart.");
+        return;
+    }
+
+    console.log("✅ Starting game loop...");
+
+    this.gameLoopInterval = setInterval(() => {
+        if (!this.ballMoving) {
+            console.log("⏸️ Ball is NOT moving, skipping update.");
+            return;
+        }
+
+        console.log("🏀 Ball is moving, updating game state...");
+        this.updateGameState();
+    }, 1000 / 60); // Run at 30 FPS
+}	
 	
   
 	/** Updates ball movement and collisions */
@@ -451,37 +434,40 @@ private resetBall(direction: number) {
 	}	
 	
 	@SubscribeMessage("playerMove")
-	handlePlayerMove(
-		@MessageBody() data: { player: number; y: number },
-		@ConnectedSocket() client: Socket
-	) {
-		const playerInfo = players.get(client.id);
-		if (!playerInfo) {
-			console.error(`Received move from unknown client: ${client.id}`);
-			return;
-		}
-	
-		// Ensure only the correct player moves their paddle
-		if (data.player === 1 && playerInfo.playerNumber === 1) {
-			this.gameState.paddle1.y = data.y;
-			console.log(`🎮 Player 1 moved paddle to Y=${data.y}`);
-		} else if (data.player === 2 && playerInfo.playerNumber === 2) {
-			this.gameState.paddle2.y = data.y;
-			console.log(`🎮 Player 2 moved paddle to Y=${data.y}`);
-		} else {
-			console.warn(`⚠️ Invalid move detected! Player ${playerInfo.playerNumber} tried to move Player ${data.player}'s paddle.`);
-			return; 
-		}
-	
-		// ✅ Only start the ball movement **if it's NOT already moving**
-		if (!this.ballMoving) {
-			console.log("🚀 First paddle move detected, starting ball movement...");
-			this.ballMoving = true;
-			this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
-			this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
-		}
-	
-		// Emit the updated game state to ALL players
-		this.server.emit("gameState", { ...this.gameState });
-	}
+handlePlayerMove(@MessageBody() data: { player: number; y: number }, @ConnectedSocket() client: Socket) {
+    const playerInfo = players.get(client.id);
+    if (!playerInfo) {
+        console.error(`Received move from unknown client: ${client.id}`);
+        return;
+    }
+
+    // Ensure only the correct player moves their paddle
+    if (data.player === 1 && playerInfo.playerNumber === 1) {
+        this.gameState.paddle1.y = data.y;
+        console.log(`🎮 Player 1 moved paddle to Y=${data.y}`);
+    } else if (data.player === 2 && playerInfo.playerNumber === 2) {
+        this.gameState.paddle2.y = data.y;
+        console.log(`🎮 Player 2 moved paddle to Y=${data.y}`);
+    } else {
+        console.warn(`⚠️ Invalid move detected! Player ${playerInfo.playerNumber} tried to move Player ${data.player}'s paddle.`);
+        return; 
+    }
+
+    // ✅ Ensure ball starts moving when a paddle moves
+    if (!this.ballMoving) {
+        console.log("🚀 First paddle move detected, starting ball movement...");
+        this.ballMoving = true;
+        this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
+        this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+
+        // ✅ Ensure game loop restarts
+        if (!this.gameLoopInterval) {
+            console.log("🔄 Restarting game loop...");
+            this.startGameLoop();
+        }
+    }
+
+    // Emit the updated game state to ALL players
+    this.server.emit("gameState", { ...this.gameState });
 }
+  }

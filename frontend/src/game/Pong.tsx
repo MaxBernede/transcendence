@@ -45,7 +45,6 @@ const [loggedInUser, setLoggedInUser] = useState<string>("");
   const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
   const hasListener = useRef(false);
   const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
-  
 
   useEffect(() => {
     axios
