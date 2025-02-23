@@ -49,6 +49,13 @@ private resetGame() {
 
     this.ballMoving = false; // Stop the ball movement completely
 
+	   // Stop the previous game loop if running
+	   if (this.gameLoopInterval) {
+        console.log("Stopping existing game loop to prevent multiple instances.");
+        clearInterval(this.gameLoopInterval);
+        this.gameLoopInterval = null;
+    }
+
     // Reset game state
     this.gameState = {
         ball: { x: 390, y: 294, vx: 0, vy: 0 }, // Ensure velocity is zero
@@ -57,10 +64,19 @@ private resetGame() {
         score: { player1: 0, player2: 0 }
     };
 
-    if (this.gameLoopInterval) {
-        clearInterval(this.gameLoopInterval); // Stop game loop
-        this.gameLoopInterval = null;
-    }
+	this.powerUpState = {
+        x: null,
+        y: null,
+        type: null,
+        isActive: false
+    };
+
+    // if (this.gameLoopInterval) {
+    //     clearInterval(this.gameLoopInterval); // Stop game loop
+    //     this.gameLoopInterval = null;
+    // }
+
+	console.log("✅ Game has been fully reset.");
 
     this.server.emit("gameState", { ...this.gameState }); // Broadcast the reset game state
 }
@@ -69,7 +85,15 @@ private resetGame() {
 
 	private gameLoopInterval: NodeJS.Timeout | null = null;
   
-	constructor(private readonly databaseService: DatabasesService) {}
+	constructor(private readonly databaseService: DatabasesService) {
+		if (PongGateway.instance) {
+			console.warn("⚠️ PongGateway already initialized! Preventing duplicate instances.");
+			return PongGateway.instance;
+		}
+		PongGateway.instance = this;
+	}
+	private static instance: PongGateway | null = null;
+	
   
 	// Spawns a power-up randomly
 	private spawnPowerUp() { 
@@ -89,30 +113,35 @@ private resetGame() {
 	handleRegisterUser(client: Socket, username: string) {
     console.log(`Registering player: ${username}`);
 
-    // Check if the player was previously assigned a number
-    let existingPlayerEntry = Array.from(players.entries()).find(([_, player]) => player.username === username);
-
-	// if disconnects and reconnects restore player number
-    if (existingPlayerEntry) {
-        console.log(` ${username} reconnected as Player ${existingPlayerEntry[1].playerNumber}`);
-        players.set(client.id, existingPlayerEntry[1]); // Keep the same player number
-    } else {
-        // Assign a new player number only if they are truly new
-        const playerNumber = players.size === 0 ? 1 : 2;
-        console.log(`New player: ${username} assigned as Player ${playerNumber}`);
-        players.set(client.id, { username, playerNumber });
+    if (players.has(client.id)) {
+        console.warn(`⚠️ ${username} is already registered. Skipping duplicate registration.`);
+        return;
     }
 
-	// broadcast all players to the clients
-    this.server.emit("playerInfo", Array.from(players.values())); 
+    let existingPlayer = Array.from(players.values()).find(p => p.username === username);
+    if (existingPlayer) {
+        console.log(`${username} reconnected as Player ${existingPlayer.playerNumber}`);
+        players.set(client.id, existingPlayer);
+        return;
+    }
+
+    const playerNumber = players.size === 0 ? 1 : 2;
+    players.set(client.id, { username, playerNumber });
+    this.server.emit("playerInfo", Array.from(players.values()));
 }
+
 
 
 @SubscribeMessage("requestPlayers")
 handleRequestPlayers(@ConnectedSocket() client: Socket) {
-    console.log(" Sending player info:", Array.from(players.values()));
-    client.emit("playerInfo", Array.from(players.values()));
+    console.log("👥 Sending player info:", Array.from(players.values()));
+
+    // Ensure only unique players are sent
+    const uniquePlayers = [...new Map(Array.from(players.values()).map(p => [p.username, p])).values()];
+
+    client.emit("playerInfo", uniquePlayers);
 }
+
 
 private broadcastPlayers() {
 	this.server.emit('updatePlayers', Array.from(players.values()));
@@ -130,13 +159,14 @@ private stopBall() {
 	private resetBall(direction: number) {
 		console.log(" Resetting ball and stopping movement...");
 	
+		this.ballMoving = false;
+
 		if (this.gameLoopInterval) {
 			console.log("Stopping game loop before resetting ball.");
 			clearInterval(this.gameLoopInterval);
 			this.gameLoopInterval = null;
 		}
 	
-		this.ballMoving = false;
 	
 		console.log(` Reset Ball after: X=${this.gameState.ball.x}, Y=${this.gameState.ball.y}, VX=${this.gameState.ball.vx}, VY=${this.gameState.ball.vy}, ballMoving=${this.ballMoving}`);
 	
@@ -154,17 +184,13 @@ private stopBall() {
 	
 		console.log(" Ball reset. Waiting for next movement...");
 	
-		//  Ensure the game loop starts after a short delay
-		setTimeout(() => {
-			console.log("🔄 Restarting game loop after ball reset...");
-			this.startGameLoop();
-		}, 2000);
-	}
+    console.log(" Ball reset. Waiting for next movement...");
+}
 
 	// runs the game loop every 60ms (60FPS)
 	private startGameLoop() {
     if (this.gameLoopInterval) {
-        console.log("⚠️ Game loop already running. Skipping restart.");
+        console.log(" Game loop already running. Skipping restart.");
         return;
     }
 
@@ -173,11 +199,11 @@ private stopBall() {
 		
 			// stops updating if ball is not moving
         if (!this.ballMoving) {
-            console.log("⏸ Ball is NOT moving, skipping update.");
+            // console.log("Ball is NOT moving, skipping update.");
             return;
         }
 
-        console.log(" Ball is moving, updating game state...");
+        // console.log(" Ball is moving, updating game state...");
         this.updateGameState();
     }, 1000 / 60);
 }	
@@ -260,17 +286,25 @@ private stopBall() {
 
 	// handles disconnect
 	handleDisconnect(client: Socket) {
-		console.log(`Player disconnected: ${client.id}`);
+		console.log(` Player disconnected: ${client.id}`);
 	
 		const playerData = players.get(client.id);
 		if (playerData) {
-			console.log(`⚠️ Marking ${playerData.username} as disconnected (Player ${playerData.playerNumber})`);
-			players.set(client.id, { ...playerData }); // Keep their player number but remove active connection
+			console.log(`Removing ${playerData.username} (Player ${playerData.playerNumber})`);
+			players.delete(client.id); // Fully remove player
 		}
 	
-		// Notify remaining players that a player is disconnected
+		// If there are no more players, fully reset the game
+		if (players.size === 0) {
+			console.log("No players left. Resetting game...");
+			this.resetGame();
+		}
+	
+		// Notify remaining players
 		this.server.emit("playerInfo", Array.from(players.values()));
-	}	
+	}
+	
+	
 	
 	// updates paddle position
 	@SubscribeMessage("playerMove")
@@ -300,12 +334,8 @@ private stopBall() {
         this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
         this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
 
-        // Ensure game loop restarts
-        if (!this.gameLoopInterval) {
-            console.log(" Restarting game loop...");
-            this.startGameLoop();
+		this.startGameLoop();
         }
-    }
 
     // Emit the updated game state to ALL players
     this.server.emit("gameState", { ...this.gameState });
