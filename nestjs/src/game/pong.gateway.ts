@@ -71,12 +71,7 @@ private resetGame() {
         isActive: false
     };
 
-    // if (this.gameLoopInterval) {
-    //     clearInterval(this.gameLoopInterval); // Stop game loop
-    //     this.gameLoopInterval = null;
-    // }
-
-	console.log("✅ Game has been fully reset.");
+	console.log("Game has been fully reset.");
 
     this.server.emit("gameState", { ...this.gameState }); // Broadcast the reset game state
 }
@@ -87,7 +82,7 @@ private resetGame() {
   
 	constructor(private readonly databaseService: DatabasesService) {
 		if (PongGateway.instance) {
-			console.warn("⚠️ PongGateway already initialized! Preventing duplicate instances.");
+			console.warn(" PongGateway already initialized! Preventing duplicate instances.");
 			return PongGateway.instance;
 		}
 		PongGateway.instance = this;
@@ -107,39 +102,40 @@ private resetGame() {
 	  this.server.emit("powerUpSpawned", this.powerUpState);
 	}
 
+@SubscribeMessage('registerUser')
+handleRegisterUser(client: Socket, username: string) {
+    console.log(` Registering player: ${username}`);
 
-	// registering a player
-	@SubscribeMessage('registerUser')
-	handleRegisterUser(client: Socket, username: string) {
-    console.log(`Registering player: ${username}`);
+    // Check if the player was previously assigned a number
+    let existingPlayer = Array.from(players.entries()).find(([_, player]) => player.username === username);
 
-    if (players.has(client.id)) {
-        console.warn(`⚠️ ${username} is already registered. Skipping duplicate registration.`);
-        return;
-    }
-
-    let existingPlayer = Array.from(players.values()).find(p => p.username === username);
     if (existingPlayer) {
-        console.log(`${username} reconnected as Player ${existingPlayer.playerNumber}`);
-        players.set(client.id, existingPlayer);
-        return;
+        //  Preserve the same player number even after refresh
+        console.log(` ${username} reconnected as Player ${existingPlayer[1].playerNumber}`);
+
+        // Remove old socket ID reference
+        players.delete(existingPlayer[0]);
+
+        // Assign the new socket ID while keeping the same player number
+        players.set(client.id, existingPlayer[1]);
+    } else {
+        //  Check if Player 1 is available
+        const playerNumbers = new Set(Array.from(players.values()).map(player => player.playerNumber));
+        let assignedPlayerNumber = playerNumbers.has(1) ? 2 : 1; // Keep Player 1 if possible
+
+        console.log(` New player: ${username} assigned as Player ${assignedPlayerNumber}`);
+        players.set(client.id, { username, playerNumber: assignedPlayerNumber });
     }
 
-    const playerNumber = players.size === 0 ? 1 : 2;
-    players.set(client.id, { username, playerNumber });
-    this.server.emit("playerInfo", Array.from(players.values()));
+    this.server.emit("playerInfo", Array.from(players.values())); // Notify all clients
 }
 
 
 
 @SubscribeMessage("requestPlayers")
 handleRequestPlayers(@ConnectedSocket() client: Socket) {
-    console.log("👥 Sending player info:", Array.from(players.values()));
-
-    // Ensure only unique players are sent
-    const uniquePlayers = [...new Map(Array.from(players.values()).map(p => [p.username, p])).values()];
-
-    client.emit("playerInfo", uniquePlayers);
+    console.log(" Sending player info:", Array.from(players.values()));
+    client.emit("playerInfo", Array.from(players.values()));
 }
 
 
@@ -286,25 +282,20 @@ private stopBall() {
 
 	// handles disconnect
 	handleDisconnect(client: Socket) {
-		console.log(` Player disconnected: ${client.id}`);
+		console.log(`Player disconnected: ${client.id}`);
 	
 		const playerData = players.get(client.id);
 		if (playerData) {
-			console.log(`Removing ${playerData.username} (Player ${playerData.playerNumber})`);
-			players.delete(client.id); // Fully remove player
-		}
+			console.log(`Marking ${playerData.username} as disconnected (Player ${playerData.playerNumber})`);
+			players.delete(client.id); // Remove the socket reference
 	
-		// If there are no more players, fully reset the game
-		if (players.size === 0) {
-			console.log("No players left. Resetting game...");
-			this.resetGame();
+			// 🔹 Store the disconnected player to maintain their player number
+			players.set(`DISCONNECTED-${playerData.username}`, { ...playerData });
 		}
 	
 		// Notify remaining players
 		this.server.emit("playerInfo", Array.from(players.values()));
 	}
-	
-	
 	
 	// updates paddle position
 	@SubscribeMessage("playerMove")
