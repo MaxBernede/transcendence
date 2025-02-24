@@ -55,13 +55,15 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-	console.log('Request to /me received');
+    console.log('Request to /me received');
     // console.log(request);
     // console.log('cookies', request.headers['cookie']);
     // console.log('user');
     const existingUser = await this.userRepository.findOne({
-      where: { email: payload.email },
+      //   where: { email: payload.email },
+      where: { id: payload.sub },
     });
+    console.log('existingUser', existingUser.username);
     return existingUser;
   }
 
@@ -98,6 +100,7 @@ export class UserController {
     try {
       // Try fetching the user from the database
       user = await this.userService.findOne(isNumericId ? +id : id);
+      console.log('user', user);
     } catch (error) {
       console.error('Error fetching user:', error.message);
       user = null;

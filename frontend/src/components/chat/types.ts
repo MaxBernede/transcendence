@@ -52,6 +52,8 @@ export const PublicUserInfoSchema = z.object({
   ladderLevel: z.number(),
 
   groupRole: z.string(),
+  banned: z.boolean(),
+  muted_untill: z.date().nullable(),
 });
 
 export type PublicUserInfo = z.infer<typeof PublicUserInfoSchema>;

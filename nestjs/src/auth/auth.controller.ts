@@ -260,6 +260,8 @@ export class AuthController {
         where: { username: loginDto.username },
       });
 
+	  console.log('user:', user);
+
       if (!user) {
         console.log('Internal Server Error: User not found');
         throw new InternalServerErrorException('User not found');
@@ -270,6 +272,8 @@ export class AuthController {
         username: user.username,
         email: user.email,
       };
+
+	  console.log('p:', p);
 
       const jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
       console.log('JWT_SECRET:', jwtSecret);

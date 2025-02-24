@@ -3,9 +3,15 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CreateConversationDto } from './dto/create-conversation.dto';
+import {
+  CreateConversationDto,
+  JoinConversationDto,
+  LeaveConversationDto,
+  UpdateMemberRoleDto,
+} from './dto/create-conversation.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
 import { TokenPayload } from 'src/auth/dto/token-payload';
 import { UserService } from 'src/user/user.service';
@@ -27,17 +33,27 @@ import {
 import { INJECTABLE_WATERMARK } from '@nestjs/common/constants';
 import { User } from 'src/user/user.entity';
 import { EventsGateway } from 'src/events/events.gateway';
-import { last } from 'rxjs';
+import { last, NotFoundError } from 'rxjs';
+
+import * as argon2 from 'argon2';
 
 import { z } from 'zod';
 
 //TODO: fix this shit, monorepo?
 import {
   AddConversationToListSchema,
+  AddParticipantToConversationSchema,
   EventsType,
+  GroupUserStatusAction,
+  GroupUserStatusUpdateSchema,
   RemoveConversationFromListSchema,
   RemoveParticipantFromConversationSchema,
+  UpdateMemberRoleSchema,
 } from '../../common/types/event-type';
+import { checkPrimeSync } from 'crypto';
+import { ucs2 } from 'punycode';
+import { argon2d } from 'argon2';
+import { Console } from 'console';
 
 @Injectable()
 export class ConversationsService {
@@ -58,6 +74,208 @@ export class ConversationsService {
 
     private readonly conversationsGateway: ConversationsGateway,
   ) {}
+
+  async leaveConversation(user: TokenPayload, conversationId: string) {
+    console.log(user.sub, 'leaving conversation', conversationId);
+
+    //? if conversation is a dm, return error
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: conversationId },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+    if (conversation.type === 'DM') {
+      console.log('Cannot leave a DM conversation');
+      throw new BadRequestException('Cannot leave a DM conversation');
+    }
+
+    //? if user is the owner and groupsize > 1, return error
+
+    const participants = await this.userConversationRepository.find({
+      where: { conversationId, banned: false },
+    });
+    const me = participants.find((p) => p.userId === user.sub);
+    if (!me) {
+      throw new BadRequestException('User not part of the conversation');
+    }
+    console.log('me:', me);
+    console.log('participants:', participants);
+    // console.log("number of participants:", participants.length);
+    if (participants.length === 1) {
+      //? remove user from userConversations
+      await this.userConversationRepository.delete({
+        userId: user.sub,
+        conversationId,
+      });
+
+      const data: z.infer<typeof RemoveConversationFromListSchema> = {
+        conversationId: conversationId,
+      };
+      this.eventsGateway.sendEventToUser(
+        EventsType.REMOVE_CONVERSATION_FROM_LIST,
+        [user.sub],
+        data,
+      );
+      this.conversationsGateway.removeUserFromRoom(user.sub, conversationId);
+      return { message: 'User removed from conversation' };
+    }
+
+    if (me.role === 'OWNER') {
+      throw new BadRequestException(
+        'Cannot leave a group conversation as the owner',
+      );
+    }
+
+    await this.userConversationRepository.delete({
+      userId: user.sub,
+      conversationId,
+    });
+
+    const data: z.infer<typeof RemoveConversationFromListSchema> = {
+      conversationId: conversationId,
+    };
+    this.eventsGateway.sendEventToUser(
+      EventsType.REMOVE_CONVERSATION_FROM_LIST,
+      [user.sub],
+      data,
+    );
+
+    //? send event to all participants to update the chat participants list
+    const userIds = participants.map((p) => p.userId);
+    const eventData: z.infer<typeof RemoveParticipantFromConversationSchema> = {
+      conversationId,
+      userId: user.sub,
+    };
+    this.eventsGateway.sendEventToUser(
+      EventsType.REMOVE_PARTICIPANT_FROM_CONVERSATION,
+      userIds,
+      eventData,
+    );
+
+    this.conversationsGateway.removeUserFromRoom(user.sub, conversationId);
+
+    return { message: 'User removed from conversation' };
+  }
+
+  async joinConversation(
+    user: TokenPayload,
+    conversationId: JoinConversationDto,
+  ) {
+    console.log('joinConversation:', user.username, conversationId.id);
+    console.log('joinConversation:', conversationId);
+    //? Check if conversation exist
+    const conversation = await this.conversationRepository.findOneBy({
+      id: conversationId.id,
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    if (conversation.password) {
+      if (!conversationId.password) {
+        throw new BadRequestException('Password is required');
+      }
+      console.log('conversation.password:', conversation.password);
+      const passwordMatch = await argon2.verify(
+        conversation.password,
+        conversationId.password,
+      );
+      if (!passwordMatch) {
+        throw new UnauthorizedException('Invalid password');
+      }
+    }
+
+    //? check if user is not banned
+    const userConversation = await this.userConversationRepository.findOne({
+      where: {
+        userId: user.sub,
+        conversationId: conversationId.id,
+      },
+    });
+
+    //? user is not part of the conversation, add user to the conversation
+    if (!userConversation) {
+      const entry = this.userConversationRepository.create({
+        userId: user.sub,
+        conversationId: conversationId.id,
+      });
+      //? send event to all participants to update the chat participants list
+      const users = await this.userConversationRepository.find({
+        where: { conversationId: conversationId.id },
+      });
+      const userIds = users.map((user) => user.userId);
+      console.log('users:', userIds);
+
+      if (users.length === 0) {
+        entry.role = 'OWNER';
+      }
+
+      await this.userConversationRepository.save(entry);
+
+        {
+          const eventData: z.infer<typeof AddConversationToListSchema> = {
+            conversationId: conversationId.id,
+          };
+          this.eventsGateway.sendEventToUser(
+            EventsType.ADD_CONVERSATION_TO_LIST,
+            [user.sub],
+            eventData,
+          );
+        }
+
+        {
+          const eventData: z.infer<typeof AddParticipantToConversationSchema> = {
+            conversationId: conversationId.id,
+            userId: user.sub,
+          };
+          this.eventsGateway.sendEventToUser(
+            EventsType.ADD_PARTICIPANT_TO_CONVERSATION,
+            userIds,
+            eventData,
+          );
+        }
+      {
+        // const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+        //   conversationId: conversationId.id,
+        //   userId: user.sub,
+        //   action: GroupUserStatusAction.JOIN,
+        // };
+
+        // this.eventsGateway.sendEventToUser(
+        //   EventsType.GROUP_USER_STATUS_UPDATED,
+        //   userIds,
+        //   eventData,
+        // );
+      }
+      return {
+        message: 'User added to conversation',
+        conversationId: conversationId.id,
+      };
+    }
+
+    //? check if the user is banned, if banned check if the ban has expired
+    if (userConversation.banned) {
+      if (userConversation.banEnd) {
+        if (new Date() > userConversation.banEnd) {
+          userConversation.banned = false;
+          userConversation.banEnd = null;
+          await this.userConversationRepository.save(userConversation);
+          return {
+            message: 'User added to conversation',
+            conversationId: conversationId.id,
+          };
+        }
+      }
+      throw new UnauthorizedException('You are banned from this conversation');
+    }
+
+    return {
+      message: 'User already part of the conversation',
+      conversationId: conversationId.id,
+    };
+  }
 
   async createConversation(
     user: TokenPayload,
@@ -84,6 +302,7 @@ export class ConversationsService {
         senderUserId,
         createConversationDto.participants,
         createConversationDto.name,
+        createConversationDto.password,
       );
     }
     throw new BadRequestException('Invalid conversation type');
@@ -93,6 +312,7 @@ export class ConversationsService {
     senderId: number,
     participants: string[],
     groupName: string,
+    password: string | null,
   ) {
     if (participants.length < 1) {
       throw new BadRequestException(
@@ -115,8 +335,19 @@ export class ConversationsService {
       }
     }
 
+    let passwordHash: string | null = null;
+    if (password) {
+      try {
+        passwordHash = await argon2.hash(password);
+        console.log('passwordHash:', passwordHash);
+      } catch (error) {
+        throw new BadRequestException('Error hashing the password');
+      }
+    }
+
     const newConversation = this.conversationRepository.create({
       type: 'GROUP',
+      password: passwordHash,
     });
 
     // if (!groupName) {
@@ -232,22 +463,27 @@ export class ConversationsService {
   async getChatHistory(user: TokenPayload) {
     const userId = user.sub;
 
-    // Get all the conversations that the user is part of
+    // Get all the conversations that the user is part of and check their banned status
     const userConversations = await this.userConversationRepository.find({
       where: { userId },
       relations: ['conversation'],
     });
 
-    const conversationIds = userConversations.map(
+    // Filter out conversations where the user is banned
+    const validUserConversations = userConversations.filter(
+      (userConv) => userConv.banned === false,
+    );
+
+    const conversationIds = validUserConversations.map(
       (userConv) => userConv.conversationId,
     );
 
-    // Now, find only the conversations the user is part of
+    // Now, find only the conversations the user is part of and not banned
     const conversations = await this.conversationRepository.find({
       where: { id: In(conversationIds) }, // Filter conversations based on user participation
       relations: [
-        'chats', // include the chats in the conversation
-        'chats.userId', // load userId (user details)
+        'chats', // Include the chats in the conversation
+        'chats.userId', // Load userId (user details)
         'chats.conversationId',
       ],
     });
@@ -279,60 +515,156 @@ export class ConversationsService {
     return formattedConversations;
   }
 
+  //   async getChatHistory(user: TokenPayload) {
+  //     const userId = user.sub;
+
+  //     // Get all the conversations that the user is part of
+  //     const userConversations = await this.userConversationRepository.find({
+  //       where: { userId },
+  //       relations: ['conversation'],
+  //     });
+
+  //     const conversationIds = userConversations.map(
+  //       (userConv) => userConv.conversationId,
+  //     );
+
+  //     // Now, find only the conversations the user is part of
+  //     const conversations = await this.conversationRepository.find({
+  //       where: { id: In(conversationIds) }, // Filter conversations based on user participation
+  //       relations: [
+  //         'chats', // include the chats in the conversation
+  //         'chats.userId', // load userId (user details)
+  //         'chats.conversationId',
+  //       ],
+  //     });
+
+  //     // Process the conversations and format the response as needed
+  //     const formattedConversations = await Promise.all(
+  //       conversations.map(async (conversation) => {
+  //         const chatWithUserDetails = await Promise.all(
+  //           conversation.chats.map(async (chat: any) => {
+  //             return {
+  //               text: chat.text,
+  //               createdAt: chat.createdAt,
+  //               senderUser: {
+  //                 userId: chat.userId.id, // Now the user is fetched from the database
+  //                 username: chat.userId.username,
+  //                 avatar: chat.userId.avatar,
+  //               },
+  //             };
+  //           }),
+  //         );
+
+  //         return {
+  //           conversationId: conversation.id,
+  //           chat: chatWithUserDetails,
+  //         };
+  //       }),
+  //     );
+
+  //     return formattedConversations;
+  //   }
+
   async getConversationsWithParticipants(user: TokenPayload) {
     const userId = user.sub;
 
-    // Fetch user conversations with the users related to each conversation, but don't include userConversations in the final result
+    // Fetch user conversations with the users related to each conversation, including the banned status
     const userConversations = await this.userConversationRepository.find({
       where: { userId },
       relations: [
         'conversation',
         'conversation.userConversations',
-        'conversation.userConversations.user',
+        'conversation.userConversations.user', // Include the user info
         'conversation.chats',
       ],
     });
 
     // Map through the userConversations and return only conversationId and participants (user objects)
-    return userConversations.map((userConvo) => {
-      const conversationId = userConvo.conversation.id;
-      const type = userConvo.conversation.type;
-      const name = userConvo.conversation.name;
+    return userConversations
+      .map((userConvo) => {
+        const conversationId = userConvo.conversation.id;
+        const type = userConvo.conversation.type;
+        const name = userConvo.conversation.name;
 
-      const participants = userConvo.conversation.userConversations
-        .map((uc) => uc.user) // Extract users
-        .filter((participant) => participant.id !== userId); // Exclude the current user
+        // Get participants excluding the current user and those who are banned
+        const participants = userConvo.conversation.userConversations
+          .filter((uc) => uc.user.id !== userId && uc.banned === false) // Exclude the current user and banned users
+          .map((uc) => uc.user); // Extract the user from userConversation
 
-      const chats = userConvo.conversation.chats.map((chat) => ({
-        id: chat.id,
-        userId: chat.userId,
-        text: chat.text,
-        edited: chat.edited,
-        createdAt: chat.createdAt,
-      }));
+        // Check if the current user (me) is banned in the conversation
+        const isCurrentUserBanned =
+          userConvo.conversation.userConversations.some(
+            (uc) => uc.user.id === userId && uc.banned === true,
+          );
 
-      // const res: serverToClientDto = {
-      //   messageId:
-      //   message:
-      //   sender: 'server',
-      //   timestamp:
-      //   conversationId:
-      //   senderUser:
-      // };
+        // If the current user is banned, don't return the conversation
+        if (isCurrentUserBanned) {
+          return null; // This will effectively remove the conversation from the final result
+        }
 
-      return {
-        conversationId, // Only return the conversationId
-        type,
-        name,
-        participants, // Return the filtered user objects (participants)
-        lastActivity: userConvo.conversation.lastActivity,
-      };
-    });
+        const chats = userConvo.conversation.chats.map((chat) => ({
+          id: chat.id,
+          userId: chat.userId,
+          text: chat.text,
+          edited: chat.edited,
+          createdAt: chat.createdAt,
+        }));
+
+        return {
+          conversationId,
+          type,
+          name,
+          participants, // Return the filtered user objects (participants)
+          lastActivity: userConvo.conversation.lastActivity,
+        };
+      })
+      .filter((convo) => convo !== null); // Filter out null conversations (where the user was banned)
   }
+
+  //   async getConversationsWithParticipants(user: TokenPayload) {
+  //     const userId = user.sub;
+
+  //     // Fetch user conversations with the users related to each conversation, but don't include userConversations in the final result
+  //     const userConversations = await this.userConversationRepository.find({
+  //       where: { userId },
+  //       relations: [
+  //         'conversation',
+  //         'conversation.userConversations',
+  //         'conversation.userConversations.user',
+  //         'conversation.chats',
+  //       ],
+  //     });
+
+  //     // Map through the userConversations and return only conversationId and participants (user objects)
+  //     return userConversations.map((userConvo) => {
+  //       const conversationId = userConvo.conversation.id;
+  //       const type = userConvo.conversation.type;
+  //       const name = userConvo.conversation.name;
+
+  //       const participants = userConvo.conversation.userConversations
+  //         .map((uc) => uc.user) // Extract users
+  //         .filter((participant) => participant.id !== userId); // Exclude the current user
+
+  //       const chats = userConvo.conversation.chats.map((chat) => ({
+  //         id: chat.id,
+  //         userId: chat.userId,
+  //         text: chat.text,
+  //         edited: chat.edited,
+  //         createdAt: chat.createdAt,
+  //       }));
+
+  //       return {
+  //         conversationId, // Only return the conversationId
+  //         type,
+  //         name,
+  //         participants, // Return the filtered user objects (participants)
+  //         lastActivity: userConvo.conversation.lastActivity,
+  //       };
+  //     });
+  //   }
 
   async getConversationById(user: TokenPayload, conversationId: string) {
     const userId = user.sub;
-
     // Fetch the conversation by ID, including participants and chats
     const userConversation = await this.userConversationRepository.findOne({
       where: {
@@ -351,6 +683,12 @@ export class ConversationsService {
       throw new Error(
         'Conversation not found or user is not part of this conversation',
       );
+    }
+
+    const bannedStatus = userConversation.banned;
+    console.log('status:', userConversation);
+    if (bannedStatus) {
+      throw new UnauthorizedException('You are banned from this conversation');
     }
 
     const conversation = userConversation.conversation;
@@ -406,6 +744,8 @@ export class ConversationsService {
         participants: userConversations.map((userConvo) => ({
           ...userConvo.user, // Spread the full user object
           group_role: userConvo.role, // Add role separately
+          banned: userConvo.banned,
+          muted_untill: userConvo.mutedUntil,
         })),
       };
     } catch (error) {
@@ -424,6 +764,113 @@ export class ConversationsService {
     }
   }
 
+  //   async removeUserFromConversation(
+  //     conversationId: string,
+  //     userId: string,
+  //     user: TokenPayload,
+  //   ) {
+  //     try {
+  //       const { participants } = await this.getParticipants(conversationId, user);
+  //       //   console.log('participants:', participants);
+
+  //       const currentUser = participants.find((p) => p.id === user.sub);
+  //       if (!currentUser) {
+  //         throw new UnauthorizedException(
+  //           'You are not a participant in this conversation',
+  //         );
+  //       }
+
+  //       // Check if currentUser has the 'role' property
+  //       if ('group_role' in currentUser) {
+  //         if (currentUser.group_role !== 'OWNER') {
+  //           throw new UnauthorizedException(
+  //             'You are not the owner of the conversation',
+  //           );
+  //         }
+  //       } else {
+  //         throw new UnauthorizedException(
+  //           'User does not have a valid role in this conversation',
+  //         );
+  //       }
+
+  //       const targetUser = participants.find(
+  //         (p) => p.id === parseInt(userId, 10),
+  //       );
+  //       if (!targetUser) {
+  //         throw new BadRequestException('User not found in the conversation');
+  //       }
+
+  //       //   console.log('currentUser:', currentUser.group_role);
+  //       if (currentUser.group_role !== 'OWNER') {
+  //         throw new UnauthorizedException(
+  //           'You are not the owner of the conversation',
+  //         );
+  //       }
+
+  //       if (currentUser.id === targetUser.id) {
+  //         throw new BadRequestException('You cannot remove yourself');
+  //       }
+
+  //       //TODO: actuall remove the user from the conversation
+  //       const result = await this.userConversationRepository.delete({
+  //         conversationId,
+  //         userId: targetUser.id,
+  //       });
+  //       console.log('User removed from conversation:', targetUser.username);
+
+  //       //   const participantIds = participants.map((p) => p.id);
+  //       //   this.eventsGateway.sendEventToUser(
+  //       //     EventsType.USER_REMOVED_FROM_CHAT,
+  //       //     participantIds,
+  //       //     {
+  //       //       message: 'You have been removed from the conversation',
+  //       //       id: conversationId,
+  //       //       userId: targetUser.id,
+  //       //     },
+  //       //   );
+
+  //       //   const d: z.infer<typeof RemoveConversationFromListSchema> = {
+  //       //     data: { conversationId },
+  //       //   };
+
+  //       const d: z.infer<typeof RemoveConversationFromListSchema> = {
+  //         conversationId: conversationId,
+  //       };
+  //       //? send event to the removed user to remove the conversation from their list
+  //       this.eventsGateway.sendEventToUser(
+  //         EventsType.REMOVE_CONVERSATION_FROM_LIST,
+  //         [targetUser.id],
+  //         d,
+  //       );
+
+  //       //? send event to all participants to update the chat participants list
+  //       const dd: z.infer<typeof RemoveParticipantFromConversationSchema> = {
+  //         conversationId: conversationId,
+  //         userId: targetUser.id,
+  //       };
+  //       const remainingParticipants = participants.filter(
+  //         (p) => p.id !== targetUser.id,
+  //       );
+  //       this.eventsGateway.sendEventToUser(
+  //         EventsType.REMOVE_PARTICIPANT_FROM_CONVERSATION,
+  //         remainingParticipants.map((p) => p.id),
+  //         dd,
+  //       );
+
+  //       this.conversationsGateway.removeUserFromRoom(
+  //         targetUser.id,
+  //         conversationId,
+  //       );
+
+  //       return { message: 'User removed from conversation' };
+
+  //       //? Check if the user is the owner of the conversation
+  //     } catch (error) {
+  //       console.log('Error fetching participants:', error);
+  //       throw new BadRequestException('Error fetching participants');
+  //     }
+  //   }
+
   async removeUserFromConversation(
     conversationId: string,
     userId: string,
@@ -441,15 +888,21 @@ export class ConversationsService {
       }
 
       // Check if currentUser has the 'role' property
-      if ('group_role' in currentUser) {
-        if (currentUser.group_role !== 'OWNER') {
-          throw new UnauthorizedException(
-            'You are not the owner of the conversation',
-          );
-        }
-      } else {
+      //   if ('group_role' in currentUser) {
+      //     if (currentUser.group_role !== 'OWNER') {
+      //       throw new UnauthorizedException(
+      //         'You are not the owner of the conversation',
+      //       );
+      //     }
+      //   } else {
+      //     throw new UnauthorizedException(
+      //       'User does not have a valid role in this conversation',
+      //     );
+      //   }
+
+      if (!currentUser.group_role) {
         throw new UnauthorizedException(
-          'User does not have a valid role in this conversation',
+          'You are not the owner of the conversation',
         );
       }
 
@@ -461,14 +914,32 @@ export class ConversationsService {
       }
 
       //   console.log('currentUser:', currentUser.group_role);
-      if (currentUser.group_role !== 'OWNER') {
-        throw new UnauthorizedException(
-          'You are not the owner of the conversation',
-        );
-      }
+      //   if (currentUser.group_role !== 'OWNER') {
+      // 	  throw new UnauthorizedException(
+      // 		  'You are not the owner of the conversation',
+      // 		);
+      // 	}
 
       if (currentUser.id === targetUser.id) {
         throw new BadRequestException('You cannot remove yourself');
+      }
+
+      const targetUserRole = targetUser.group_role;
+      const currentUserRole = currentUser.group_role;
+      if (currentUserRole === 'MEMBER') {
+        throw new UnauthorizedException(
+          'You are not authorized to remove this user',
+        );
+      }
+      if (targetUserRole === currentUserRole) {
+        throw new UnauthorizedException(
+          'You are not authorized to remove this user',
+        );
+      }
+      if (targetUserRole === 'OWNER') {
+        throw new UnauthorizedException(
+          'You cannot remove the owner of the conversation',
+        );
       }
 
       //TODO: actuall remove the user from the conversation
@@ -477,21 +948,6 @@ export class ConversationsService {
         userId: targetUser.id,
       });
       console.log('User removed from conversation:', targetUser.username);
-
-      //   const participantIds = participants.map((p) => p.id);
-      //   this.eventsGateway.sendEventToUser(
-      //     EventsType.USER_REMOVED_FROM_CHAT,
-      //     participantIds,
-      //     {
-      //       message: 'You have been removed from the conversation',
-      //       id: conversationId,
-      //       userId: targetUser.id,
-      //     },
-      //   );
-
-      //   const d: z.infer<typeof RemoveConversationFromListSchema> = {
-      //     data: { conversationId },
-      //   };
 
       const d: z.infer<typeof RemoveConversationFromListSchema> = {
         conversationId: conversationId,
@@ -528,6 +984,262 @@ export class ConversationsService {
     } catch (error) {
       console.log('Error fetching participants:', error);
       throw new BadRequestException('Error fetching participants');
+    }
+  }
+
+  async updateRole(user: TokenPayload, updateMember: UpdateMemberRoleDto) {
+    //? get role of the current user
+    const myRole = await this.userConversationRepository.findOne({
+      where: {
+        userId: user.sub,
+        conversationId: updateMember.conversationId,
+      },
+      select: ['role'],
+    });
+
+    if (!myRole) {
+      throw new UnauthorizedException('You are not part of this conversation');
+    }
+
+    if (myRole.role !== 'OWNER') {
+      throw new UnauthorizedException(
+        'You are not the owner of this conversation',
+      );
+    }
+
+    const targetUser = await this.userConversationRepository.findOne({
+      where: {
+        userId: updateMember.memberId,
+        conversationId: updateMember.conversationId,
+      },
+    });
+
+    if (!targetUser) {
+      throw new BadRequestException('User not found in the conversation');
+    }
+
+    targetUser.role = updateMember.role;
+
+    try {
+      await this.userConversationRepository.save(targetUser);
+      //? send event to all participants to update the chat participants list
+      const participants = await this.userConversationRepository.find({
+        where: { conversationId: updateMember.conversationId },
+      });
+      const userIds = participants.map((p) => p.userId);
+
+      const eventData: z.infer<typeof UpdateMemberRoleSchema> = {
+        conversationId: updateMember.conversationId,
+        memberId: updateMember.memberId,
+        role: updateMember.role,
+      };
+      this.eventsGateway.sendEventToUser(
+        EventsType.GROUP_ROLE_UPDATED,
+        userIds,
+        eventData,
+      );
+      if (updateMember.role === 'OWNER') {
+        await this.userConversationRepository.update(
+          {
+            userId: user.sub,
+            conversationId: updateMember.conversationId,
+          },
+          { role: 'ADMIN' },
+        );
+
+        //? send event to all participants to update the chat participants list
+        const eventData: z.infer<typeof UpdateMemberRoleSchema> = {
+          conversationId: updateMember.conversationId,
+          memberId: user.sub,
+          role: 'ADMIN',
+        };
+        this.eventsGateway.sendEventToUser(
+          EventsType.GROUP_ROLE_UPDATED,
+          userIds,
+          eventData,
+        );
+      }
+
+      return { message: 'Role updated successfully' };
+
+      //   console.log('myRole:', myRole);
+    } catch (error) {
+      console.log('error:', error);
+      throw new BadRequestException('Error updating role');
+    }
+  }
+
+  async sendEventToGroupParticipants(
+    conversationId: string,
+    obj: z.infer<typeof GroupUserStatusUpdateSchema>,
+    eventsType: EventsType,
+  ) {
+    const participants = await this.userConversationRepository.find({
+      where: { conversationId },
+    });
+    if (!participants) {
+      throw new BadRequestException(
+        'No participants found in the conversation',
+      );
+    }
+    const userIds: number[] = participants.map((p) => p.userId);
+    console.log('userIds:', userIds);
+    this.eventsGateway.sendEventToUser(eventsType, userIds, obj);
+  }
+
+  async banUserFromConversation(
+    conversationId: string,
+    userId: number,
+    user: TokenPayload,
+  ) {
+    console.log('banUserFromConversation:', conversationId, userId, user);
+
+    ///? check if the conversation exists
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: conversationId },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    //? check if both users are part of the conversation
+    const users = await this.userConversationRepository.find({
+      where: {
+        conversationId,
+        userId: In([userId, user.sub]),
+      },
+    });
+
+    if (users.length !== 2) {
+      throw new BadRequestException('Users are not part of the conversation');
+    }
+
+    const senderUser = users.find((u) => u.userId === user.sub);
+    const targetUser = users.find((u) => u.userId === userId);
+
+    if (
+      senderUser.role === 'OWNER' ||
+      (senderUser.role === 'ADMIN' && targetUser.role !== 'OWNER')
+    ) {
+      targetUser.banned = true;
+      targetUser.role = 'MEMBER';
+      // targetUser.banEnd = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // 7 days
+      try {
+        await this.userConversationRepository.save(targetUser);
+      } catch (error) {
+        console.log('error:', error);
+        throw new BadRequestException('Error banning user');
+      }
+      const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+        conversationId: conversationId,
+        userId: targetUser.userId,
+        action: GroupUserStatusAction.BAN,
+        duration: 0,
+        reason: 'Banned by: ' + user.username,
+      };
+      //   const userIds = users.map((u) => u.userId);
+      this.sendEventToGroupParticipants(
+        conversationId,
+        eventData,
+        EventsType.GROUP_USER_STATUS_UPDATED,
+      );
+
+      //   {
+      //     const eventData: z.infer<typeof RemoveConversationFromListSchema> = {
+      //       conversationId: conversationId,
+      //     };
+      //     this.eventsGateway.sendEventToUser(
+      //       EventsType.REMOVE_CONVERSATION_FROM_LIST,
+      //       [targetUser.userId],
+      //       eventData,
+      //     );
+      //   }
+
+      return { message: 'User banned successfully' };
+    } else {
+      throw new UnauthorizedException(
+        'You are not authorized to ban this user',
+      );
+    }
+
+    // console.log('users:', users);
+  }
+
+  async unbanUserFromConversation(
+    conversationId: string,
+    userId: number,
+    user: TokenPayload,
+  ) {
+    console.log('banUserFromConversation:', conversationId, userId, user);
+
+    ///? check if the conversation exists
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: conversationId },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    //? check if both users are part of the conversation
+    const users = await this.userConversationRepository.find({
+      where: {
+        conversationId,
+        userId: In([userId, user.sub]),
+      },
+    });
+
+    if (users.length !== 2) {
+      throw new BadRequestException('Users are not part of the conversation');
+    }
+
+    const senderUser = users.find((u) => u.userId === user.sub);
+    const targetUser = users.find((u) => u.userId === userId);
+
+    if (senderUser.role === 'OWNER' || senderUser.role === 'ADMIN') {
+      targetUser.banned = false;
+      //   targetUser.role = 'MEMBER';
+      // targetUser.banEnd = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // 7 days
+      try {
+        // await this.userConversationRepository.save(targetUser);
+        await this.userConversationRepository.delete(targetUser.id);
+      } catch (error) {
+        console.log('error:', error);
+        throw new BadRequestException('Error unbanning user');
+      }
+      const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+        conversationId: conversationId,
+        userId: targetUser.userId,
+        action: GroupUserStatusAction.UNBAN,
+        duration: 0,
+        reason: 'Unbanned by: ' + user.username,
+      };
+      this.sendEventToGroupParticipants(
+        conversationId,
+        eventData,
+        EventsType.GROUP_USER_STATUS_UPDATED,
+      );
+      //   {
+      //     const eventData: z.infer<
+      //       typeof RemoveParticipantFromConversationSchema
+      //     > = {
+      //       conversationId: conversationId,
+      //       userId: targetUser.userId,
+      //     };
+      //     const participants = await this.userConversationRepository.find({
+      //       where: { conversationId },
+      //     });
+      //     const userIds = participants.map((u) => u.userId);
+      //     this.eventsGateway.sendEventToUser(
+      //       EventsType.REMOVE_PARTICIPANT_FROM_CONVERSATION,
+      //       userIds,
+      //       eventData,
+      //     );
+      //   }
+      return { message: 'User unbanned successfully' };
+    } else {
+      throw new UnauthorizedException(
+        'You are not authorized to ban this user',
+      );
     }
   }
 }

@@ -1,8 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // Added useNavigate for redirection
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom"; // Added useNavigate for redirection
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Card, CardContent, CardTitle } from "../ui/card";
-import axios from "axios";
+import { toast } from "sonner";
+
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "../ui/context-menu";
+import axios, { Axios } from "axios";
 import LoginButton from "../Loginbutton";
 import { CreateNewDm } from "./create-new-dm";
 import { CreateNewGroup } from "./create-new-groupp";
@@ -16,13 +29,26 @@ import {
   EventsType,
   RemoveConversationFromListSchema,
   AddConversationToListSchema,
+  GroupUserStatusUpdateSchema,
+  GroupUserStatusAction,
 } from "../../common/types/event-type";
+import { UserPayload, useUserContext } from "../../context";
+import { Socket } from "socket.io-client";
+
+interface ChatContext {
+  socket: Socket | null;
+  me: UserPayload; // Adjust the type based on your actual user data
+}
 
 const ConversationList = () => {
   const location = useLocation(); // Get the current location (URL)
   const history = useNavigate(); // Used for redirection
   const [conversations, setConversations] = useState<any[]>([]);
   const [isUnauthorized, setIsUnauthorized] = useState(false); // State to handle unauthorized
+  const [error, setError] = useState<string | null>(null);
+  const me: UserPayload = useUserContext();
+  //   const { socket, me } = useOutletContext<ChatContext>();
+  // const { socket }: { socket: Socket | null } = useOutletContext();
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -54,6 +80,22 @@ const ConversationList = () => {
 
   useEffect(() => {
     const eventsHandler = EventsHandler.getInstance();
+
+    const addConversationToList = async (conversationId: string) => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3000/conversations/${conversationId}`,
+          { withCredentials: true }
+        );
+        const newConversation = response.data;
+
+        setConversations((prevConversations) => {
+          return [...prevConversations, newConversation];
+        });
+      } catch (error) {
+        console.error("Error fetching conversation details:", error);
+      }
+    };
 
     const handleAddConversation = async (data: any) => {
       console.log(
@@ -110,14 +152,45 @@ const ConversationList = () => {
       });
     };
 
+    const handleGroupUserStatusUpdate = (
+      data: z.infer<typeof GroupUserStatusUpdateSchema>
+    ) => {
+      console.log(
+        "GROUP_USER_STATUS_UPDATED received in conversations-list:",
+        data
+      );
+
+      if (
+        data.userId === me.id &&
+        (data.action === GroupUserStatusAction.KICK ||
+          data.action === GroupUserStatusAction.BAN)
+      ) {
+        setConversations((prevConversations) => {
+          return prevConversations.filter(
+            (conversation) =>
+              conversation.conversationId !== data.conversationId
+          );
+        });
+      }
+
+    //   if (data.userId === me.id && data.action === GroupUserStatusAction.JOIN) {
+    //     addConversationToList(data.conversationId);
+    //   }
+    };
+
     eventsHandler.on("ADD_CONVERSATION_TO_LIST", handleAddConversation);
     eventsHandler.on("REMOVE_CONVERSATION_FROM_LIST", handleRemoveConversation);
+    eventsHandler.on("GROUP_USER_STATUS_UPDATED", handleGroupUserStatusUpdate);
 
     return () => {
       eventsHandler.off("ADD_CONVERSATION_TO_LIST", handleAddConversation);
       eventsHandler.off(
         "REMOVE_CONVERSATION_FROM_LIST",
         handleRemoveConversation
+      );
+      eventsHandler.off(
+        "GROUP_USER_STATUS_UPDATED",
+        handleGroupUserStatusUpdate
       );
     };
   }, []);
@@ -137,6 +210,35 @@ const ConversationList = () => {
     } catch (error) {
       console.error("Error in the connection:", error);
       alert("Error in the connection process");
+    }
+  };
+
+  const leaveGroup = async (conversationId: string) => {
+    console.log("Leaving group:", conversationId);
+    try {
+      const response = await axios.delete(
+        `http://localhost:3000/conversations/leave-conversation/${conversationId}`,
+        { withCredentials: true }
+      );
+      console.log("User removed from group:", response.data);
+      toast.success("Successfully left the group!", { duration: 3000 });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error("Axios error:", error.response?.data || error.message);
+        setError("Failed to leave the group. Please try again.");
+        // const errorMsg = error.response?.data || error.message;
+        // console.log(error.response?.data.message || error.message);
+        // toast(error.response?.data.message || error.message);
+        toast.error(error.response?.data.message || error.message, {
+          duration: 5000,
+        });
+        // toast.success("Successfully updated!", { duration: 3000 });
+        // toast.warning("This action cannot be undone.", { duration: 4000 });
+        // toast.info("New feature available!", { duration: 3500 });
+      } else {
+        console.error("Unexpected error:", error);
+        setError("An unexpected error occurred.");
+      }
     }
   };
 
@@ -171,40 +273,52 @@ const ConversationList = () => {
         //   const participant = conversation.participants[0]; // Assume the first participant is relevant
         const isSelected =
           location.pathname === `/chat/${conversation.conversationId}`;
-
         return (
-          <Link
-            to={`/chat/${conversation.conversationId}`}
-            key={conversation.conversationId}
-            className={`block rounded-lg p-2 ${
-              isSelected ? "bg-gray-900" : "hover:bg-gray-900"
-            }`}
-          >
-            <Card
-              className={`flex items-center space-x-2 border-none shadow-none bg-transparent ${
-                isSelected ? "bg-gray-900" : "bg-transparent"
-              }`}
-            >
-              {/* Avatar */}
-              <Avatar className="w-12 h-12">
-                {conversation.type === "GROUP" ? (
-                  <Users className="w-12 h-12 text-gray-500" />
-                ) : (
-                  <AvatarImage
-                    src={participant.avatar}
-                    alt={`${participant.username}'s avatar`}
-                  />
-                )}
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="font-semibold text-xl ml-4">
-                  {conversation.type === "DM"
-                    ? participant.username || "Unknown User"
-                    : conversation.name || "Group Name"}
-                </span>
-              </div>
-            </Card>
-          </Link>
+          <ContextMenu key={conversation.conversationId}>
+            <ContextMenuTrigger>
+              <Link
+                to={`/chat/${conversation.conversationId}`}
+                key={conversation.conversationId}
+                className={`block rounded-lg p-2 ${
+                  isSelected ? "bg-gray-900" : "hover:bg-gray-900"
+                }`}
+              >
+                <Card
+                  className={`flex items-center space-x-2 border-none shadow-none bg-transparent ${
+                    isSelected ? "bg-gray-900" : "bg-transparent"
+                  }`}
+                >
+                  {/* Avatar */}
+                  <Avatar className="w-12 h-12">
+                    {conversation.type === "GROUP" ? (
+                      <Users className="w-12 h-12 text-gray-500" />
+                    ) : (
+                      <AvatarImage
+                        src={participant.avatar}
+                        alt={`${participant.username}'s avatar`}
+                      />
+                    )}
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-xl ml-4">
+                      {conversation.type === "DM"
+                        ? participant.username || "Unknown User"
+                        : conversation.name || "Group Name"}
+                    </span>
+                  </div>
+                </Card>
+              </Link>
+            </ContextMenuTrigger>
+            <ContextMenuContent className="bg-slate-900 border-none">
+              <ContextMenuItem
+                onClick={() => leaveGroup(conversation.conversationId)}
+                className="text-red-500 hover:bg-slate-600"
+              >
+                {/* ${conversation.conversationId} */}
+                Leave group
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         );
       })}
     </div>

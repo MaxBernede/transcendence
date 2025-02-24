@@ -7,7 +7,12 @@ import EventsHandler from "../../events/EventsHandler"; // Import the event hand
 
 import { set, z } from "zod";
 
-import { RemoveParticipantFromConversationSchema } from "../../common/types/event-type";
+import {
+  GroupUserStatusAction,
+  GroupUserStatusUpdateSchema,
+  RemoveParticipantFromConversationSchema,
+} from "../../common/types/event-type";
+import { UserPayload, useUserContext } from "@/context";
 
 interface ChannelParticipantsProps {
   channelId: string;
@@ -45,6 +50,8 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
           losses: participant.loose,
           ladderLevel: participant.ladder_level,
           groupRole: participant.group_role,
+          banned: participant.banned,
+          muted_untill: participant.muted_untill,
         })
       );
 
@@ -61,6 +68,31 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
   useEffect(() => {
     fetchParticipants();
   }, [channelId]);
+
+  useEffect(() => {
+    const eventsHandler = EventsHandler.getInstance();
+
+    const handleRoleUpdate = async (data: any) => {
+      console.log("GROUP_ROLE_UPDATED received in conversations-list:", data);
+
+      //? data: { conversationId: "", memberId: 1, role: "ADMIN" }
+
+      // Update the participants list
+      setParticipants((prevParticipants) =>
+        prevParticipants.map((participant) =>
+          participant.id === data.memberId
+            ? { ...participant, groupRole: data.role } // Update the role for the matching user
+            : participant
+        )
+      );
+    };
+
+    eventsHandler.on("GROUP_ROLE_UPDATED", handleRoleUpdate);
+
+    return () => {
+      eventsHandler.off("GROUP_ROLE_UPDATED", handleRoleUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     const eventsHandler = EventsHandler.getInstance();
@@ -89,15 +121,130 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
       });
     };
 
+    const handleAddParticipant = async (data: any) => {
+      console.log(
+        "ADD_PARTICIPANT_TO_CONVERSATION received in conversations-list:",
+        data
+      );
+
+      try {
+        const user = await axios.get(
+          `http://localhost:3000/api/users/${data.userId}`,
+          {
+            withCredentials: true,
+          }
+        );
+        setParticipants((prevParticipants) => [
+          ...prevParticipants,
+          {
+            id: data.userId,
+            username: user.data.username,
+            avatar: user.data.avatar,
+            createdAt: user.data.created_at,
+            wins: user.data.wins,
+            losses: user.data.loose,
+            ladderLevel: user.data.ladder_level,
+            groupRole: "MEMBER",
+            banned: false,
+            muted_untill: null,
+          },
+        ]);
+        console.log("User data:", user.data);
+      } catch (error) {
+        console.error("Invalid data received:", error);
+      }
+    };
+
+    const handleEventActionBan = async (
+      data: z.infer<typeof GroupUserStatusUpdateSchema>
+    ) => {
+      console.log("BAN action received in conversations-list:", data);
+      // if banned user === me, remove from participants
+      if (data.userId === currentUserId) {
+        console.log("Banned user is me, removing from participants");
+        setParticipants((prevParticipants) => {
+          return prevParticipants.filter(
+            (participant) => participant.id !== data.userId
+          );
+        });
+      } else {
+        console.log(
+          "Banned user is not me, updating participants:",
+          currentUserId
+        );
+        setParticipants((prev) => {
+          const index = prev.findIndex((p) => p.id === data.userId);
+          if (index === -1) return prev; // No change needed
+
+          const updatedParticipants = [...prev];
+          updatedParticipants[index] = {
+            ...updatedParticipants[index],
+            banned: true,
+          };
+
+          return updatedParticipants;
+        });
+      }
+    };
+
+    const handleEventActionUnban = async (
+      data: z.infer<typeof GroupUserStatusUpdateSchema>
+    ) => {
+      console.log("UNBAN action received in conversations-list:", data);
+
+      setParticipants((prev) => {
+        const index = prev.findIndex((p) => p.id === data.userId);
+        if (index === -1) return prev; // No change needed
+
+        const updatedParticipants = [...prev];
+        updatedParticipants[index] = {
+          ...updatedParticipants[index],
+          banned: false,
+        };
+
+        return updatedParticipants;
+      });
+    };
+
+    const handleGroupUserStatusUpdate = async (
+      data: z.infer<typeof GroupUserStatusUpdateSchema>
+    ) => {
+      console.log(
+        "GROUP_USER_STATUS_UPDATED received in conversations-list:",
+        data
+      );
+
+      switch (data.action) {
+        case GroupUserStatusAction.BAN:
+          handleEventActionBan(data);
+          break;
+        case GroupUserStatusAction.UNBAN:
+          handleEventActionUnban(data);
+          break;
+      }
+    };
+
     eventsHandler.on(
       "REMOVE_PARTICIPANT_FROM_CONVERSATION",
       handleRemoveConversation
     );
 
+    eventsHandler.on("ADD_PARTICIPANT_TO_CONVERSATION", handleAddParticipant);
+
+    eventsHandler.on("GROUP_USER_STATUS_UPDATED", handleGroupUserStatusUpdate);
+
     return () => {
       eventsHandler.off(
         "REMOVE_PARTICIPANT_FROM_CONVERSATION",
         handleRemoveConversation
+      );
+      eventsHandler.off(
+        "ADD_PARTICIPANT_TO_CONVERSATION",
+        handleAddParticipant
+      );
+      eventsHandler.off(
+        "GROUP_USER_STATUS_UPDATED",
+        handleGroupUserStatusUpdate
       );
     };
   }, []);

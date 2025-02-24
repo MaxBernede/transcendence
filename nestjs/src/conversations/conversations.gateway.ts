@@ -210,6 +210,7 @@ export class ConversationsGateway
     const conversations = await this.userConversationRepository.find({
       where: {
         userId: payload.sub,
+		banned: false,
       },
     });
 
@@ -260,6 +261,7 @@ export class ConversationsGateway
         where: {
           userId: user.sub,
           conversationId: message.conversationId,
+		  banned: false,
         },
       });
       if (!userConversation) {

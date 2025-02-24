@@ -22,7 +22,29 @@ export enum EventsType {
 
   ADD_PARTICIPANT_TO_CONVERSATION = 'ADD_PARTICIPANT_TO_CONVERSATION',
   REMOVE_PARTICIPANT_FROM_CONVERSATION = 'REMOVE_PARTICIPANT_FROM_CONVERSATION',
+
+  GROUP_ROLE_UPDATED = 'GROUP_ROLE_UPDATED',
+  GROUP_USER_STATUS_UPDATED = 'GROUP_USER_STATUS_UPDATED',
 }
+
+export enum GroupUserStatusAction {
+  KICK = 'kick',
+  BAN = 'ban',
+  UNBAN = 'unban',
+  MUTE = 'mute',
+  UNMUTE = 'unmute',
+  TIMEOUT = 'timeout',
+  LEAVE = 'leave',
+  JOIN = 'join',
+}
+
+export const GroupUserStatusUpdateSchema = z.object({
+  conversationId: z.string(), // The group/chat ID
+  userId: z.number(), // The affected user
+  action: z.nativeEnum(GroupUserStatusAction), // Uses the enum
+  duration: z.number().optional(), // Only for "timeout" (in seconds)
+  reason: z.string().optional(), // Optional reason for the action
+});
 
 export const AddParticipantToConversationSchema = z.object({
   conversationId: z.string().uuid(),
@@ -40,6 +62,12 @@ export const AddConversationToListSchema = z.object({
 
 export const RemoveConversationFromListSchema = z.object({
   conversationId: z.string().uuid(), // Ensure conversationId is a valid UUID string
+});
+
+export const UpdateMemberRoleSchema = z.object({
+  conversationId: z.string().uuid(),
+  memberId: z.number(),
+  role: z.string(),
 });
 
 export enum UserActionType {

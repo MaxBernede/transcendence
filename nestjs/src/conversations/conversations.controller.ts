@@ -9,7 +9,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
-import { CreateConversationDto } from './dto/create-conversation.dto';
+import {
+  CreateConversationDto,
+  JoinConversationDto,
+  LeaveConversationDto,
+  UpdateMemberRoleDto,
+} from './dto/create-conversation.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { GetUserPayload } from 'src/test.decorator';
@@ -21,6 +26,63 @@ import { Conversation } from './entities/conversation.entity';
 @UseGuards(JwtAuthGuard)
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
+
+  @Post(':conversationId/users/:userId/ban')
+  async banUserFromConversation(
+    @Param('conversationId') conversationId: string,
+    @Param('userId') userId: string,
+    @GetUserPayload() user: TokenPayload,
+  ) {
+    return this.conversationsService.banUserFromConversation(
+      conversationId,
+      parseInt(userId),
+      user,
+    );
+  }
+
+  @Post(':conversationId/users/:userId/unban')
+  async unbanUserFromConversation(
+    @Param('conversationId') conversationId: string,
+    @Param('userId') userId: string,
+    @GetUserPayload() user: TokenPayload,
+  ) {
+    return this.conversationsService.unbanUserFromConversation(
+      conversationId,
+      parseInt(userId),
+      user,
+    );
+  }
+
+  @Post('join-conversation')
+  async joinConversation(
+    @GetUserPayload() user: TokenPayload,
+    @Body() joinConversationDto: JoinConversationDto,
+  ) {
+    // console.log('joinConversationDto:', user);
+    return this.conversationsService.joinConversation(
+      user,
+      joinConversationDto,
+    );
+  }
+
+  @Post('update-role')
+  async updateRole(
+    @GetUserPayload() user: TokenPayload,
+    @Body() updateMember: UpdateMemberRoleDto,
+  ) {
+    return this.conversationsService.updateRole(user, updateMember);
+  }
+
+  //   @Post('leave-conversation')
+  //   async leaveConversation(
+  //     @GetUserPayload() user: TokenPayload,
+  //     @Body() leaveConversationDto: LeaveConversationDto,
+  //   ) {
+  //     return this.conversationsService.leaveConversation(
+  //       user,
+  //       leaveConversationDto,
+  //     );
+  //   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new conversation' })
@@ -104,5 +166,13 @@ export class ConversationsController {
       userId,
       user,
     );
+  }
+
+  @Delete('leave-conversation/:conversationId')
+  async leaveGroup(
+    @Param('conversationId') conversationId: string,
+    @GetUserPayload() user: TokenPayload,
+  ) {
+    return this.conversationsService.leaveConversation(user, conversationId);
   }
 }

@@ -1,97 +1,13 @@
-// import React from "react";
-// import { Button } from "../ui/button";
-// import { Input } from "../ui/input";
-// import { Label } from "../ui/label";
-
-// import {
-//   AlertDialog,
-//   AlertDialogAction,
-//   AlertDialogCancel,
-//   AlertDialogContent,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-//   AlertDialogTrigger,
-// } from "../ui/alert-dialog";
-
-// interface CreateNewGroupProps {
-//   currentUserId: string;
-//   onCreateGroup: (username: string) => void;
-// }
-
-// export const CreateNewDm = () => {
-//   const [username, setUsername] = React.useState("");
-
-//   const handleSubmit = () => {
-//     if (username.trim() === "") {
-//       alert("Username cannot be empty!"); // Replace with better validation if needed
-//       return;
-//     }
-//     // onCreateGroup(username);
-//   };
-
-//   return (
-//     <AlertDialog>
-//       <AlertDialogTrigger asChild>
-//         <Button className="bg-cyan-700">Create New DM</Button>
-//       </AlertDialogTrigger>
-//       <AlertDialogContent>
-//         <AlertDialogHeader className="flex flex-col items-center">
-//           <AlertDialogTitle>Create a New DM</AlertDialogTitle>
-//         </AlertDialogHeader>
-//         <form
-//           onSubmit={(e) => {
-//             e.preventDefault();
-//             handleSubmit();
-//           }}
-//         >
-//           <div className="space-y-4">
-//             <div className="form-group">
-//               <Label />
-//               <Input
-//                 id="username"
-//                 placeholder="Enter username"
-//                 value={username}
-//                 onChange={(e) => setUsername(e.target.value)}
-//                 required
-//               />
-//             </div>
-//           </div>
-//           <AlertDialogFooter className="flex justify-between space-x-4 mt-4">
-//             <AlertDialogCancel asChild>
-//               <Button className="bg-red-600 border-none w-full">Cancel</Button>
-//             </AlertDialogCancel>
-//             <AlertDialogAction asChild>
-//               <Button
-//                 type="submit"
-//                 className="bg-green-600 border-none w-full disabled:bg-gray-400 disabled:cursor-not-allowed"
-//                 disabled={!username.trim()}
-//               >
-//                 Create DM
-//               </Button>
-//             </AlertDialogAction>
-//           </AlertDialogFooter>
-//         </form>
-//       </AlertDialogContent>
-//     </AlertDialog>
-//   );
-// };
-
 import React from "react";
 import axios from "axios"; // Import Axios
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-// import CardWrapper from "../ui/card-wrapper";
-import { Plus, X } from "lucide-react";
-import { AlertCircle } from "lucide-react";
+
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -100,21 +16,17 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "../ui/form";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { useUserContext } from "../../context";
 
 import { set, z } from "zod";
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Router } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
 const newGroupSchema = z.object({
@@ -154,7 +66,7 @@ export const CreateNewDm = () => {
     console.log("New DM Conversation:", newDmConversation);
 
     try {
-      setLoading(true); // Set loading state to true
+      setLoading(true);
       const { data } = await axios.post(
         "http://localhost:3000/conversations",
         newDmConversation,
@@ -164,42 +76,46 @@ export const CreateNewDm = () => {
       );
       console.log("Created dm:", data);
       console.log("Navigating to chat page...");
-      navigate(`/chat/${data.id}`); // React Router navigation
-      setIsOpen(false); // Close the dialog only on success
+      navigate(`/chat/${data.id}`);
+      setIsOpen(false);
       setError(null);
     } catch (error) {
-      console.error("Failed to create dm:", error);
-      setError("Failed to create dm"); // Show error message
+      if (axios.isAxiosError(error)) {
+        console.log("Failed to join group:", error.response?.data);
+        setError(error.response?.data.message);
+      } else {
+        console.error("Failed to join group:", error);
+        setError("Failed to create dm");
+      }
       setIsOpen(true);
-      setLoading(false); // Reset loading state
-      // Dialog stays open even on error
+      setLoading(false);
     }
   };
 
   const handleOpenDialog = () => {
     setIsOpen(true);
-    form.reset(); // Reset form values when opening dialog
-    setError(null); // Clear any error messages
-    setLoading(false); // Ensure the button is not disabled
+    form.reset();
+    setError(null);
+    setLoading(false);
   };
 
   const handleCloseDialog = () => {
-    form.reset();
-    setIsOpen(false);
     setError(null);
+    setIsOpen(false);
+    form.reset();
   };
-
-  // Submit on Enter press and prevent default page reload
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !loading) {
       e.preventDefault();
       customSubmit();
     }
     if (e.key === "Escape") {
+      console.log("Escape key pressed");
+      setError(null);
+      setIsOpen(false);
       handleCloseDialog();
     }
   };
-
   return (
     <AlertDialog open={isOpen}>
       <AlertDialogTrigger asChild>
@@ -207,13 +123,13 @@ export const CreateNewDm = () => {
           Create New DM
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent onKeyDown={handleKeyPress} tabIndex={0}>
         <AlertDialogHeader className="flex flex-col items-center">
           <AlertDialogTitle>Create a New DM</AlertDialogTitle>
         </AlertDialogHeader>
 
         <Form {...form}>
-          <form onKeyDown={handleKeyPress}>
+          <form>
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -238,7 +154,7 @@ export const CreateNewDm = () => {
               <AlertDialogCancel asChild>
                 <Button
                   className="bg-red-600 border-none w-full"
-                  onClick={handleCloseDialog} // Ensure dialog is closed
+                  onClick={handleCloseDialog}
                 >
                   Cancel
                 </Button>

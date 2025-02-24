@@ -49,6 +49,9 @@ export class Conversation {
   @Column({ type: 'text', default: 'Untitled Group' })
   name: string;
 
+  @Column({ type: 'text', default: null })
+  password: string;
+
   // Relationship with the UserConversation join table (many-to-one)
   @OneToMany(
     () => UserConversation,

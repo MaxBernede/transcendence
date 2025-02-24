@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, ReactNode } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Home from "./pages/Home";
 import UserPage from "./pages/Userpage";
 import Creation from "./components/Creation";
@@ -9,13 +9,15 @@ import ProfileUpdate from "./pages/user/ProfileUpdate";
 import { fetchUserData, UserData } from "./utils/UserLogic";
 import TwoFactorAuth from "./components/2FA/2FA";
 import TwoFA from "./pages/TwoFA";
-import ChatPage from "./pages/chat/chat-page";
-import ChatLayout from "./components/chat/layout/chatList";
+import ChatPage from "./pages/chat/[id]";
+import ChatLayout from "./pages/chat/chat-page";
 import { UserProvider } from "./context";
 import PongPage from "./game/PongPage";
 import LoginPage from "./pages/login/page";
 import { io, Socket } from "socket.io-client";
 import EventsHandler from "./events/EventsHandler";
+
+import { Toaster } from "./components/ui/sonner";
 
 export const UserContext = createContext<{
   userData: UserData | null;
@@ -100,6 +102,8 @@ function App() {
     //   }}
     // >
     <BrowserRouter>
+      <Toaster position="bottom-right" richColors />
+
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -133,6 +137,7 @@ const UserProviderWrapper = () => {
   return (
     <UserProvider>
       <ChatLayout />
+      {/* <Outlet /> */}
     </UserProvider>
   );
 };
