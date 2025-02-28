@@ -24,22 +24,25 @@ import { MenuList } from '@mui/material';
 	  paddle2: { y: 250 },
 	  score: { player1: 0, player2: 0 },
 	};
-  
 	private powerUpState = {
-	  x: null as number | null,
-	  y: null as number | null,
-	  type: null as "shrinkOpponent" | "speedBoost" | "enlargePaddle" | null,
-	  isActive: false,
+		x: null as number | null,
+		y: null as number | null,
+		vx: 0, // Ensure velocity is always set
+		vy: 0,
+		type: null as "shrinkOpponent" | "speedBoost" | "enlargePaddle" | null,
+		isActive: false,
 	};
 
 	// ends game and resets when a player has 3 points and notifies the server clients
 	private checkGameOver() {
 		if (this.gameState.score.player1 >= 3) {
+			console.log("🎉 Player 1 WINS!");
 			this.server.emit("gameOver", { winner: "Player 1" });
-			this.resetGame(); //  Reset game once someone wins
+			setTimeout(() => this.resetGame(), 3000); // Reset after 3 seconds
 		} else if (this.gameState.score.player2 >= 3) {
+			console.log("🎉 Player 2 WINS!");
 			this.server.emit("gameOver", { winner: "Player 2" });
-			this.resetGame();
+			setTimeout(() => this.resetGame(), 3000); // Reset after 3 seconds
 		}
 	}
 
@@ -64,12 +67,18 @@ private resetGame() {
         score: { player1: 0, player2: 0 }
     };
 
-	this.powerUpState = {
-        x: null,
-        y: null,
-        type: null,
-        isActive: false
-    };
+    if (this.powerUpState.isActive) {
+        console.log("Keeping power-up active after reset.");
+    } else {
+        this.powerUpState = {
+            x: null,
+            y: null,
+            vx: 0, 
+            vy: 0,
+            type: null,
+            isActive: false
+        };
+    }
 
 	console.log("Game has been fully reset.");
 
@@ -92,15 +101,37 @@ private resetGame() {
   
 	// Spawns a power-up randomly
 	private spawnPowerUp() { 
-	  if (this.powerUpState.isActive) return;
-	  const randomX = Math.floor(Math.random() * 600) + 100;
-	  const randomY = Math.floor(Math.random() * 300) + 50;
-	  const powerUpTypes = ["shrinkOpponent", "speedBoost", "enlargePaddle"];
-	  const randomType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
-  
-	  this.powerUpState = { x: randomX, y: randomY, type: randomType as any, isActive: true };
-	  this.server.emit("powerUpSpawned", this.powerUpState);
-	}
+		if (this.powerUpState.isActive) return;
+
+		console.log("⚡ Spawning power-up at:", this.powerUpState);
+
+		
+		const randomX = Math.floor(Math.random() * 600) + 100;
+		const randomY = Math.floor(Math.random() * 300) + 50;
+		const powerUpTypes: Array<"shrinkOpponent" | "speedBoost" | "enlargePaddle"> = [
+		  "shrinkOpponent", 
+		  "speedBoost", 
+		  "enlargePaddle"
+		];
+		const randomType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)] as "shrinkOpponent" | "speedBoost" | "enlargePaddle";
+	  
+		console.log("Spawning Power-up at", { randomX, randomY, randomType });
+	  
+		this.powerUpState = { 
+			x: randomX, 
+			y: randomY, 
+			vx: Math.random() > 0.5 ? 3 : -3,
+			vy: Math.random() > 0.5 ? 2 : -2,
+			type: randomType, 
+			isActive: true 
+		};
+
+		console.log("📡 Emitting powerUpSpawned:", this.powerUpState);
+
+		this.server.emit("powerUpSpawned", this.powerUpState);
+	  }
+	  
+	  
 
 @SubscribeMessage('registerUser')
 handleRegisterUser(client: Socket, username: string) {
@@ -154,17 +185,14 @@ private stopBall() {
 	/** Resets the ball after scoring */
 	private resetBall(direction: number) {
 		console.log(" Resetting ball and stopping movement...");
-	
+		
 		this.ballMoving = false;
-
+	
 		if (this.gameLoopInterval) {
 			console.log("Stopping game loop before resetting ball.");
 			clearInterval(this.gameLoopInterval);
 			this.gameLoopInterval = null;
 		}
-	
-	
-		console.log(` Reset Ball after: X=${this.gameState.ball.x}, Y=${this.gameState.ball.y}, VX=${this.gameState.ball.vx}, VY=${this.gameState.ball.vy}, ballMoving=${this.ballMoving}`);
 	
 		this.gameState.ball = { 
 			x: 390, 
@@ -176,12 +204,37 @@ private stopBall() {
 		this.gameState.paddle1.y = 250;
 		this.gameState.paddle2.y = 250;
 	
-		this.server.emit("gameState", { ...this.gameState });
+		// Dont reset the power-up state!
+		this.server.emit("gameState", { ...this.gameState, powerUp: this.powerUpState });
 	
-		console.log(" Ball reset. Waiting for next movement...");
+		this.startGameLoop();
+		console.log(" Ball reset. Power-ups remain active.");
+	}
+
+	private updatePowerUpState() {
+        if (!this.powerUpState.isActive)
+			return;
+
+		if (this.powerUpState.vx === 0) this.powerUpState.vx = Math.random() > 0.5 ? 3 : -3;
+		if (this.powerUpState.vy === 0) this.powerUpState.vy = Math.random() > 0.5 ? 2 : -2;
+
+        this.powerUpState.x += this.powerUpState.vx;
+        this.powerUpState.y += this.powerUpState.vy;
+
+        // Bounce power-ups off the walls
+        if (this.powerUpState.x <= 0 || this.powerUpState.x >= 770) {
+            console.log(" Power-Up bounced off X wall!");
+            this.powerUpState.vx *= -1; 
+        }
+        if (this.powerUpState.y <= 0 || this.powerUpState.y >= 600) {
+            console.log(" Power-Up bounced off Y wall!");
+            this.powerUpState.vy *= -1;
+        }
+
+        this.checkPowerUpCollision();
+        this.server.emit("updatePowerUp", this.powerUpState);
+    }
 	
-    console.log(" Ball reset. Waiting for next movement...");
-}
 
 	// runs the game loop every 60ms (60FPS)
 	private startGameLoop() {
@@ -194,15 +247,95 @@ private stopBall() {
     this.gameLoopInterval = setInterval(() => {
 		
 			// stops updating if ball is not moving
-        if (!this.ballMoving) {
+        if (!this.ballMoving && !this.powerUpState.isActive) {
             // console.log("Ball is NOT moving, skipping update.");
             return;
         }
 
         // console.log(" Ball is moving, updating game state...");
         this.updateGameState();
+
+		if (this.powerUpState.isActive) {
+            this.updatePowerUpState(); // Ensure power-up keeps moving!
+        }
+
+		if (Math.random() < 0.05) { // 0.5% chance per frame (~every 10-15 seconds)
+			this.spawnPowerUp();
+		}
     }, 1000 / 60);
 }	
+
+/** Handles power-up collection */
+@SubscribeMessage("powerUpCollected")
+handlePowerUpCollected(@MessageBody() data: { player: number }) {
+    if (!this.powerUpState.isActive) return; // Ignore if no active power-up
+
+    console.log(`🔥 Player ${data.player} collected ${this.powerUpState.type}`);
+
+    if (this.powerUpState.type === "shrinkOpponent") {
+        this.server.emit("shrinkPaddle", { player: data.player === 1 ? 2 : 1 });
+    } else if (this.powerUpState.type === "speedBoost") {
+        this.server.emit("increaseBallSpeed");
+    } else if (this.powerUpState.type === "enlargePaddle") {
+        this.server.emit("enlargePaddle", { player: data.player });
+    }
+
+    // Reset power-up state
+    this.powerUpState = { x: null, y: null, vx: 0, vy: 0, type: null, isActive: false };
+    this.server.emit("powerUpCleared");
+}
+
+private applyPowerUpEffect(player: number, type: "shrinkOpponent" | "speedBoost" | "enlargePaddle") {
+    if (!type) return;
+
+    console.log(`🔥 Applying ${type} to Player ${player}`);
+
+    if (type === "shrinkOpponent") {
+        const opponent = player === 1 ? 2 : 1;
+        console.log(`🔹 Shrinking Player ${opponent}'s paddle!`);
+        this.server.emit("shrinkPaddle", { player: opponent });
+    } 
+    else if (type === "speedBoost") {
+        console.log("🚀 Speed Boost! Increasing ball speed.");
+        this.gameState.ball.vx *= 1.5; // Increase ball speed by 50%
+        this.gameState.ball.vy *= 1.5;
+        this.server.emit("increaseBallSpeed", this.gameState.ball);
+    } 
+    else if (type === "enlargePaddle") {
+        console.log(`🛠 Enlarging Player ${player}'s paddle!`);
+        this.server.emit("enlargePaddle", { player });
+    }
+
+    // **🔥 Remove power-up after collection**
+    this.powerUpState = { x: null, y: null, vx: 0, vy: 0, type: null, isActive: false };
+    this.server.emit("powerUpCleared");
+}
+
+
+
+private checkPowerUpCollision() {
+    if (!this.powerUpState.isActive) return;
+
+    const { x, y, type } = this.powerUpState;
+    const paddle1 = this.gameState.paddle1;
+    const paddle2 = this.gameState.paddle2;
+
+    if (x <= 30 && y >= paddle1.y && y <= paddle1.y + 100) {
+        console.log(` Player 1 collected power-up: ${type}`);
+        this.applyPowerUpEffect(1, type);
+        this.server.emit("powerUpCollected", { player: 1, type });
+        return;
+    }
+
+    if (x >= 770 && y >= paddle2.y && y <= paddle2.y + 100) {
+        console.log(` Player 2 collected power-up: ${type}`);
+        this.applyPowerUpEffect(2, type);
+        this.server.emit("powerUpCollected", { player: 2, type });
+        return;
+    }
+}
+
+
 
 // updates ball and paddles (gamestate)
 	private updateGameState() {
@@ -214,7 +347,27 @@ private stopBall() {
 	
 		// Wall bounce logic
 		if (ball.y <= 0 || ball.y >= 600) ball.vy = -ball.vy;
-	
+
+		// Update Power-Up Movement
+		if (this.powerUpState.isActive) {
+			this.powerUpState.x += this.powerUpState.vx;
+			this.powerUpState.y += this.powerUpState.vy;
+		
+			// Make power-up bounce inside the play area
+			if (this.powerUpState.x <= 0 || this.powerUpState.x >= 770) {
+				console.log("🔄 Power-Up bounced off X wall!");
+				this.powerUpState.vx *= -1; // Reverse X direction
+			}
+			if (this.powerUpState.y <= 0 || this.powerUpState.y >= 600) {
+				console.log("🔄 Power-Up bounced off Y wall!");
+				this.powerUpState.vy *= -1; // Reverse Y direction
+			}
+
+			this.checkPowerUpCollision();
+
+			this.server.emit("updatePowerUp", this.powerUpState);
+		}
+		
 		// Paddle collision logic
 		const paddle1 = this.gameState.paddle1;
 		const paddle2 = this.gameState.paddle2;
@@ -239,7 +392,7 @@ private stopBall() {
 		}
 	
 		// Broadcast updated game state
-		this.server.emit("gameState", { ...this.gameState });
+		this.server.emit("gameState", { ...this.gameState, powerUp: this.powerUpState });
 	}
 	
 	

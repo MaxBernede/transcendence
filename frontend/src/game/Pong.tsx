@@ -14,39 +14,58 @@ import axios from "axios";
 const socket = io("http://localhost:3000/pong");
 
 interface Player {
-  username: string;
-  playerNumber: number;
+	username: string;
+	playerNumber: number;
 }
 
 const Pong = () => {
-  const [playerNumber, setPlayerNumber] = useState<number>(1);
+	const [playerNumber, setPlayerNumber] = useState<number>(1);
+	const [winner, setWinner] = useState<string | null>(null);
+	const [score1, setScore1] = useState<number>(0);
+	const [score2, setScore2] = useState<number>(0);
+	
+	const {
+		gameContainerRef,
+		paddle1Y,
+		paddle2Y,
+		paddleHeight1,
+		paddleHeight2,
+		powerUpX,
+		powerUpY,
+		powerUpType,
+		isPowerUpActive,
+		// score1,
+		// score2,
+		// winner,
+		setPaddle1Y,
+		setPaddle2Y,
+		ballStarted,
+		setBallStarted,
+	} = usePongGame(socket, playerNumber);
 
-  const {
-    gameContainerRef,
-    paddle1Y,
-    paddle2Y,
-    paddleHeight1,
-    paddleHeight2,
-    powerUpX,
-    powerUpY,
-    powerUpType,
-    isPowerUpActive,
-    score1,
-    score2,
-    winner,
-    setPaddle1Y,
-    setPaddle2Y,
-    ballStarted,
-    setBallStarted,
-  } = usePongGame(socket, playerNumber);
+	const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
+	const [darkBackground, setDarkBackground] = useState(false);
+	const [loggedInUser, setLoggedInUser] = useState<string>("");
+	const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
+	const hasListener = useRef(false);
+	const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
+	
 
-  const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
-  const [darkBackground, setDarkBackground] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<string>("");
-  const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
-  const hasListener = useRef(false);
-  const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
-
+	  // Reset game state when the page refreshes
+	  useEffect(() => {
+		const handleBeforeUnload = () => {
+		  console.log("Clearing game state on refresh.");
+		  localStorage.removeItem("gameState");
+		  setWinner(null);
+		  setScore1(0);
+		  setScore2(0);
+		};
+	
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		return () => {
+		  window.removeEventListener("beforeunload", handleBeforeUnload);
+		};
+	  }, []);
 
   // fetch current user's name from users/me and store it in loggedinuser
   useEffect(() => {
@@ -91,7 +110,11 @@ useEffect(() => {
         setPaddle1Y(state.paddle1.y);
       }
 
-      setBallPosition({ x: state.ball.x, y: state.ball.y });
+	  setBallPosition({ x: state.ball.x, y: state.ball.y });
+
+	  if (!ballStarted && state.ball.vx !== 0 && state.ball.vy !== 0) {
+		setBallStarted(true);
+	  }
     };
 
     socket.on("gameState", handleGameState);
@@ -188,6 +211,12 @@ useEffect(() => {
         socket.emit("playerMove", { player: 2, y: newY });
       }
     }
+
+	if (!ballStarted) {
+		console.log("First paddle move detected, starting ball movement...");
+		setBallStarted(true);
+		socket.emit("startBall");
+	  }
   };
 
   // when user presses W / S / Up / Down it moves paddle and sends it to server
@@ -199,8 +228,16 @@ useEffect(() => {
 
   // restarts the game
   const handleResetGame = () => {
-    socket.emit("resetGame");
+	console.log("Restarting game...");
+	setWinner(null);
+	setScore1(0);
+	setScore2(0);
+	setBallPosition({ x: 390, y: 294 }); // Reset ball position
+	setBallStarted(false); // Ensure ball movement is restarted when paddle moves
+	socket.emit("resetGame");
   };
+  
+
 
   return (
     <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
