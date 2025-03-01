@@ -199,8 +199,8 @@ private stopBall() {
 		this.gameState.ball = { 
 			x: 390, 
 			y: 294, 
-			vx: direction,
-			vy: Math.random() > 0.5 ? 5 : -5
+			vx: 0,
+			vy: 0,
 		};
 	
 		this.gameState.paddle1.y = 250;

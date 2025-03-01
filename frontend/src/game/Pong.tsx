@@ -116,6 +116,16 @@ useEffect(() => {
 	  if (!ballStarted && state.ball.vx !== 0 && state.ball.vy !== 0) {
 		setBallStarted(true);
 	  }
+
+	  if (score1 !== state.score.player1) {
+		console.log(`🔄 Updating Player 1 Score: ${state.score.player1}`);
+		setScore1(state.score.player1);
+	}
+	if (score2 !== state.score.player2) {
+		console.log(`🔄 Updating Player 2 Score: ${state.score.player2}`);
+		setScore2(state.score.player2);
+	}
+	
     };
 
     socket.on("gameState", handleGameState);
