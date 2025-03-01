@@ -41,6 +41,8 @@ const Pong = () => {
 		setPaddle2Y,
 		ballStarted,
 		setBallStarted,
+		setPaddleHeight1,
+		setPaddleHeight2,
 	} = usePongGame(socket, playerNumber);
 
 	const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
@@ -103,36 +105,34 @@ useEffect(() => {
   // listens for gamestate updates from server and updates opponents paddle and ball position
   useEffect(() => {
     const handleGameState = (state: any) => {
-      if (!state?.paddle1 || !state?.paddle2 || !state?.ball) return;
+        if (!state?.paddle1 || !state?.paddle2 || !state?.ball) return;
 
-      if (playerNumber === 1) {
-        setPaddle2Y(state.paddle2.y);
-      } else if (playerNumber === 2) {
-        setPaddle1Y(state.paddle1.y);
-      }
+        if (playerNumber === 1) {
+            setPaddle2Y(state.paddle2.y);
+        } else if (playerNumber === 2) {
+            setPaddle1Y(state.paddle1.y);
+        }
 
-	  setBallPosition({ x: state.ball.x, y: state.ball.y });
+        setBallPosition({ x: state.ball.x, y: state.ball.y });
 
-	  if (!ballStarted && state.ball.vx !== 0 && state.ball.vy !== 0) {
-		setBallStarted(true);
-	  }
+        if (!ballStarted && state.ball.vx !== 0 && state.ball.vy !== 0) {
+            setBallStarted(true);
+        }
 
-	  if (score1 !== state.score.player1) {
-		console.log(`🔄 Updating Player 1 Score: ${state.score.player1}`);
-		setScore1(state.score.player1);
-	}
-	if (score2 !== state.score.player2) {
-		console.log(`🔄 Updating Player 2 Score: ${state.score.player2}`);
-		setScore2(state.score.player2);
-	}
-	
+        // ✅ Only update the score if it's different
+        if (score1 !== state.score.player1 || score2 !== state.score.player2) {
+            console.log(`🔄 Updating Scores: P1=${state.score.player1} P2=${state.score.player2}`);
+            setScore1(state.score.player1);
+            setScore2(state.score.player2);
+        }
     };
 
     socket.on("gameState", handleGameState);
     return () => {
-      socket.off("gameState", handleGameState);
+        socket.off("gameState", handleGameState);
     };
-  }, [playerNumber]);
+}, [playerNumber, score1, score2]);
+
 
 
 // checks session storage for playernumber and restores it if exists
@@ -148,54 +148,47 @@ useEffect(() => {
 
   // listens to playerinfo updates from Websocket server
   useEffect(() => {
-	const handlePlayerInfo = (players: Player[]) => {
-	  console.log("Received player info:", players);
-  
-	  if (!loggedInUser) return;
-  
-	  let storedPlayerNumber = Number(sessionStorage.getItem("playerNumber")) || 1;
+    const handlePlayerInfo = (players: Player[]) => {
+        console.log("🔄 Received updated player info:", players);
 
-	  // finds current logged in user in list of players from websocket and assigns it
-	  const currentPlayer = players.find((p) => p.username === loggedInUser);
-	  // finds opponent that is not the logged in user, if alone opponent is undefined
-	  const opponent = players.find((p) => p.username !== loggedInUser);
+        if (!loggedInUser) return;
 
-	  // if currentplayer exists restore playernumber to receive data
-	  if (currentPlayer) {
-		console.log(` Restoring stored player number: ${currentPlayer.playerNumber}`);
-		storedPlayerNumber = currentPlayer.playerNumber;
-		// if playernumber 1 is assigned make user player 2 and other gets opponent number
-	  } else if (players.length === 1) {
-		if (players[0].playerNumber === 1) {
-		  storedPlayerNumber = 2;
-		} else {
-		  storedPlayerNumber = 1;
-		}
-		console.log(`Assigning opposite player number: ${storedPlayerNumber}`);
-	  }
-	  // only updates playernumber if it has changed and saves it
-	  if (playerNumber !== storedPlayerNumber) {
-		setPlayerNumber(storedPlayerNumber);
-		sessionStorage.setItem("playerNumber", String(storedPlayerNumber));
-	  }
+        let storedPlayerNumber = Number(sessionStorage.getItem("playerNumber")) || 1;
 
-	  // if opponent exists update opponentusername, otherwise it is WAITING...
-	  if (opponent) {
-		console.log(`Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
-		setOpponentUsername(opponent.username);
-	  } else {
-		console.warn("Opponent not found, setting to WAITING...");
-		setOpponentUsername("WAITING...");
-	  }
-	};
-  
-	socket.on("playerInfo", handlePlayerInfo);
-	return () => {
-	  socket.off("playerInfo", handlePlayerInfo);
-	};
-  }, [loggedInUser, playerNumber]);
-  
-  
+        const currentPlayer = players.find((p) => p.username === loggedInUser);
+        const opponent = players.find((p) => p.username !== loggedInUser);
+
+        if (currentPlayer) {
+            console.log(`✅ Restoring stored player number: ${currentPlayer.playerNumber}`);
+            storedPlayerNumber = currentPlayer.playerNumber;
+        } else if (players.length === 1) {
+            storedPlayerNumber = players[0].playerNumber === 1 ? 2 : 1;
+            console.log(`Assigning opposite player number: ${storedPlayerNumber}`);
+        }
+
+        if (playerNumber !== storedPlayerNumber) {
+            setPlayerNumber(storedPlayerNumber);
+            sessionStorage.setItem("playerNumber", String(storedPlayerNumber));
+        }
+
+        // ✅ FIX: Ensure opponent's username updates correctly after game reset
+        if (opponent) {
+            console.log(`🎯 Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
+            setOpponentUsername(opponent.username);
+        } else {
+            console.warn("⚠️ Opponent not found, setting to WAITING...");
+            setOpponentUsername("WAITING...");
+        }
+    };
+
+    socket.on("playerInfo", handlePlayerInfo);
+
+    return () => {
+        socket.off("playerInfo", handlePlayerInfo);
+    };
+}, [loggedInUser, playerNumber]);
+
+
 // when user presses W / S / up / down it moves paddles and sends it to server
   const handleKeyDown = (event: KeyboardEvent) => {
     let newY = 0;
@@ -236,21 +229,107 @@ useEffect(() => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [paddle1Y, paddle2Y]);
 
+  useEffect(() => {
+    socket.on("gameOver", (data) => {
+        console.log("🎉 Game Over! Winner:", data.winner);
+        
+        setWinner(data.winner); // ✅ Show popup
+        setBallStarted(false);  // ✅ Stop ball movement
+        socket.emit("pauseGame"); // ✅ Tell the server to stop the game
+    });
 
-  // restarts the game
-  const handleResetGame = () => {
-	console.log("Restarting game...");
-	setWinner(null);
-	setScore1(0);
-	setScore2(0);
-	setBallPosition({ x: 390, y: 294 }); // Reset ball position
-	setBallStarted(false); // Ensure ball movement is restarted when paddle moves
-	socket.emit("resetGame");
-  };
-  
+    return () => {
+        socket.off("gameOver");
+    };
+}, []);
 
 
-  return (
+
+
+useEffect(() => {
+    socket.on("gameReset", () => {
+        console.log("🆕 Game has been fully reset! Ensuring fresh state...");
+        
+        // ✅ Reset everything on the frontend
+        setWinner(null);
+        setScore1(0);
+        setScore2(0);
+        setBallPosition({ x: 390, y: 294 });
+        setPaddle1Y(250);
+        setPaddle2Y(250);
+        setPaddleHeight1(100);
+        setPaddleHeight2(100);
+		setBallStarted(false);
+
+        // ✅ Add a small delay to avoid syncing issues
+        setTimeout(() => {
+            console.log("📡 Requesting fresh game state from server...");
+            socket.emit("requestGameState");
+        }, 100);
+    });
+
+    return () => {
+        socket.off("gameReset");
+    };
+}, []);
+
+useEffect(() => {
+    socket.on("waitingForOpponent", (data) => {
+        console.log(`⏳ ${data.waitingFor} is waiting for their opponent...`);
+        
+        // ✅ Ensure that ONLY the player who has NOT clicked sees "WAITING..."
+        if (!winner) {
+            setOpponentUsername("WAITING...");
+        }
+    });
+
+    return () => {
+        socket.off("waitingForOpponent");
+    };
+}, [winner]);
+
+
+const handleResetGame = () => {
+    console.log("🔄 Player clicked 'Play Again'... Waiting for opponent.");
+
+    setWinner(null);
+    setScore1(0);
+    setScore2(0);
+    setBallPosition({ x: 390, y: 294 });
+    setPaddle1Y(250);
+    setPaddle2Y(250);
+    setPaddleHeight1(100);
+    setPaddleHeight2(100);
+    setBallStarted(false);
+
+    setOpponentUsername("WAITING..."); // Show WAITING... until opponent is assigned
+
+    // Emit "playerReady" instead of resetting immediately
+    socket.emit("playerReady");
+
+    // ✅ Explicitly request the player list again
+    setTimeout(() => {
+        console.log("📡 Requesting fresh player info from server...");
+        socket.emit("requestPlayers");
+    }, 500);
+};
+
+
+useEffect(() => {
+    socket.on("playerWaiting", (playerNum) => {
+        if (playerNum !== playerNumber) {
+            console.log("⏳ Opponent is waiting...");
+            setOpponentUsername("WAITING...");
+        }
+    });
+
+    return () => {
+        socket.off("playerWaiting");
+    };
+}, [playerNumber]);
+
+
+return (
     <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
 		<Scoreboard
 		score1={score1}  // Player 1's score always on the left
@@ -270,16 +349,19 @@ useEffect(() => {
         {powerUpsEnabled && isPowerUpActive && powerUpType && (
           <PowerUp x={powerUpX ?? 0} y={powerUpY ?? 0} isActive={isPowerUpActive} type={powerUpType} darkMode={darkBackground} />
         )}
-      </div>
 
-      {winner && (
-        <div className="pong-winner-popup">
-          <h2>{winner} WINS! 🎉</h2>
-          <button className="play-again-button" onClick={handleResetGame}>
+        {/* ADD WINNER POPUP HERE */}
+		{winner && (
+    <div className="pong-winner-popup">
+        <h2>{winner} WINS! 🎉</h2>
+        <button className="play-again-button" onClick={handleResetGame}>
             PLAY AGAIN
-          </button>
-        </div>
-      )}
+        </button>
+    </div>
+)}
+
+
+      </div>
 
       <div className="pong-buttons">
         <button className="toggle-button" onClick={() => setPowerUpsEnabled((prev) => !prev)}>
@@ -291,6 +373,6 @@ useEffect(() => {
       </div>
     </div>
   );
-};
+}
 
 export default Pong;
