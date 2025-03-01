@@ -50,22 +50,23 @@ import { MenuList } from '@mui/material';
 private resetGame() {
     console.log("Resetting entire game...");
 
-    this.ballMoving = false; // Stop the ball movement completely
-
-	   // Stop the previous game loop if running
-	   if (this.gameLoopInterval) {
-        console.log("Stopping existing game loop to prevent multiple instances.");
+	
+	// Stop the previous game loop if running
+	if (this.gameLoopInterval) {
+		console.log("Stopping existing game loop to prevent multiple instances.");
         clearInterval(this.gameLoopInterval);
         this.gameLoopInterval = null;
     }
-
+	
     // Reset game state
     this.gameState = {
-        ball: { x: 390, y: 294, vx: 0, vy: 0 }, // Ensure velocity is zero
+		ball: { x: 390, y: 294, vx: 0, vy: 0 }, // Ensure velocity is zero
         paddle1: { y: 250 },
         paddle2: { y: 250 },
         score: { player1: 0, player2: 0 }
     };
+	
+	this.ballMoving = false; // Stop the ball movement completely
 
     if (this.powerUpState.isActive) {
         console.log("Keeping power-up active after reset.");
@@ -82,7 +83,8 @@ private resetGame() {
 
 	console.log("Game has been fully reset.");
 
-    this.server.emit("gameState", { ...this.gameState }); // Broadcast the reset game state
+    this.server.emit("gameState", this.gameState); // Broadcast the reset game state
+	this.server.emit("gameReset");
 }
 
 	private ballMoving: boolean = false; 
@@ -197,8 +199,8 @@ private stopBall() {
 		this.gameState.ball = { 
 			x: 390, 
 			y: 294, 
-			vx: 0, 
-			vy: 0 
+			vx: direction,
+			vy: Math.random() > 0.5 ? 5 : -5
 		};
 	
 		this.gameState.paddle1.y = 250;
@@ -453,35 +455,31 @@ private checkPowerUpCollision() {
 	// updates paddle position
 	@SubscribeMessage("playerMove")
 	handlePlayerMove(@MessageBody() data: { player: number; y: number }, @ConnectedSocket() client: Socket) {
-    const playerInfo = players.get(client.id);
-    if (!playerInfo) {
-        console.error(`Received move from unknown client: ${client.id}`);
-        return;
-    }
-
-    // Ensure only the correct player moves their paddle
-    if (data.player === 1 && playerInfo.playerNumber === 1) {
-        this.gameState.paddle1.y = data.y;
-        console.log(` Player 1 moved paddle to Y=${data.y}`);
-    } else if (data.player === 2 && playerInfo.playerNumber === 2) {
-        this.gameState.paddle2.y = data.y;
-        console.log(` Player 2 moved paddle to Y=${data.y}`);
-    } else {
-        console.warn(`Invalid move detected! Player ${playerInfo.playerNumber} tried to move Player ${data.player}'s paddle.`);
-        return; 
-    }
-
-    //  Ensure ball starts moving when a paddle moves
-    if (!this.ballMoving) {
-        console.log(" First paddle move detected, starting ball movement...");
-        this.ballMoving = true;
-        this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
-        this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
-
-		this.startGameLoop();
-        }
-
-    // Emit the updated game state to ALL players
-    this.server.emit("gameState", { ...this.gameState });
-}
+		const playerInfo = players.get(client.id);
+		if (!playerInfo) {
+			console.error(`Received move from unknown client: ${client.id}`);
+			return;
+		}
+	
+		if (data.player === 1 && playerInfo.playerNumber === 1) {
+			this.gameState.paddle1.y = data.y;
+		} else if (data.player === 2 && playerInfo.playerNumber === 2) {
+			this.gameState.paddle2.y = data.y;
+		} else {
+			console.warn(`Invalid move detected! Player ${playerInfo.playerNumber} tried to move Player ${data.player}'s paddle.`);
+			return; 
+		}
+	
+		// ✅ Ensure ball starts moving when a paddle moves
+		if (!this.ballMoving) {
+			console.log("First paddle move detected, starting ball movement...");
+			this.ballMoving = true;
+			this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
+			this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+			this.startGameLoop(); // ✅ Restart game loop
+		}
+	
+		this.server.emit("gameState", { ...this.gameState });
+	}
+	
   }

@@ -59,6 +59,7 @@ const Pong = () => {
 		  setWinner(null);
 		  setScore1(0);
 		  setScore2(0);
+		  socket.emit("resetGame"); 
 		};
 	
 		window.addEventListener("beforeunload", handleBeforeUnload);
