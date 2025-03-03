@@ -153,27 +153,25 @@ handlePlayerReady(@ConnectedSocket() client: Socket) {
     }
 
     console.log(`✅ Player ${playerInfo.playerNumber} (${playerInfo.username}) is ready!`);
+    this.playersReady++; // Increment ready player count
 
-    this.playersReady++; // ✅ Increment the number of players who are ready
+    if (this.playersReady === 2) { // Only reset when both players are ready
+        console.log("🎉 Both players clicked 'Play Again'! Resetting game...");
+        
+        this.playersReady = 0; // Reset counter
+        this.resetGame(); // Reset the game state
 
-    if (this.playersReady === 2) { // ✅ Only reset when BOTH players are ready
-        console.log("🎉 Both players are ready! Resetting game...");
-
-        this.playersReady = 0; // ✅ Reset the counter
-
-        this.resetGame();
-
-        // ✅ Send updated player info after the reset
+        // ✅ Ensure the frontend updates its player list
         setTimeout(() => {
             this.server.emit("playerInfo", Array.from(players.values())); 
         }, 500);
 
-        this.server.emit("bothPlayersReady"); // ✅ Notify both clients to start
+        this.server.emit("bothPlayersReady"); // Notify both clients to update UI
     } else {
         console.log("⏳ Waiting for the second player...");
+        this.server.emit("waitingForOpponent", { waitingFor: playerInfo.username });
     }
 }
-
 
 	   
 

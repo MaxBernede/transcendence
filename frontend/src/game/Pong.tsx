@@ -276,43 +276,137 @@ useEffect(() => {
 useEffect(() => {
     socket.on("waitingForOpponent", (data) => {
         console.log(`⏳ ${data.waitingFor} is waiting for their opponent...`);
-        
-        // ✅ Ensure that ONLY the player who has NOT clicked sees "WAITING..."
+
+        // ✅ Show "WAITING..." until opponent also clicks
         if (!winner) {
             setOpponentUsername("WAITING...");
         }
     });
 
+    socket.on("gameReset", () => {
+        console.log("🆕 Both players clicked 'Play Again'! Restarting game...");
+
+        // ✅ Fully reset game state
+        setScore1(0);
+        setScore2(0);
+        setBallPosition({ x: 390, y: 294 });
+        setPaddle1Y(250);
+        setPaddle2Y(250);
+        setPaddleHeight1(100);
+        setPaddleHeight2(100);
+        setBallStarted(false);
+
+        // ✅ Restore correct opponent name
+        setTimeout(() => {
+            console.log("📡 Requesting fresh player info from server...");
+            socket.emit("requestPlayers");
+        }, 500);
+    });
+
     return () => {
         socket.off("waitingForOpponent");
+        socket.off("gameReset");
     };
 }, [winner]);
 
 
+
+// const handleResetGame = () => {
+//     console.log("🔄 Player clicked 'Play Again'... Waiting for opponent.");
+
+//     setWinner(null);
+//     setScore1(0);
+//     setScore2(0);
+//     setBallPosition({ x: 390, y: 294 });
+//     setPaddle1Y(250);
+//     setPaddle2Y(250);
+//     setPaddleHeight1(100);
+//     setPaddleHeight2(100);
+//     setBallStarted(false);
+
+//     setOpponentUsername("WAITING..."); // Show WAITING... until opponent is assigned
+
+//     // Emit "playerReady" instead of resetting immediately
+//     socket.emit("playerReady");
+
+//     // ✅ Explicitly request the player list again
+//     setTimeout(() => {
+//         console.log("📡 Requesting fresh player info from server...");
+//         socket.emit("requestPlayers");
+//     }, 500);
+// };
+
+const [playersReady, setPlayersReady] = useState<number>(0); // Track how many players clicked "Play Again"
+const [isPlayerReady, setIsPlayerReady] = useState<boolean>(false); // Track if THIS player is ready
+
+// const handleResetGame = () => {
+//     console.log("🔄 Player clicked 'Play Again'... Waiting for opponent.");
+    
+//     setWinner(null);  // ✅ Hide popup for THIS player
+//     setOpponentUsername("WAITING..."); // ✅ Show "WAITING..." until both players click
+//     setIsPlayerReady(true); // ✅ Mark THIS player as ready
+
+//     // ✅ Notify the server that THIS player is ready
+//     socket.emit("playerReady");
+// };
+
 const handleResetGame = () => {
     console.log("🔄 Player clicked 'Play Again'... Waiting for opponent.");
+    
+    setWinner(null);  // ✅ Hide popup for THIS player
+    setOpponentUsername("WAITING..."); // ✅ Show "WAITING..." until both players click
+    setIsPlayerReady(true); // ✅ Mark THIS player as ready
 
-    setWinner(null);
-    setScore1(0);
-    setScore2(0);
-    setBallPosition({ x: 390, y: 294 });
-    setPaddle1Y(250);
-    setPaddle2Y(250);
-    setPaddleHeight1(100);
-    setPaddleHeight2(100);
-    setBallStarted(false);
-
-    setOpponentUsername("WAITING..."); // Show WAITING... until opponent is assigned
-
-    // Emit "playerReady" instead of resetting immediately
+    // ✅ Notify the server that THIS player is ready
     socket.emit("playerReady");
-
-    // ✅ Explicitly request the player list again
-    setTimeout(() => {
-        console.log("📡 Requesting fresh player info from server...");
-        socket.emit("requestPlayers");
-    }, 500);
 };
+
+// ✅ Handle "bothPlayersReady" event correctly
+useEffect(() => {
+    socket.on("bothPlayersReady", () => {
+        console.log("✅ Both players are ready! Restarting game...");
+
+        setPlayersReady(2); // ✅ Ensure both players are marked as ready
+        setScore1(0);
+        setScore2(0);
+        setBallPosition({ x: 390, y: 294 });
+        setPaddle1Y(250);
+        setPaddle2Y(250);
+        setPaddleHeight1(100);
+        setPaddleHeight2(100);
+        setBallStarted(false);
+
+        // ✅ Request fresh player data AFTER the game resets
+        setTimeout(() => {
+            console.log("📡 Requesting fresh player info from server...");
+            socket.emit("requestPlayers");
+        }, 500);
+    });
+
+    return () => {
+        socket.off("bothPlayersReady");
+    };
+}, []);
+
+
+
+useEffect(() => {
+    socket.on("playersReady", (readyPlayers) => {
+        console.log(`📢 Server says ${readyPlayers} players are ready!`);
+        setPlayersReady(readyPlayers);
+
+        // ✅ If both players are ready, restore opponent's username
+        if (readyPlayers === 2) {
+            console.log("✅ Both players are ready! Assigning opponent...");
+            socket.emit("requestPlayers"); // Request fresh player info from the server
+        }
+    });
+
+    return () => {
+        socket.off("playersReady");
+    };
+}, []);
+
 
 
 useEffect(() => {
