@@ -7,6 +7,8 @@ import Remove2FAButton from '../../components/2FA/2FARemove';
 import TwoFactorAuth from '../../components/2FA/2FA';
 import { Box } from '@mui/material';
 import Header from '../../utils/Mybox';
+import ProfilePictureUpload from '../../utils/ProfilePicUp';
+import AvatarUpdate from './AvatarUpdate';
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -45,8 +47,8 @@ const UserPage: React.FC = () => {
     justifyContent="center"
     minHeight="100vh" // This ensures the content is vertically centered
     padding="2rem" >
-        <h1>User Profile</h1>
-        {/* <Header></Header> */}
+        <AvatarUpdate></AvatarUpdate>
+        {/* <ProfilePictureUpload></ProfilePictureUpload> */}
       {/* Editable username */}
       <EditableFieldButton
         field="username"
@@ -54,11 +56,10 @@ const UserPage: React.FC = () => {
         onSave={handleChange}
       />
 
-      <h2> Two Factor Authentication</h2>
       {userData?.secret_2fa ? (
-			<div>✅ Activated: {userData?.secret_2fa}</div>
+			<h1>✅ Activated: {userData?.secret_2fa}</h1>
 		) : (
-			<div>❌ Disabled: 2FA not enabled yet</div>
+			<h1>❌ 2FA not activated</h1>
 		)}
       <Remove2FAButton></Remove2FAButton>
       {/* <Component></Component> */}
