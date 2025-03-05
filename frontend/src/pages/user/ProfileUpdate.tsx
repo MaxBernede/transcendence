@@ -6,6 +6,7 @@ import axios from 'axios';
 import Remove2FAButton from '../../components/2FA/2FARemove';
 import TwoFactorAuth from '../../components/2FA/2FA';
 import { Box } from '@mui/material';
+import Header from '../../utils/Mybox';
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -44,8 +45,8 @@ const UserPage: React.FC = () => {
     justifyContent="center"
     minHeight="100vh" // This ensures the content is vertically centered
     padding="2rem" >
-      <h1>User Profile</h1>
-
+        <h1>User Profile</h1>
+        {/* <Header></Header> */}
       {/* Editable username */}
       <EditableFieldButton
         field="username"
@@ -53,25 +54,6 @@ const UserPage: React.FC = () => {
         onSave={handleChange}
       />
 
-      {/* Editable avatar */}
-      <EditableFieldButton
-        field="avatar"
-        currentValue={userData?.avatar || ''}
-        onSave={handleChange}
-      />
-
-		{/* <EditableFieldButton
-        field="phone"
-        currentValue={userData?.phone || 'no phone registered yet'}
-        onSave={handleChange}
-      /> */}
-
-      {/* Other user fields */}
-      <div>
-        <p>Wins: {userData?.wins}</p>
-        <p>Losses: {userData?.losses}</p>
-        <p>Ladder Level: {userData?.ladderLevel}</p>
-      </div>
       <h2> Two Factor Authentication</h2>
       {userData?.secret_2fa ? (
 			<div>✅ Activated: {userData?.secret_2fa}</div>
