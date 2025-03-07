@@ -36,6 +36,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import * as path from 'path';
 
 @Controller('api/users')
 export class UserController {
@@ -196,6 +197,24 @@ export class UserController {
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
+    }
+
+    // Fetch user data to check if they already have an avatar
+    const user = await this.userService.findOneById(Number(userId));
+    if (user && user.avatar) {
+      // If the user has an existing avatar, delete the previous file
+      const previousAvatarPath = path.join(process.cwd(), 'uploads', 'avatars', user.avatar.replace('http://localhost:3000/uploads/avatars/', ''));
+      console.log('Previous avatar path:', previousAvatarPath);
+  
+      try {
+        // Check if the file exists and delete it
+        if (fs.existsSync(previousAvatarPath)) {
+          fs.unlinkSync(previousAvatarPath);
+          console.log(`Previous avatar deleted: ${previousAvatarPath}`);
+        }
+      } catch (err) {
+        console.error('Error deleting previous avatar:', err);
+      }
     }
     const avatarUrl = `http://localhost:3000/uploads/avatars/${file.filename}`;
     console.log('New avatar URL:', avatarUrl);
