@@ -56,12 +56,12 @@ async function bootstrap() {
   // Ensure the "uploads/avatars" folder exists
 
   const uploadPath = join(__dirname, '..', 'uploads', 'avatars');
-  console.log(`Checking directory: ${uploadPath}`);
+  // console.log(`Checking directory: ${uploadPath}`);
   if (!existsSync(uploadPath)) {
     mkdirSync(uploadPath, { recursive: true });
-    console.log(`Created directory: ${uploadPath}`);
+    // console.log(`Created directory: ${uploadPath}`);
   } else {
-    console.log(`Directory already exists: ${uploadPath}`);
+    // console.log(`Directory already exists: ${uploadPath}`);
   }
 
   // Serve static files for uploaded avatars
@@ -70,7 +70,9 @@ async function bootstrap() {
   //   });
 
   // app.use('/uploads', express.static(uploadPath));
-  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+  const uploadsPath = path.join(process.cwd(), 'uploads');
+  console.log('Serving static files from:', uploadsPath); 
+  app.use('/uploads', express.static(uploadsPath));
 
   const publicAssetsPath = join(
     __dirname,
@@ -83,7 +85,7 @@ async function bootstrap() {
   console.log(`Serving static public assets from: ${publicAssetsPath}`);
   app.use('/assets', express.static(publicAssetsPath));
 
-  console.log(`Static assets served from: ${uploadPath}`);
+  // console.log(`Static assets served from: ${uploadPath}`);
   console.log(
     `Static public assets served from: ${join(__dirname, '..', 'frontend', 'public', 'assets')}`,
   );
@@ -95,11 +97,11 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
-  console.log('CORS enabled for origin:', 'http://localhost:3001');
+  // console.log('CORS enabled for origin:', 'http://localhost:3001');
 
   // Log server listening port
   const port = 3000;
   await app.listen(port);
-  console.log(`Server is running on http://localhost:${port}`);
+  // console.log(`Server is running on http://localhost:${port}`);
 }
 bootstrap();
