@@ -20,7 +20,7 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
   // Handles Power-Up SPAWNING and CLEARING
   useEffect(() => {
       socket.on("powerUpSpawned", (data) => {
-          console.log("🔥 Power-up received from server:", data);
+          console.log("Power-up received from server:", data);
           setPowerUpX(data.x);
           setPowerUpY(data.y);
           setPowerUpType(data.type);
@@ -28,7 +28,7 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
       });
 
       socket.on("powerUpCleared", () => {
-          console.log("❌ Power-up cleared!");
+          console.log("Power-up cleared!");
           setPowerUpX(null);
           setPowerUpY(null);
           setPowerUpType(null);
@@ -44,7 +44,7 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
   // Handles Power-Up MOVEMENT updates
   useEffect(() => {
       socket.on("updatePowerUp", (data) => {
-        //   console.log("🔄 Received Power-Up update:", data);
+        //   console.log(" Received Power-Up update:", data);
           setPowerUpX(data.x);
           setPowerUpY(data.y);
       });
@@ -67,7 +67,7 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
               console.log(" Game reset detected! Resetting paddles.");
               setPaddle1Y(250);
               setPaddle2Y(250);
-              setPaddleHeight1(100); // ✅ Reset paddle height
+              setPaddleHeight1(100); 
               setPaddleHeight2(100);
           }
       });
@@ -100,7 +100,7 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
               console.log(`⏳ Restoring Player ${data.player}'s paddle size after 7 seconds`);
               if (data.player === 1) setPaddleHeight1(100);
               if (data.player === 2) setPaddleHeight2(100);
-          }, 7000); // ✅ Restore paddle size after 7 seconds
+          }, 7000); // Restore paddle size after 7 seconds
       });
 
       return () => {

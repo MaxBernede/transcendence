@@ -149,7 +149,7 @@ useEffect(() => {
   // listens to playerinfo updates from Websocket server
   useEffect(() => {
     const handlePlayerInfo = (players: Player[]) => {
-        console.log("🔄 Received updated player info:", players);
+        console.log("Received updated player info:", players);
 
         if (!loggedInUser) return;
 
@@ -159,7 +159,7 @@ useEffect(() => {
         const opponent = players.find((p) => p.username !== loggedInUser);
 
         if (currentPlayer) {
-            console.log(`✅ Restoring stored player number: ${currentPlayer.playerNumber}`);
+            console.log(`Restoring stored player number: ${currentPlayer.playerNumber}`);
             storedPlayerNumber = currentPlayer.playerNumber;
         } else if (players.length === 1) {
             storedPlayerNumber = players[0].playerNumber === 1 ? 2 : 1;
@@ -171,12 +171,11 @@ useEffect(() => {
             sessionStorage.setItem("playerNumber", String(storedPlayerNumber));
         }
 
-        // ✅ FIX: Ensure opponent's username updates correctly after game reset
         if (opponent) {
-            console.log(`🎯 Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
+            console.log(`Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
             setOpponentUsername(opponent.username);
         } else {
-            console.warn("⚠️ Opponent not found, setting to WAITING...");
+            console.warn("Opponent not found, setting to WAITING...");
             setOpponentUsername("WAITING...");
         }
     };
@@ -233,9 +232,9 @@ useEffect(() => {
     socket.on("gameOver", (data) => {
         console.log("🎉 Game Over! Winner:", data.winner);
         
-        setWinner(data.winner); // ✅ Show popup
-        setBallStarted(false);  // ✅ Stop ball movement
-        socket.emit("pauseGame"); // ✅ Tell the server to stop the game
+        setWinner(data.winner); // Show popup
+        setBallStarted(false);  // Stop ball movement
+        socket.emit("pauseGame"); // Tell  server to stop the game
     });
 
     return () => {
@@ -248,9 +247,9 @@ useEffect(() => {
 
 useEffect(() => {
     socket.on("gameReset", () => {
-        console.log("🆕 Game has been fully reset! Ensuring fresh state...");
+        console.log("Game has been fully reset! Ensuring fresh state...");
         
-        // ✅ Reset everything on the frontend
+        // Reset everything on the frontend
         setWinner(null);
         setScore1(0);
         setScore2(0);
@@ -261,9 +260,9 @@ useEffect(() => {
         setPaddleHeight2(100);
 		setBallStarted(false);
 
-        // ✅ Add a small delay to avoid syncing issues
+        // Add delay to avoid syncing issues
         setTimeout(() => {
-            console.log("📡 Requesting fresh game state from server...");
+            console.log(" Requesting fresh game state from server...");
             socket.emit("requestGameState");
         }, 100);
     });
@@ -275,18 +274,17 @@ useEffect(() => {
 
 useEffect(() => {
     socket.on("waitingForOpponent", (data) => {
-        console.log(`⏳ ${data.waitingFor} is waiting for their opponent...`);
+        console.log(`${data.waitingFor} is waiting for their opponent...`);
 
-        // ✅ Show "WAITING..." until opponent also clicks
         if (!winner) {
             setOpponentUsername("WAITING...");
         }
     });
 
     socket.on("gameReset", () => {
-        console.log("🆕 Both players clicked 'Play Again'! Restarting game...");
+        console.log("Both players clicked 'Play Again'! Restarting game...");
 
-        // ✅ Fully reset game state
+        // Fully reset game state
         setScore1(0);
         setScore2(0);
         setBallPosition({ x: 390, y: 294 });
@@ -296,9 +294,9 @@ useEffect(() => {
         setPaddleHeight2(100);
         setBallStarted(false);
 
-        // ✅ Restore correct opponent name
+        // Restore correct opponent name
         setTimeout(() => {
-            console.log("📡 Requesting fresh player info from server...");
+            console.log(" Requesting fresh player info from server...");
             socket.emit("requestPlayers");
         }, 500);
     });
@@ -353,20 +351,20 @@ const [isPlayerReady, setIsPlayerReady] = useState<boolean>(false); // Track if 
 const handleResetGame = () => {
     console.log("🔄 Player clicked 'Play Again'... Waiting for opponent.");
     
-    setWinner(null);  // ✅ Hide popup for THIS player
-    setOpponentUsername("WAITING..."); // ✅ Show "WAITING..." until both players click
-    setIsPlayerReady(true); // ✅ Mark THIS player as ready
+    setWinner(null);  // Hide popup for THIS player
+    setOpponentUsername("WAITING..."); // Show "WAITING..." until both players click
+    setIsPlayerReady(true); // Mark THIS player as ready
 
-    // ✅ Notify the server that THIS player is ready
+    // Notify the server that THIS player is ready
     socket.emit("playerReady");
 };
 
-// ✅ Handle "bothPlayersReady" event correctly
+// Handle "bothPlayersReady" event correctly
 useEffect(() => {
     socket.on("bothPlayersReady", () => {
-        console.log("✅ Both players are ready! Restarting game...");
+        console.log("Both players are ready! Restarting game...");
 
-        setPlayersReady(2); // ✅ Ensure both players are marked as ready
+        setPlayersReady(2); // Ensure both players are marked as ready
         setScore1(0);
         setScore2(0);
         setBallPosition({ x: 390, y: 294 });
@@ -376,9 +374,9 @@ useEffect(() => {
         setPaddleHeight2(100);
         setBallStarted(false);
 
-        // ✅ Request fresh player data AFTER the game resets
+        // Request fresh player data AFTER the game resets
         setTimeout(() => {
-            console.log("📡 Requesting fresh player info from server...");
+            console.log("Requesting fresh player info from server...");
             socket.emit("requestPlayers");
         }, 500);
     });
@@ -395,9 +393,9 @@ useEffect(() => {
         console.log(`📢 Server says ${readyPlayers} players are ready!`);
         setPlayersReady(readyPlayers);
 
-        // ✅ If both players are ready, restore opponent's username
+        // If both players are ready, restore opponent's username
         if (readyPlayers === 2) {
-            console.log("✅ Both players are ready! Assigning opponent...");
+            console.log("Both players are ready! Assigning opponent...");
             socket.emit("requestPlayers"); // Request fresh player info from the server
         }
     });
