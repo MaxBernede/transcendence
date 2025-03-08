@@ -14,7 +14,7 @@ import ChatLayout from "./components/chat/layout/chatList";
 import { UserProvider } from "./context";
 import PongPage from './game/PongPage';
 import Friends from './pages/Friends';
-
+import UserProfile from './pages/UserProfile';
 
 export const UserContext = createContext<{
 	userData: UserData | null;
@@ -57,7 +57,8 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/user/:id" element={<UserPage />} />
+          <Route path="/user/me" element={<UserPage />} />
+          <Route path="/user/:id" element={<UserProfile />} />
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
           <Route path="/2FASetup" element={<TwoFASetup />} />
           <Route path="/Friends" element={<Friends />} />

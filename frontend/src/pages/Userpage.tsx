@@ -20,19 +20,11 @@ const UserPage: React.FC = () => {
   return (
     <div className="user-page-container">
       <ProfileBanner></ProfileBanner>
-      {/* <Header
-        id={userData?.id || ''}
-        username={userData?.username || ''}
-        avatar={userData?.avatar || ''}
-        handleImageChange={(e) => handleImageChange(e, userData?.id || '', setUserData)}
-        setUsername={(newUsername) =>
-          updateUserUsername(newUsername, userData?.id || '', setUserData, () => {}, () => {})
-        }
-        /> */}
       <div className="content-container">
         <div className="user-info">
           <p>userId: {userData?.intraId}</p>
-          <LogoutButton />
+          {/* check if username is same as user to print button */}
+          <LogoutButton /> 
         </div>
         <Stats
           wins={userData?.wins || 0}

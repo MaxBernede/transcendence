@@ -56,10 +56,8 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-    // console.log(request);
+  async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     // console.log('cookies', request.headers['cookie']);
-    // console.log('user');
     const existingUser = await this.userRepository.findOne({
       where: { email: payload.email },
     });
@@ -75,10 +73,6 @@ export class UserController {
     return this.userService.updateUser(id, updatedData);
   }
 
-  //   @Get(':id')
-  //   async getUser(@Param('id') id: string) {
-  //     return this.userService.getUser(id);
-  //   }
   @Get(':id')
   async getUser(@Param('id') id: string, @Req() request: Request) {
     console.log('Requested User ID or Username:', id); // Debug log
