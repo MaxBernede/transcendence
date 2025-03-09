@@ -104,34 +104,44 @@ useEffect(() => {
 
   // listens for gamestate updates from server and updates opponents paddle and ball position
   useEffect(() => {
+    if (hasListener.current) return; // Prevent duplicate listeners
+    hasListener.current = true;
+
     const handleGameState = (state: any) => {
         if (!state?.paddle1 || !state?.paddle2 || !state?.ball) return;
 
-        if (playerNumber === 1) {
-            setPaddle2Y(state.paddle2.y);
-        } else if (playerNumber === 2) {
-            setPaddle1Y(state.paddle1.y);
-        }
-
+        setPaddle1Y(state.paddle1.y);
+        setPaddle2Y(state.paddle2.y);
         setBallPosition({ x: state.ball.x, y: state.ball.y });
 
         if (!ballStarted && state.ball.vx !== 0 && state.ball.vy !== 0) {
             setBallStarted(true);
         }
 
-        // ✅ Only update the score if it's different
         if (score1 !== state.score.player1 || score2 !== state.score.player2) {
-            console.log(`🔄 Updating Scores: P1=${state.score.player1} P2=${state.score.player2}`);
+            console.log(`Updating Scores: P1=${state.score.player1} P2=${state.score.player2}`);
             setScore1(state.score.player1);
             setScore2(state.score.player2);
         }
     };
 
     socket.on("gameState", handleGameState);
+    socket.on("gameReset", () => {
+        console.log("Game reset detected! Resetting everything...");
+        setScore1(0);
+        setScore2(0);
+        setBallStarted(false);
+        setBallPosition({ x: 390, y: 294 });
+        setPaddle1Y(250);
+        setPaddle2Y(250);
+    });
+
     return () => {
         socket.off("gameState", handleGameState);
+        socket.off("gameReset");
+        hasListener.current = false; // Allow re-registering on component re-mount
     };
-}, [playerNumber, score1, score2]);
+}, []);
 
 
 
@@ -230,17 +240,21 @@ useEffect(() => {
 
   useEffect(() => {
     socket.on("gameOver", (data) => {
-        console.log("🎉 Game Over! Winner:", data.winner);
-        
-        setWinner(data.winner); // Show popup
-        setBallStarted(false);  // Stop ball movement
-        socket.emit("pauseGame"); // Tell  server to stop the game
+        console.log(`${data.winner} Wins!`);
+        setWinner(data.winner);
+    });
+
+    socket.on("gameReset", () => {
+        console.log("Game reset");
+        setWinner(null); // Hide popup when game restarts
     });
 
     return () => {
         socket.off("gameOver");
+        socket.off("gameReset");
     };
-}, []);
+}, [socket]);
+
 
 
 

@@ -18,9 +18,9 @@ export const usePowerUp = (
   gameContainerRef: React.RefObject<HTMLDivElement>,
   onPowerUpCollected: (player: number, type: "shrinkOpponent" | "speedBoost" | "enlargePaddle") => void,
   enableMovement: boolean = true,
-  socket: Socket,  // ✅ Fixed missing comma
-  setPaddleHeight1: React.Dispatch<React.SetStateAction<number>>, // ✅ Correct type
-  setPaddleHeight2: React.Dispatch<React.SetStateAction<number>>  // ✅ Correct type
+  socket: Socket,
+  setPaddleHeight1: React.Dispatch<React.SetStateAction<number>>, 
+  setPaddleHeight2: React.Dispatch<React.SetStateAction<number>>
 ): UsePowerUpReturn => {
   const [powerUpX, setPowerUpX] = useState<number | null>(null);
   const [powerUpY, setPowerUpY] = useState<number | null>(null);
@@ -30,7 +30,7 @@ export const usePowerUp = (
   // WebSocket: Listen for power-up events from the server
   useEffect(() => {
     socket.on("powerUpSpawned", (data) => {
-        console.log("🔥 Power-up received from server:", data);
+        console.log(" Power-up received from server:", data);
         setPowerUpX(data.x);
         setPowerUpY(data.y);
         setPowerUpType(data.type);
@@ -38,7 +38,7 @@ export const usePowerUp = (
     });
 
     socket.on("powerUpCleared", () => {
-        console.log("❌ Power-up cleared!");
+        console.log("Power-up cleared!");
         setPowerUpX(null);
         setPowerUpY(null);
         setPowerUpType(null);
@@ -63,13 +63,13 @@ export const usePowerUp = (
     };
   }, [socket]);
 
-  // ✅ Update Paddle Heights on Power-up Collection
+
   useEffect(() => {
     socket.on("shrinkPaddle", (data) => {
-        console.log(`🔹 Shrinking Player ${data.player}'s paddle`);
+        console.log(`Shrinking Player ${data.player}'s paddle`);
         
         if (data.player === 1) {
-            setPaddleHeight1((h: number) => Math.max(h * 0.5, 40)); // ✅ Fixed typing
+            setPaddleHeight1((h: number) => Math.max(h * 0.5, 40)); 
         } else if (data.player === 2) {
             setPaddleHeight2((h: number) => Math.max(h * 0.5, 40));
         }
@@ -82,10 +82,10 @@ export const usePowerUp = (
     });
 
     socket.on("enlargePaddle", (data) => {
-        console.log(`🛠 Enlarging Player ${data.player}'s paddle`);
+        console.log(`Enlarging Player ${data.player}'s paddle`);
 
         if (data.player === 1) {
-            setPaddleHeight1((h: number) => Math.min(h * 1.5, 150)); // ✅ Fixed typing
+            setPaddleHeight1((h: number) => Math.min(h * 1.5, 150));
         } else if (data.player === 2) {
             setPaddleHeight2((h: number) => Math.min(h * 1.5, 150));
         }

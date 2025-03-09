@@ -13,7 +13,7 @@ import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.modu
 import { ConversationsModule } from './conversations/conversations.module';
 import { AppService } from './app.service';
 import { PongGateway } from './game/pong.gateway';
-import { GameModule } from './game/game.module'; // ✅ Ensure GameModule is imported
+import { PongModule } from './game/pong.module';
 
 @Module({
   imports: [
@@ -27,8 +27,8 @@ import { GameModule } from './game/game.module'; // ✅ Ensure GameModule is imp
     UsersModule,
     TwoFactorAuthModule,
     ConversationsModule,
-    DatabasesModule, // ✅ Fixed name (was DatabaseModule)
-    GameModule, // ✅ GameModule is correctly imported
+    DatabasesModule, 
+    PongModule,
   ],
   controllers: [AppController],
   providers: [AppService, PongGateway],

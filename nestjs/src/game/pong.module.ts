@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { PongGateway } from './pong.gateway'; 
+import { PongService } from './pong.service';
 import { DatabasesModule } from '../database/database.module';
 
 @Module({
-  providers: [PongGateway],
+  providers: [PongGateway, PongService],
   imports: [DatabasesModule], 
-  exports: [PongGateway],   
+  exports: [PongService],   
 })
-export class GameModule {}
+export class PongModule {}
 
