@@ -28,6 +28,14 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     handleConnection(client: Socket) {
         console.log('New player connected: ${client.id}');
 
+		    // Check if player is already in a room (prevents duplicate joins)
+			for (const [roomId, players] of activeRooms.entries()) {
+				if (players.includes(client.id)) {
+					console.warn(`Player ${client.id} is already in room ${roomId}, skipping duplicate join.`);
+					return;
+				}
+			}
+
 		let assignedRoom = null;
 
 		// Look for a room that has only 1 player
@@ -53,13 +61,14 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		this.server.to(assignedRoom).emit('gameRoomUpdate', { roomId: assignedRoom, players: activeRooms.get(assignedRoom) });
     }
 
+	
     /** Handles player disconnect */
     handleDisconnect(client: Socket) {
         console.log('Player disconnected: ${client.id}');
 
         const playerData = players.get(client.id);
         if (playerData) {
-            console.log('Marking ${playerData.username} as disconnected (Player ${playerData.playerNumber})');
+            // console.log('Marking ${playerData.username} as disconnected (Player ${playerData.playerNumber})');
             players.delete(client.id);
 
             // Store disconnected player to maintain their player number
