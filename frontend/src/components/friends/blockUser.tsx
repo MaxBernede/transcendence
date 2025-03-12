@@ -11,7 +11,7 @@ const BlockUser: React.FC<AddFriendProps> = () => {
 	const { userData } = useContext(UserContext);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	
-	const addFriend = async () => {
+	const blockUser = async () => {
 		if (!username) return;  // ensure field is not empty
 	
 		try {
@@ -50,7 +50,7 @@ const BlockUser: React.FC<AddFriendProps> = () => {
 					onChange={(e) => setUsername(e.target.value)}
 					placeholder="Enter username to block"
 				></InputComponent>
-				<ButtonComponent onClick={addFriend}>Block user</ButtonComponent>
+				<ButtonComponent onClick={blockUser}>Block user</ButtonComponent>
 				{errorMessage && <ErrorMessage message={errorMessage} />}
 			</div>
 		</div>

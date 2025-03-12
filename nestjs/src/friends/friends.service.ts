@@ -75,7 +75,7 @@ export class FriendsService {
     const userId = await this.userService.getUserIdByUsername(friendUsername);
     if (!userId) throw new ConflictException('Friend username not found');
   
-    if (userId === mainId) throw new ConflictException('Cannot block yourself');
+    if (userId == mainId) throw new ConflictException('Cannot block yourself');
   
     // Check if there's an existing relationship (friends, request, or blocked)
     const existingRelationship = await this.friendsRepository.findOne({
@@ -87,7 +87,7 @@ export class FriendsService {
   
     if (existingRelationship) {
       // If already blocked, do nothing
-      if (existingRelationship.status === 'blocked') {
+      if (existingRelationship.status == 'blocked') {
         throw new ConflictException('This user is already blocked');
       }
   
