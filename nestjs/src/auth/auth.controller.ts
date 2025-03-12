@@ -65,7 +65,7 @@ export class AuthController {
         await this.userService.updateUser(String(user.id), { newUser: false });
         return res.redirect(`http://localhost:3001/user/profileupdate`); //if first login, needs to prompt to change infos :)
       }
-      return res.redirect(`http://localhost:3001/user/${this.authService.getUserIdFromJwt(jwt)}`);
+      return res.redirect(`http://localhost:3001/user/me`);
     } 
     catch (error) {
       console.error(error);
