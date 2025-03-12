@@ -16,6 +16,7 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
   const [isPowerUpActive, setIsPowerUpActive] = useState(false);
   const [ballStarted, setBallStarted] = useState(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -63,11 +64,30 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
     };
 	}, [socket]);
 
+	useEffect(() => {
+		socket.on("gameRoomUpdate", (data) => {
+			console.log("Assigned to room:", data.roomId);
+			setRoomId(data.roomId);
+		});
+	
+		return () => {
+			socket.off("gameRoomUpdate");
+		};
+	}, []);
+	
+
 	const handleStartGame = () => {
 		console.log("User clicked 'Start Game'");
-		socket.emit("startGame");
+	
+		if (!roomId) {
+			console.warn("No room assigned to this player.");
+			return;
+		}
+	
+		socket.emit("startGame", { roomId }); // Include room ID
 		setWinner(null); // Hide popup
 	};
+	
 
 
 	useEffect(() => {

@@ -12,6 +12,7 @@ import { DatabasesService } from '../database/database.service';
 import { PongService } from './pong.service';
 
 export const players = new Map<string, { username: string; playerNumber: number }>();
+const activeRooms = new Map<string, string[]>(); // { roomId: [player1Id, player2Id] }
 
 @WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
 export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -26,6 +27,30 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     /** WebSocket connection */
     handleConnection(client: Socket) {
         console.log('New player connected: ${client.id}');
+
+		let assignedRoom = null;
+
+		// Look for a room that has only 1 player
+		for (const [roomId, players] of activeRooms.entries()) {
+			if (players.length === 1) {
+				players.push(client.id);
+				assignedRoom = roomId;
+				break;
+			}
+		}
+	
+		// If no room is available, create a new one
+		if (!assignedRoom) {
+			assignedRoom = `room-${Math.random().toString(36).substring(2, 10)}`;
+			activeRooms.set(assignedRoom, [client.id]);
+		}
+	
+		// Assign player to the room
+		client.join(assignedRoom);
+		console.log(`Player ${client.id} joined room ${assignedRoom}`);
+	
+		// Send room info to the client
+		this.server.to(assignedRoom).emit('gameRoomUpdate', { roomId: assignedRoom, players: activeRooms.get(assignedRoom) });
     }
 
     /** Handles player disconnect */
@@ -115,7 +140,21 @@ handlePlayerReady(@ConnectedSocket() client: Socket) {
 handlePlayerMove(@MessageBody() data: { player: number; y: number }, @ConnectedSocket() client: Socket) {
     const playerInfo = players.get(client.id);
     if (!playerInfo) {
-        console.error('Received move from unknown client: ${client.id}');
+        console.error(`Received move from unknown client: ${client.id}`);
+        return;
+    }
+
+    // Find the player's room
+    let roomId = null;
+    for (const [id, players] of activeRooms.entries()) {
+        if (players.includes(client.id)) {
+            roomId = id;
+            break;
+        }
+    }
+
+    if (!roomId) {
+        console.warn(`Player ${client.id} is not assigned to any room.`);
         return;
     }
 
@@ -127,22 +166,14 @@ handlePlayerMove(@MessageBody() data: { player: number; y: number }, @ConnectedS
 
     // Start ball movement only if it's the first movement
     if (!this.pongService.updatePaddlePosition(playerInfo.playerNumber, data.y, this.server)) {
-        console.warn('Invalid move! Player ${playerInfo.playerNumber} attempted unauthorized movement.');
+        console.warn(`Invalid move! Player ${playerInfo.playerNumber} attempted unauthorized movement.`);
         return;
     }
 
     const updatedState = this.pongService.getGameState();
-    this.server.emit("gameState", updatedState);
-}
-
-	/** Handles game start */
-	@SubscribeMessage("startGame")
-	handleStartGame() {
-    console.log("Starting the game loop...");
     
-    // Ensure game starts only when the button is clicked!
-    // this.pongService.setGameActive(true);
-    this.pongService.startGameLoop(this.server);
+    // Emit only to the specific room
+    this.server.to(roomId).emit("gameState", updatedState);
 }
 
 
