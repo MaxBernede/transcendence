@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -62,53 +63,44 @@ export class UserService {
   }
 
   async updateUser(id: string, updatedData: Partial<User>): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: +id },
-      relations: ['matchHistory', 'friends'],
-    });
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: +id },
+        relations: ['matchHistory', 'friends'],
+      });
+  
+      if (!user) {
+        throw new NotFoundException(`User with ID "${id}" not found`);
+      }
+  
+      const fieldsToUpdate: (keyof User)[] = ['wins', 'loose', 'ladder_level', 'avatar'];
+      for (const field of fieldsToUpdate) {
+        if (updatedData[field] !== undefined) {
+          (user as Record<string, any>)[field] = updatedData[field];
+        }
+      }
 
-    if (!user) {
-      throw new NotFoundException(`User with ID "${id}" not found`);
-    }
-
-    // console.log('Before Update:', user);
-    // console.log('Updated Data Received:', updatedData);
-
-    if (updatedData.wins !== undefined) {
-      console.log(`Updating wins from ${user.wins} to ${updatedData.wins}`);
-      user.wins = updatedData.wins;
-    }
-    if (updatedData.loose !== undefined) {
-      console.log(`Updating losses from ${user.loose} to ${updatedData.loose}`);
-      user.loose = updatedData.loose;
-    }
-    if (updatedData.ladder_level !== undefined) {
-      console.log(
-        `Updating ladder level from ${user.ladder_level} to ${updatedData.ladder_level}`,
+  
+      if (updatedData.image) {
+        console.log('Updating image:', updatedData.image);
+        user.image = updatedData.image;
+        user.avatar =
+          updatedData.image.link ||
+          updatedData.image.versions?.large ||
+          '/assets/Bat.jpg';
+        console.log('Updated avatar based on image:', user.avatar);
+      }
+  
+      Object.assign(user, updatedData);
+  
+      return await this.userRepository.save(user);
+    } catch (error) {
+      console.error(`Error updating user with ID "${id}"`);
+      // console.error(`Error updating user with ID "${id}":`, error);
+      throw new InternalServerErrorException(
+        'An error occurred while updating the user',
       );
-      user.ladder_level = updatedData.ladder_level;
     }
-
-    if (updatedData.avatar) {
-      console.log('Updating avatar:', updatedData.avatar);
-      user.avatar = updatedData.avatar;
-    }
-
-    if (updatedData.image) {
-      console.log('Updating image:', updatedData.image);
-      user.image = updatedData.image;
-      user.avatar =
-        updatedData.image.link ||
-        updatedData.image.versions?.large ||
-        '/assets/Bat.jpg';
-      console.log('Updated avatar based on image:', user.avatar);
-    }
-
-    Object.assign(user, updatedData);
-
-    // console.log('Final User Object before saving:', user);
-
-    return this.userRepository.save(user);
   }
 
   async updateAvatar(id: string, avatarUrl: string): Promise<User> {

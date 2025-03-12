@@ -69,7 +69,6 @@ export class UserController {
     @Param('id') id: string,
     @Body() updatedData: any,
   ) {
-    // console.log('Updated Data Received:', updatedData);
     return this.userService.updateUser(id, updatedData);
   }
 
