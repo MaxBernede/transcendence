@@ -196,12 +196,12 @@ export class PongService {
 
 	private checkGameOver(server: Server) {
 		if (this.gameState.score.player1 >= 3) {
-			console.log("🏆 Player 1 Wins!");
+			console.log("Player 1 Wins!");
 			this.winnerDeclared = true;
 			this.stopGame(server); // Freeze game state!
 			server.emit("gameOver", { winner: "Player 1" });
 		} else if (this.gameState.score.player2 >= 3) {
-			console.log("🏆 Player 2 Wins!");
+			console.log("Player 2 Wins!");
 			this.winnerDeclared = true;
 			this.stopGame(server); // Freeze game state!
 			server.emit("gameOver", { winner: "Player 2" });

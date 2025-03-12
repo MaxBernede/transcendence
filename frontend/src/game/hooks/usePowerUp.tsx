@@ -53,7 +53,7 @@ export const usePowerUp = (
 
   useEffect(() => {
     socket.on("updatePowerUp", (data) => {
-        console.log("🔄 Power-up movement update received:", data);
+        console.log("Power-up movement update received:", data);
         setPowerUpX(data.x);
         setPowerUpY(data.y);
     });
