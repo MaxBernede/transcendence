@@ -1,10 +1,6 @@
 import React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from "../../components/ui/avatar";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { PublicUserInfo } from "./types";
 // import { CardContent } from "@mui/material";
 

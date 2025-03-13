@@ -92,7 +92,7 @@ export class AuthController {
 
     try {
       // Verify the token
-      jwt.verify(token, this.configService.get<string>('JWT_SECRET')); // Use your secret or key here
+      jwt.verify(token, this.configService.getOrThrow<string>('JWT_SECRET')); // Use your secret or key here
       return res.json({ authenticated: true });
     } catch (error) {
       console.log('Wrong token used to check the jwt');
@@ -184,7 +184,7 @@ async login(@Body() loginDto: { username: string }, @Res() res: Response) {
       email: user.email,
     };
 
-    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
     const jwt = this.jwtService.sign(payload, { secret: jwtSecret });
 
     return res.json({ message: 'Login successful', token: jwt });

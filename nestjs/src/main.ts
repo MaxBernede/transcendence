@@ -37,9 +37,11 @@ async function bootstrap() {
   };
   SwaggerModule.setup('docs', app, document, options);
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+    }),
+  );
 
   // Use cookie-parser for handling cookies
   app.use(cookieParser());
@@ -75,7 +77,7 @@ async function bootstrap() {
 
   // app.use('/uploads', express.static(uploadPath));
   const uploadsPath = path.join(process.cwd(), 'uploads');
-  console.log('Serving static files from:', uploadsPath); 
+  console.log('Serving static files from:', uploadsPath);
   app.use('/uploads', express.static(uploadsPath));
 
   const publicAssetsPath = join(
@@ -94,19 +96,20 @@ async function bootstrap() {
     `Static public assets served from: ${join(__dirname, '..', 'frontend', 'public', 'assets')}`,
   );
 
-  // Enable CORS for frontend communication
+  //   Enable CORS for frontend communication
   app.enableCors({
     origin: 'http://localhost:3001', // Allow requests from your frontend's port
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
+  //   app.enableCors();
   // console.log('CORS enabled for origin:', 'http://localhost:3001');
 
   // Log server listening port
   app.useWebSocketAdapter(new IoAdapter(app));
   const pongGateway = app.get(PongGateway);
-  console.log("✅ WebSocket Gateway is Running:", pongGateway ? "YES" : "NO");
+  console.log('✅ WebSocket Gateway is Running:', pongGateway ? 'YES' : 'NO');
 
   const port = 3000;
   await app.listen(port);

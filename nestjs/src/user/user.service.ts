@@ -97,6 +97,7 @@ export class UserService {
 
       Object.assign(user, updatedData);
 
+	  	return user; //TODO: double check this.
       return await this.userRepository.save(user);
     } catch (error) {
       console.error(`Error updating user with ID "${id}"`);
@@ -211,11 +212,11 @@ export class UserService {
 
     if (user) {
       // user = { ...user, ...userInfo };
-      console.log('User already exist in the database');
+      console.log('user already exist, not overwriting informations');
     } else {
       user = this.userRepository.create(userInfo);
     }
-    // console.log('User saved:', user);
+    console.log('User saved:', user);
 
     return this.userRepository.save(user);
   }
@@ -271,5 +272,4 @@ export class UserService {
     await this.userRepository.save(user);
     return user;
   }
-  
 }

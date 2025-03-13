@@ -47,7 +47,6 @@ export class UserController {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-
   ) {}
 
   @Post()
@@ -111,6 +110,7 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     try {
       // Try fetching the user from the database
       user = await this.userService.findOne(isNumericId ? +id : id);
+      console.log('user', user);
     } catch (error) {
       console.error('Error fetching user:', error.message);
       user = null;
@@ -136,17 +136,17 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
   //     }
   //     return this.userService.findOneById(userId);
   //   }
-//   @UseGuards(JwtAuthGuard)
-//   @Get('me')
-//   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-//     console.log(request);
-//     // console.log('cookies', request.headers['cookie']);
-//     // console.log('user');
-//     const existingUser = await this.userRepository.findOne({
-//       where: { email: payload.email },
-//     });
-//     return existingUser;
-//   }
+  //   @UseGuards(JwtAuthGuard)
+  //   @Get('me')
+  //   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+  //     console.log(request);
+  //     // console.log('cookies', request.headers['cookie']);
+  //     // console.log('user');
+  //     const existingUser = await this.userRepository.findOne({
+  //       where: { email: payload.email },
+  //     });
+  //     return existingUser;
+  //   }
 
   //Last part of the login after the 2FA
   async endLogin(@Req() request: any, @Res() res: Response) {

@@ -13,6 +13,8 @@ import { PongModule } from './game/pong.module';
 import { PongGateway } from './game/pong.gateway';
 import { FriendsModule } from './friends/friends.module';
 import { User } from './user/user.entity';
+import { EventsGateway } from './events/events.gateway';
+import { ConversationsGateway } from './conversations/conversations.gateway';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { User } from './user/user.entity';
 	FriendsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PongGateway],
+//   providers: [AppService, EventsGateway, PongGateway],
+  providers: [AppService, EventsGateway],
 })
 export class AppModule {}

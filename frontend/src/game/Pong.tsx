@@ -11,7 +11,7 @@ import axios from "axios";
 // this file connects to a Websocket server to sync real time movement
 // and manages the game state (ball, paddle, scores) + handles player input
 
-const socket = io("http://localhost:3000/pong");
+const socket = io("http://localhost:3000/pong", {withCredentials: true});
 
 interface Player {
 	username: string;

@@ -11,6 +11,31 @@ import {
   JoinColumn,
 } from 'typeorm';
 
+// @Entity()
+// export class Conversation {
+//   @PrimaryGeneratedColumn('uuid')
+//   id: string;
+
+//   // Field to indicate whether the conversation is a DM or a Group chat
+//   @Column({ type: 'enum', enum: ['DM', 'GROUP'], default: 'DM' })
+//   type: 'DM' | 'GROUP';
+
+//   // Optional field for Group  name
+//   @Column({ type: 'text', default: 'Untitled Group', nullable: true })
+//   name: string;
+
+//   // Relationship with the UserConversation join table (many-to-one)
+//   @OneToMany(
+//     () => UserConversation,
+//     (userConversation) => userConversation.conversation,
+//   )
+//   userConversations: UserConversation[];
+
+//   // Relationship with the chats in the conversation (one-to-many)
+//   @OneToMany(() => Chat, (chat) => chat.conversationId)
+//   chats: Chat[];
+// }
+
 @Entity()
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
@@ -21,8 +46,11 @@ export class Conversation {
   type: 'DM' | 'GROUP';
 
   // Optional field for Group  name
-  @Column({ type: 'text', default: 'Untitled Group', nullable: true })
+  @Column({ type: 'text', default: 'Untitled Group' })
   name: string;
+
+  @Column({ type: 'text', default: null })
+  password: string;
 
   // Relationship with the UserConversation join table (many-to-one)
   @OneToMany(
@@ -34,6 +62,13 @@ export class Conversation {
   // Relationship with the chats in the conversation (one-to-many)
   @OneToMany(() => Chat, (chat) => chat.conversationId)
   chats: Chat[];
+
+  // Last activity timestamp (defaults to now)
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  lastActivity: Date;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }
 
 @Entity()
@@ -81,4 +116,26 @@ export class UserConversation {
   @ManyToOne(() => Conversation, (conversation) => conversation.id)
   @JoinColumn({ name: 'conversationId' })
   conversation: Conversation; // Optional, if you need to join with the conversation
+
+  @Column({ type: 'boolean', default: false })
+  banned: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  banEnd: Date | null; // for permanent bans set date to +999 years?
+
+  @Column({ type: 'boolean', default: false })
+  muted: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  mutedUntil: Date | null;
+
+  @Column({
+    type: 'enum',
+    enum: ['MEMBER', 'ADMIN', 'OWNER'],
+    default: 'MEMBER',
+  })
+  role: 'MEMBER' | 'ADMIN' | 'OWNER';
+
+  @CreateDateColumn()
+  joinedAt: Date;
 }

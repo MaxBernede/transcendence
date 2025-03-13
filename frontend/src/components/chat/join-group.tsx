@@ -1,5 +1,5 @@
 import React from "react";
-import axios from "axios"; // Import Axios
+import axios from "axios";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
@@ -20,26 +20,25 @@ import {
   FormItem,
   FormMessage,
 } from "../ui/form";
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
-import { set, z } from "zod";
+import { z } from "zod";
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
-const newGroupSchema = z.object({
-  username: z
+const joinGroupSchema = z.object({
+  id: z
     .string()
-    .regex(/^[a-zA-Z0-9]+$/, "Username must be alphanumeric")
     .min(1, "Username cannot be empty")
     .nonempty("At least one participant is required"),
+  password: z.string().optional(),
 });
 
-type NewGroup = z.infer<typeof newGroupSchema>;
+type NewGroup = z.infer<typeof joinGroupSchema>;
 
-export const CreateNewDm = () => {
+export const JoinGroup = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -47,9 +46,10 @@ export const CreateNewDm = () => {
   const navigate = useNavigate();
 
   const form = useForm({
-    resolver: zodResolver(newGroupSchema),
+    resolver: zodResolver(joinGroupSchema),
     defaultValues: {
-      username: "",
+      id: "",
+      password: "",
     },
   });
 
@@ -58,89 +58,104 @@ export const CreateNewDm = () => {
 
     console.log("Custom form submitted", formData);
 
-    const newDmConversation = {
-      type: "DM",
-      participants: [formData.username],
+    const joinGroupDto: NewGroup = {
+      id: formData.id,
+	  password: formData.password,
     };
 
-    console.log("New DM Conversation:", newDmConversation);
+    console.log("joining:", joinGroupDto.id);
 
     try {
-      setLoading(true);
+      setLoading(true); // Set loading state to true
       const { data } = await axios.post(
-        "http://localhost:3000/conversations",
-        newDmConversation,
-        {
-          withCredentials: true,
-        }
+        "http://localhost:3000/conversations/join-conversation",
+        { id: joinGroupDto.id, password: joinGroupDto.password },
+        { withCredentials: true }
       );
-      console.log("Created dm:", data);
       console.log("Navigating to chat page...");
-      navigate(`/chat/${data.id}`);
-      setIsOpen(false);
+      navigate(`/chat/${data.conversationId}`); // React Router navigation
+      setIsOpen(false); // Close the dialog only on success
       setError(null);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.log("Failed to join group:", error.response?.data);
-        setError(error.response?.data.message);
+        setError(error.response?.data.message); // Show error
       } else {
         console.error("Failed to join group:", error);
-        setError("Failed to create dm");
+        setError("Failed to join group"); // Show error message
       }
+
       setIsOpen(true);
-      setLoading(false);
+      setLoading(false); // Reset loading state
+      // Dialog stays open even on error
     }
   };
 
   const handleOpenDialog = () => {
     setIsOpen(true);
-    form.reset();
-    setError(null);
-    setLoading(false);
+    form.reset(); // Reset form values when opening dialog
+    setError(null); // Clear any error messages
+    setLoading(false); // Ensure the button is not disabled
   };
 
   const handleCloseDialog = () => {
-    setError(null);
-    setIsOpen(false);
     form.reset();
+    setIsOpen(false);
+    setError(null);
   };
+
+  // Submit on Enter press and prevent default page reload
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !loading) {
       e.preventDefault();
       customSubmit();
     }
     if (e.key === "Escape") {
-      console.log("Escape key pressed");
-      setError(null);
-      setIsOpen(false);
       handleCloseDialog();
     }
   };
+
   return (
     <AlertDialog open={isOpen}>
       <AlertDialogTrigger asChild>
         <Button className="bg-cyan-700" onClick={handleOpenDialog}>
-          Create New DM
+          Join Group
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent onKeyDown={handleKeyPress} tabIndex={0}>
+      <AlertDialogContent>
         <AlertDialogHeader className="flex flex-col items-center">
-          <AlertDialogTitle>Create a New DM</AlertDialogTitle>
+          <AlertDialogTitle>Join Group</AlertDialogTitle>
         </AlertDialogHeader>
 
         <Form {...form}>
-          <form>
+          <form onKeyDown={handleKeyPress}>
             <div className="space-y-4">
               <FormField
                 control={form.control}
-                name="username"
+                name="id"
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Input
                         {...field}
-                        type="username"
-                        placeholder="username"
+                        type="groupId"
+                        placeholder="abcd1234-ab12-cd34-ef56-gh789012ijkl"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+			  <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        placeholder="password (optional)"
                       />
                     </FormControl>
                     <FormMessage />
@@ -154,7 +169,7 @@ export const CreateNewDm = () => {
               <AlertDialogCancel asChild>
                 <Button
                   className="bg-red-600 border-none w-full"
-                  onClick={handleCloseDialog}
+                  onClick={handleCloseDialog} // Ensure dialog is closed
                 >
                   Cancel
                 </Button>
@@ -166,7 +181,7 @@ export const CreateNewDm = () => {
                   disabled={loading}
                   onClick={customSubmit}
                 >
-                  Create DM
+                  Join Group
                 </Button>
               </AlertDialogAction>
             </AlertDialogFooter>

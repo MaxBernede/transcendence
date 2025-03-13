@@ -27,7 +27,7 @@ import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'fallbackSecret',
+        secret: configService.getOrThrow<string>('JWT_SECRET') || 'fallbackSecret',
         signOptions: { expiresIn: '24h' },
       }),
     }),

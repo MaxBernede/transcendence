@@ -22,6 +22,15 @@ export class CreateConversationDto {
 
   @ApiProperty({
     description:
+      'password',
+    required: false, // Optional field, only needed for GROUP type
+  })
+  @IsString()
+  @IsOptional()
+  password: string;
+
+  @ApiProperty({
+    description:
       'The type of conversation. Choose either DM (Direct Message) or GROUP (Group Chat). For DM, only the first participant will be considered.',
     example: 'DM',
     enum: ['DM', 'GROUP'],
@@ -48,6 +57,35 @@ export class CreateConversationDmDto {
   @IsUUID() // Ensures that the receiverId is a valid UUID
   @IsNotEmpty()
   receiverId: string; // ID of the receiver for the DM conversation
+}
+
+export class UpdateMemberRoleDto {
+  @IsUUID() // Ensures that the conversationId is a valid UUID
+  @IsNotEmpty()
+  conversationId: string; // ID of the conversation to update
+
+  @IsNotEmpty()
+  memberId: number; // ID of the member to update
+
+  @IsEnum(['OWNER', 'ADMIN', 'MEMBER'])
+  @IsNotEmpty()
+  role: 'OWNER' | 'ADMIN' | 'MEMBER'; // Role to assign to the member
+}
+
+export class JoinConversationDto {
+  @IsUUID() // Ensures that the receiverId is a valid UUID
+  @IsNotEmpty()
+  id: string; // ID of the receiver for the DM conversation
+
+  @IsString()
+  @IsOptional()
+  password: string;
+}
+
+export class LeaveConversationDto {
+  @IsUUID() // Ensures that the conversationId is a valid UUID
+  @IsNotEmpty()
+  id: string; // ID of the conversation to leave
 }
 
 export class CreateConversationGroupDto {
