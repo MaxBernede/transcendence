@@ -200,6 +200,9 @@ useEffect(() => {
 
 // when user presses W / S / up / down it moves paddles and sends it to server
   const handleKeyDown = (event: KeyboardEvent) => {
+	if (winner)
+			return;
+		
     let newY = 0;
 
     console.log("playerNumber: ", playerNumber);
@@ -262,7 +265,7 @@ useEffect(() => {
 useEffect(() => {
     socket.on("gameReset", () => {
         console.log("Game has been fully reset! Ensuring fresh state...");
-        
+
         // Reset everything on the frontend
         setWinner(null);
         setScore1(0);
@@ -299,6 +302,8 @@ useEffect(() => {
         console.log("Both players clicked 'Play Again'! Restarting game...");
 
         // Fully reset game state
+
+		setWinner(null);
         setScore1(0);
         setScore2(0);
         setBallPosition({ x: 390, y: 294 });
