@@ -101,7 +101,6 @@ export class ConversationsService {
     }
     console.log('me:', me);
     console.log('participants:', participants);
-    // console.log("number of participants:", participants.length);
     if (participants.length === 1) {
       //? remove user from userConversations
       await this.userConversationRepository.delete({
@@ -214,40 +213,40 @@ export class ConversationsService {
 
       await this.userConversationRepository.save(entry);
 
-        {
-          const eventData: z.infer<typeof AddConversationToListSchema> = {
-            conversationId: conversationId.id,
-          };
-          this.eventsGateway.sendEventToUser(
-            EventsType.ADD_CONVERSATION_TO_LIST,
-            [user.sub],
-            eventData,
-          );
-        }
-
-        {
-          const eventData: z.infer<typeof AddParticipantToConversationSchema> = {
-            conversationId: conversationId.id,
-            userId: user.sub,
-          };
-          this.eventsGateway.sendEventToUser(
-            EventsType.ADD_PARTICIPANT_TO_CONVERSATION,
-            userIds,
-            eventData,
-          );
-        }
       {
-        // const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
-        //   conversationId: conversationId.id,
-        //   userId: user.sub,
-        //   action: GroupUserStatusAction.JOIN,
-        // };
+        const eventData: z.infer<typeof AddConversationToListSchema> = {
+          conversationId: conversationId.id,
+        };
+        this.eventsGateway.sendEventToUser(
+          EventsType.ADD_CONVERSATION_TO_LIST,
+          [user.sub],
+          eventData,
+        );
+      }
 
-        // this.eventsGateway.sendEventToUser(
-        //   EventsType.GROUP_USER_STATUS_UPDATED,
-        //   userIds,
-        //   eventData,
-        // );
+      {
+        const eventData: z.infer<typeof AddParticipantToConversationSchema> = {
+          conversationId: conversationId.id,
+          userId: user.sub,
+        };
+        this.eventsGateway.sendEventToUser(
+          EventsType.ADD_PARTICIPANT_TO_CONVERSATION,
+          userIds,
+          eventData,
+        );
+      }
+      {
+        const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+          conversationId: conversationId.id,
+          userId: user.sub,
+          action: GroupUserStatusAction.JOIN,
+        };
+
+        this.eventsGateway.sendEventToUser(
+          EventsType.GROUP_USER_STATUS_UPDATED,
+          userIds,
+          eventData,
+        );
       }
       return {
         message: 'User added to conversation',
@@ -1241,5 +1240,113 @@ export class ConversationsService {
         'You are not authorized to ban this user',
       );
     }
+  }
+
+  //? checks if the user has the authority to perform an action
+  async hasAuthority(user: number, target: number, convId: string) {
+    //? 1: check if both users are part of the conversation
+    const users: any = await this.userConversationRepository.find({
+      where: {
+        conversationId: convId,
+        userId: In([user, target]),
+      },
+    });
+    // console.log('users:', users.length);
+    if (users.length !== 2) {
+      return false;
+    }
+    //? 2: check if user has higher role than target user
+    const senderUser = users.find((u) => u.userId === user);
+    const targetUser = users.find((u) => u.userId === target);
+    if (senderUser.role === 'OWNER') {
+      return true;
+    } else if (senderUser.role === 'ADMIN' && targetUser.role === 'MEMBER') {
+      return true;
+    }
+    return false;
+  }
+
+  async muteUser(user: TokenPayload, data: any) {
+    console.log('muteUser:', user, data);
+    const valid = await this.hasAuthority(
+      user.sub,
+      data.id,
+      data.conversationId,
+    );
+    if (!valid) {
+      throw new UnauthorizedException(
+        'You are not authorized to mute this user',
+      );
+    }
+    console.log('valid:', valid);
+
+    const userConv = await this.userConversationRepository.findOne({
+      where: {
+        userId: data.id,
+        conversationId: data.conversationId,
+      },
+    });
+    if (!userConv) {
+      throw new NotFoundException('User not found in the conversation');
+    }
+
+    //? if minutes, hours and days are all 0, then mute indefinitely
+    if (data.minutes === 0 && data.hours === 0 && data.days === 0) {
+      userConv.muted = true;
+      console.log('userConv:', userConv);
+      await this.userConversationRepository.save(userConv);
+      return { message: 'User muted successfully' };
+    }
+
+    //? if minutes, hours and days are not all 0, calcualte end date
+    const now = new Date();
+    const end = new Date();
+
+    const msPerMinute = 60 * 1000;
+    const msPerHour = 60 * msPerMinute;
+    const msPerDay = 24 * msPerHour;
+
+    const totalMs =
+      now.getTime() +
+      data.minutes * msPerMinute +
+      data.hours * msPerHour +
+      data.days * msPerDay;
+
+    end.setTime(totalMs);
+
+    userConv.mutedUntil = end;
+    await this.userConversationRepository.save(userConv);
+
+    return { message: 'User muted successfully' };
+  }
+
+  async unmuteUserFromConversation(
+    conversationId: string,
+    targetUser: number,
+    user: TokenPayload,
+  ) {
+    const valid = await this.hasAuthority(user.sub, targetUser, conversationId);
+    if (!valid) {
+      throw new UnauthorizedException(
+        'You are not authorized to unmute this user',
+      );
+    }
+
+    const userConv = await this.userConversationRepository.findOne({
+      where: {
+        userId: targetUser,
+        conversationId,
+      },
+    });
+
+    if (!userConv) {
+      throw new NotFoundException('User not found in the conversation');
+    }
+
+    userConv.muted = false;
+    userConv.mutedUntil = null;
+    await this.userConversationRepository.save(userConv);
+
+    return { message: 'User unmuted successfully' };
   }
 }

@@ -28,34 +28,14 @@ const ChatPage = () => {
     new Map<string, Message[]>()
   );
   const [newMessage, setNewMessage] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  //   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   //   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
   const { socket }: { socket: Socket | null } = useOutletContext(); // Access the socket from Outlet context
 
-  //   const user: UserPayload = useUserContext();
-  //   return;
-
-  //   useEffect(() => {
-  //     const fetchCurrentUser = async () => {
-  //       console.log("fetchCurrentUser");
-  //       try {
-  //         const { data } = await axios.get("http://localhost:3000/api/users/me", {
-  //           withCredentials: true,
-  //         });
-  //         console.log("data:", data);
-  //         // setCurrentUserId(data.id);
-  //       } catch (error) {
-  //         console.error("Failed to fetch current user:", error);
-  //       }
-
-  //       console.log("currentUserId:", currentUserId);
-  //     };
-
-  //     fetchCurrentUser();
-  //   }, []);
+  const user: UserPayload = useUserContext();
 
   useEffect(() => {
     const eventsHandler = EventsHandler.getInstance();
@@ -80,7 +60,7 @@ const ChatPage = () => {
     return () => {
       eventsHandler.off("REMOVE_CONVERSATION_FROM_LIST", handleUserRemoved);
     };
-  }, [channelId, navigate, currentUserId]);
+  }, [channelId, navigate]);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -188,7 +168,7 @@ const ChatPage = () => {
               <ChatMessage
                 key={m.id}
                 messageObject={m}
-                currentUserId={currentUserId as number}
+                currentUserId={user.id as number}
               />
             );
           })}
@@ -201,11 +181,10 @@ const ChatPage = () => {
         />
       </div>
 
-      {/* Sidebar (Participants) */}
       <div className="w-128 bg-gray-700 text-white p-4 rounded-lg ml-4">
         <ChannelParticipants
           channelId={channelId as string}
-          currentUserId={currentUserId as number}
+          currentUserId={user.id as number}
         />
       </div>
     </div>

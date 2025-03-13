@@ -123,6 +123,9 @@ export class UserConversation {
   @Column({ type: 'timestamp', nullable: true })
   banEnd: Date | null; // for permanent bans set date to +999 years?
 
+  @Column({ type: 'boolean', default: false })
+  muted: boolean;
+
   @Column({ type: 'timestamp', nullable: true })
   mutedUntil: Date | null;
 

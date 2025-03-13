@@ -13,6 +13,7 @@ import {
   RemoveParticipantFromConversationSchema,
 } from "../../common/types/event-type";
 import { UserPayload, useUserContext } from "@/context";
+import { useNavigate } from "react-router-dom";
 
 interface ChannelParticipantsProps {
   channelId: string;
@@ -26,6 +27,8 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
   const [participants, setParticipants] = useState<PublicUserInfo[]>([]);
   const [conversationType, setConversationType] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
+
+  const navigate = useNavigate();
 
   // Fetch participants from the backend
   const fetchParticipants = async () => {
@@ -159,9 +162,17 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
       data: z.infer<typeof GroupUserStatusUpdateSchema>
     ) => {
       console.log("BAN action received in conversations-list:", data);
+      console.log("Current user ID:", currentUserId);
       // if banned user === me, remove from participants
       if (data.userId === currentUserId) {
         console.log("Banned user is me, removing from participants");
+        //? if the current page is the conversation page, redirect to the home page
+        if (data.conversationId === channelId) {
+          // redirect to /chat
+          //   window.location.href = "/chat";
+          navigate("/chat");
+        }
+
         setParticipants((prevParticipants) => {
           return prevParticipants.filter(
             (participant) => participant.id !== data.userId
@@ -193,16 +204,8 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
       console.log("UNBAN action received in conversations-list:", data);
 
       setParticipants((prev) => {
-        const index = prev.findIndex((p) => p.id === data.userId);
-        if (index === -1) return prev; // No change needed
-
-        const updatedParticipants = [...prev];
-        updatedParticipants[index] = {
-          ...updatedParticipants[index],
-          banned: false,
-        };
-
-        return updatedParticipants;
+        // Filter out the user with the matching ID
+        return prev.filter((participant) => participant.id !== data.userId);
       });
     };
 

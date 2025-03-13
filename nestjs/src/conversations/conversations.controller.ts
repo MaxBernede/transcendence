@@ -27,6 +27,32 @@ import { Conversation } from './entities/conversation.entity';
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
+  @Post('mute-user')
+  async muteUser(@GetUserPayload() user: TokenPayload, @Body() muteData: any) {
+    return this.conversationsService.muteUser(user, muteData);
+  }
+
+  //   @Post('unmute-user')
+  //   async unmuteUser(
+  //     @GetUserPayload() user: TokenPayload,
+  //     @Body() muteData: any,
+  //   ) {
+  //     return this.conversationsService.unmuteUser(user, muteData);
+  //   }
+
+  @Post(':conversationId/users/:userId/unmute')
+  async unmuteUserFromConversation(
+    @Param('conversationId') conversationId: string,
+    @Param('userId') userId: number,
+    @GetUserPayload() user: TokenPayload,
+  ) {
+    return this.conversationsService.unmuteUserFromConversation(
+      conversationId,
+      userId,
+      user,
+    );
+  }
+
   @Post(':conversationId/users/:userId/ban')
   async banUserFromConversation(
     @Param('conversationId') conversationId: string,
@@ -72,17 +98,6 @@ export class ConversationsController {
   ) {
     return this.conversationsService.updateRole(user, updateMember);
   }
-
-  //   @Post('leave-conversation')
-  //   async leaveConversation(
-  //     @GetUserPayload() user: TokenPayload,
-  //     @Body() leaveConversationDto: LeaveConversationDto,
-  //   ) {
-  //     return this.conversationsService.leaveConversation(
-  //       user,
-  //       leaveConversationDto,
-  //     );
-  //   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new conversation' })

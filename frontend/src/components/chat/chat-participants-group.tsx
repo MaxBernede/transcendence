@@ -6,6 +6,23 @@ import { PublicUserInfo } from "./types";
 
 import { Crown, ShieldCheck } from "lucide-react";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -19,6 +36,8 @@ import axios from "axios";
 import EventsHandler from "../../events/EventsHandler";
 
 import { toast } from "sonner";
+import { set } from "zod";
+import { MuteSelector } from "./chat-mute";
 
 interface DMComponentProps {
   participants: PublicUserInfo[];
@@ -44,6 +63,36 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
 
   const users = participants.filter((p) => !p.banned);
   const banned_users = participants.filter((p) => p.banned);
+
+  const [renderMuteSelect, setRenderMuteSelect] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState<PublicUserInfo | null>(
+    null
+  );
+
+  const handleMute = (selectedUser: PublicUserInfo) => {
+    console.log("Mute button clicked");
+    setSelectedUser(selectedUser);
+    setRenderMuteSelect(true);
+  };
+
+  const handleCloseMute = () => {
+    setRenderMuteSelect(false);
+  };
+
+  const handleUnmute = async (userId: number) => {
+    console.log("Unmuting user:", userId);
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/conversations/${conversationId}/users/${userId}/unmute`,
+        {},
+        { withCredentials: true }
+      );
+
+      console.log("User banned from group:", response.data);
+    } catch (error) {
+      console.error("Error banning user from group:", error);
+    }
+  };
 
   //   useEffect(() => {
   //     const eventsHandler = EventsHandler.getInstance();
@@ -257,12 +306,26 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
               participant.groupRole === "MEMBER" && (
                 <>
                   <ContextMenuItem
+                    onClick={() => handleMute(participant)}
+                    className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                  >
+                    Mute
+                  </ContextMenuItem>
+
+                  <ContextMenuItem
+                    onClick={() => handleUnmute(participant.id)}
+                    className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                  >
+                    Unmute
+                  </ContextMenuItem>
+
+                  <ContextMenuItem
                     onClick={() =>
                       removeUserFromGroup(participant.id, conversationId)
                     }
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
-                    Remove from group
+                    Kick
                   </ContextMenuItem>
 
                   <ContextMenuItem
@@ -271,7 +334,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
                     }
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
-                    Ban from group
+                    Ban
                   </ContextMenuItem>
                 </>
               )}
@@ -280,12 +343,26 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
               participant.groupRole !== "OWNER" && (
                 <>
                   <ContextMenuItem
+                    onClick={() => handleMute(participant)}
+                    className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                  >
+                    Mute
+                  </ContextMenuItem>
+
+                  <ContextMenuItem
+                    onClick={() => handleUnmute(participant.id)}
+                    className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                  >
+                    Unmute
+                  </ContextMenuItem>
+
+                  <ContextMenuItem
                     onClick={() =>
                       removeUserFromGroup(participant.id, conversationId)
                     }
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
-                    Remove from group
+                    Kick
                   </ContextMenuItem>
 
                   <ContextMenuItem
@@ -294,7 +371,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
                     }
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
-                    Ban from group
+                    Ban
                   </ContextMenuItem>
                 </>
               )}
@@ -358,6 +435,13 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
             </ContextMenu>
           ))}
         </div>
+      )}
+      {renderMuteSelect && (
+        <MuteSelector
+          targetUser={selectedUser as PublicUserInfo}
+          onClose={handleCloseMute}
+          conversationId={conversationId}
+        />
       )}
     </div>
   );

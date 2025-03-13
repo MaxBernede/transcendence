@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -210,7 +211,7 @@ export class ConversationsGateway
     const conversations = await this.userConversationRepository.find({
       where: {
         userId: payload.sub,
-		banned: false,
+        banned: false,
       },
     });
 
@@ -226,6 +227,58 @@ export class ConversationsGateway
     this.userSocketMap.set(payload.sub, client.id);
     this.socketIdUserMap.set(client.id, payload.sub);
     this.userIdSocketMap.set(payload.sub, client);
+  }
+
+  async isUserBannedOrMuted(
+    userId: number,
+    conversationId: string,
+  ): Promise<boolean> {
+    const userConversation = await this.userConversationRepository.findOne({
+      where: {
+        userId: userId,
+        conversationId: conversationId,
+      },
+    });
+    //? If user isn't in the conversation, consider them banned/unauthorized
+    if (!userConversation) {
+      throw new NotFoundException('User not found in conversation');
+    }
+    //? perma ban/mute
+    if (userConversation.banned === true) {
+      throw new UnauthorizedException(
+        'You are permanently banned from this conversation',
+      );
+    }
+    if (userConversation.muted === true) {
+      throw new UnauthorizedException('You are muted in this conversation');
+    }
+    const now = new Date();
+    if (userConversation.banEnd !== null) {
+      if (userConversation.banEnd < now) {
+        userConversation.banEnd = null;
+        await this.userConversationRepository.save(userConversation);
+        return false;
+      } else {
+        const timeRemaining = userConversation.banEnd.getTime() - now.getTime();
+        throw new UnauthorizedException(
+          `You are banned from this conversation for ${timeRemaining} milliseconds`,
+        );
+      }
+    }
+    if (userConversation.mutedUntil !== null) {
+      if (userConversation.mutedUntil < now) {
+        userConversation.mutedUntil = null;
+        await this.userConversationRepository.save(userConversation);
+        return false;
+      } else {
+        const timeRemaining =
+          userConversation.mutedUntil.getTime() - now.getTime();
+        throw new UnauthorizedException(
+          `You are muted in this conversation for ${timeRemaining} milliseconds`,
+        );
+      }
+    }
+    return false;
   }
 
   // @UseGuards(SocketAuthGuard)
@@ -255,26 +308,36 @@ export class ConversationsGateway
       throw new InternalServerErrorException('Validation error');
     }
 
-    //? check if user AKA me, has access to the conversationId
-    try {
-      const userConversation = await this.userConversationRepository.findOne({
-        where: {
-          userId: user.sub,
-          conversationId: message.conversationId,
-		  banned: false,
-        },
-      });
-      if (!userConversation) {
-        throw new UnauthorizedException(
-          'User does not have access to this conversation',
-        );
-      }
-    } catch (error) {
-      console.log('User does not have access to this conversation');
+    const bannedOrMuted = await this.isUserBannedOrMuted(
+      user.sub,
+      message.conversationId,
+    );
+    if (bannedOrMuted) {
       throw new UnauthorizedException(
         'User does not have access to this conversation',
       );
     }
+
+    // //? check if user AKA me, has access to the conversationId
+    // try {
+    //   const userConversation = await this.userConversationRepository.findOne({
+    //     where: {
+    //       userId: user.sub,
+    //       conversationId: message.conversationId,
+    //       banned: false,
+    //     },
+    //   });
+    //   if (!userConversation) {
+    //     throw new UnauthorizedException(
+    //       'User does not have access to this conversation',
+    //     );
+    //   }
+    // } catch (error) {
+    //   console.log('User does not have access to this conversation');
+    //   throw new UnauthorizedException(
+    //     'User does not have access to this conversation',
+    //   );
+    // }
 
     const newMessage: ChatDto = {
       id: uuidv4(),

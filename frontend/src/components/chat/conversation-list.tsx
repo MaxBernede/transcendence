@@ -50,6 +50,20 @@ const ConversationList = () => {
   //   const { socket, me } = useOutletContext<ChatContext>();
   // const { socket }: { socket: Socket | null } = useOutletContext();
 
+  const removeConversation = (conversationId: string) => {
+    setConversations((prevConversations) => {
+      return prevConversations.filter(
+        (conversation) => conversation.conversationId !== conversationId
+      );
+    });
+  };
+
+  const addConversation = (conversation: any) => {
+    setConversations((prevConversations) => {
+      return [...prevConversations, conversation];
+    });
+  };
+
   useEffect(() => {
     const fetchConversations = async () => {
       try {
@@ -89,9 +103,10 @@ const ConversationList = () => {
         );
         const newConversation = response.data;
 
-        setConversations((prevConversations) => {
-          return [...prevConversations, newConversation];
-        });
+        addConversation(newConversation);
+        // setConversations((prevConversations) => {
+        //   return [...prevConversations, newConversation];
+        // });
       } catch (error) {
         console.error("Error fetching conversation details:", error);
       }
@@ -113,19 +128,21 @@ const ConversationList = () => {
       const validatedDate: z.infer<typeof AddConversationToListSchema> =
         result.data;
 
-      try {
-        const response = await axios.get(
-          `http://localhost:3000/conversations/${validatedDate.conversationId}`,
-          { withCredentials: true }
-        );
-        const newConversation = response.data;
+      addConversationToList(validatedDate.conversationId);
 
-        setConversations((prevConversations) => {
-          return [...prevConversations, newConversation];
-        });
-      } catch (error) {
-        console.error("Error fetching conversation details:", error);
-      }
+      //   try {
+      //     const response = await axios.get(
+      //       `http://localhost:3000/conversations/${validatedDate.conversationId}`,
+      //       { withCredentials: true }
+      //     );
+      //     const newConversation = response.data;
+
+      //     setConversations((prevConversations) => {
+      //       return [...prevConversations, newConversation];
+      //     });
+      //   } catch (error) {
+      //     console.error("Error fetching conversation details:", error);
+      //   }
     };
 
     const handleRemoveConversation = (data: any) => {
@@ -144,12 +161,12 @@ const ConversationList = () => {
       const validatedDate: z.infer<typeof RemoveConversationFromListSchema> =
         result.data;
 
-      setConversations((prevConversations) => {
-        return prevConversations.filter(
-          (conversation) =>
-            conversation.conversationId !== validatedDate.conversationId
-        );
-      });
+      //   setConversations((prevConversations) => {
+      //     return prevConversations.filter(
+      //       (conversation) =>
+      //         conversation.conversationId !== validatedDate.conversationId
+      //     );
+      //   });
     };
 
     const handleGroupUserStatusUpdate = (
@@ -165,17 +182,12 @@ const ConversationList = () => {
         (data.action === GroupUserStatusAction.KICK ||
           data.action === GroupUserStatusAction.BAN)
       ) {
-        setConversations((prevConversations) => {
-          return prevConversations.filter(
-            (conversation) =>
-              conversation.conversationId !== data.conversationId
-          );
-        });
+        removeConversation(data.conversationId);
       }
 
-    //   if (data.userId === me.id && data.action === GroupUserStatusAction.JOIN) {
-    //     addConversationToList(data.conversationId);
-    //   }
+      //   if (data.userId === me.id && data.action === GroupUserStatusAction.JOIN) {
+      //     addConversationToList(data.conversationId);
+      //   }
     };
 
     eventsHandler.on("ADD_CONVERSATION_TO_LIST", handleAddConversation);
@@ -221,20 +233,15 @@ const ConversationList = () => {
         { withCredentials: true }
       );
       console.log("User removed from group:", response.data);
+      removeConversation(conversationId);
       toast.success("Successfully left the group!", { duration: 3000 });
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error("Axios error:", error.response?.data || error.message);
         setError("Failed to leave the group. Please try again.");
-        // const errorMsg = error.response?.data || error.message;
-        // console.log(error.response?.data.message || error.message);
-        // toast(error.response?.data.message || error.message);
         toast.error(error.response?.data.message || error.message, {
           duration: 5000,
         });
-        // toast.success("Successfully updated!", { duration: 3000 });
-        // toast.warning("This action cannot be undone.", { duration: 4000 });
-        // toast.info("New feature available!", { duration: 3500 });
       } else {
         console.error("Unexpected error:", error);
         setError("An unexpected error occurred.");
