@@ -14,6 +14,7 @@ import {
   UseGuards,
   Res,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -54,15 +55,33 @@ export class UserController {
     return this.userService.createUser(createUserDto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-    // console.log('cookies', request.headers['cookie']);
-    const existingUser = await this.userRepository.findOne({
-      where: { email: payload.email },
-    });
-    return existingUser;
+//   @UseGuards(JwtAuthGuard)
+//   @Get('me')
+//   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+//     // console.log(request);
+//     // console.log('cookies', request.headers['cookie']);
+//     // console.log('user');
+//     const existingUser = await this.userRepository.findOne({
+//       where: { email: payload.email },
+//     });
+//     return existingUser;
+//   }
+
+@UseGuards(JwtAuthGuard)
+@Get('me')
+async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+  console.log("Fetching user with ID:", payload.sub);
+
+  const existingUser = await this.userRepository.findOne({
+    where: { id: payload.sub }, // Use ID instead of email
+  });
+
+  if (!existingUser) {
+    throw new UnauthorizedException("User not found.");
   }
+  return existingUser;
+}
+
 
   @Put(':id')
   async updateUser(

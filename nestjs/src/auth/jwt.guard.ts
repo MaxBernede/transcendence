@@ -12,7 +12,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       }
       // Throw an UnauthorizedException to signal the authentication failure
 	  throw new UnauthorizedException('Authentication failed');
-      throw err || new UnauthorizedException('Authentication failed');
     }
     return user;
   }

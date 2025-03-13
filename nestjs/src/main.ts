@@ -1,18 +1,26 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config'; // Import ConfigService
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import * as path from 'path';
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import { PongGateway } from './game/pong.gateway';
 
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Fetch ConfigService for debugging
+  const configService = app.get(ConfigService);
+  console.log('INTRA_CLIENT_ID:', configService.get('INTRA_CLIENT_ID'));
+  console.log('INTRA_CLIENT_SECRET:', configService.get('INTRA_CLIENT_SECRET'));
 
   // Enable validation globally
   const config = new DocumentBuilder()
@@ -25,15 +33,12 @@ async function bootstrap() {
   const theme = new SwaggerTheme();
   const options = {
     explorer: true,
-    // customCss: theme.getBuffer(SwaggerThemeNameEnum.DRACULA),
     customCss: theme.getBuffer(SwaggerThemeNameEnum.ONE_DARK),
   };
   SwaggerModule.setup('docs', app, document, options);
 
   app.useGlobalPipes(new ValidationPipe({
-	whitelist: true,
-	// forbidNonWhitelisted: true,
-	// transform: true,
+    whitelist: true,
   }));
 
   // Use cookie-parser for handling cookies
@@ -54,7 +59,6 @@ async function bootstrap() {
   });
 
   // Ensure the "uploads/avatars" folder exists
-
   const uploadPath = join(__dirname, '..', 'uploads', 'avatars');
   // console.log(`Checking directory: ${uploadPath}`);
   if (!existsSync(uploadPath)) {
@@ -100,8 +104,13 @@ async function bootstrap() {
   // console.log('CORS enabled for origin:', 'http://localhost:3001');
 
   // Log server listening port
+  app.useWebSocketAdapter(new IoAdapter(app));
+  const pongGateway = app.get(PongGateway);
+  console.log("✅ WebSocket Gateway is Running:", pongGateway ? "YES" : "NO");
+
   const port = 3000;
   await app.listen(port);
   // console.log(`Server is running on http://localhost:${port}`);
 }
+
 bootstrap();

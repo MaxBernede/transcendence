@@ -238,4 +238,37 @@ export class UserService {
 		return user ? user.username : 'Unknown';
 	}
 
+  }
+
+  async incrementWins(userId: number) {
+	console.log(`⚡ Incrementing WINS for User ID: ${userId}`);
+  
+	const user = await this.userRepository.findOne({ where: { id: userId } });
+	if (!user) {
+	  console.error("❌ User not found in database.");
+	  throw new NotFoundException("User not found");
+	}
+  
+	user.wins += 1;
+	console.log(`✅ New wins count: ${user.wins}`);
+	await this.userRepository.save(user);
+	return user;
+  }
+  
+  async incrementLoose(userId: number) {
+	console.log(`⚡ Incrementing LOSSES for User ID: ${userId}`);
+  
+	const user = await this.userRepository.findOne({ where: { id: userId } });
+	if (!user) {
+	  console.error("❌ User not found in database.");
+	  throw new NotFoundException("User not found");
+	}
+  
+	user.loose += 1;
+	console.log(`✅ New losses count: ${user.loose}`);
+	await this.userRepository.save(user);
+	return user;
+  }
+  
+  
 }
