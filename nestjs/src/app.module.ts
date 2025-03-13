@@ -12,7 +12,7 @@ import { AppService } from './app.service';
 import { PongModule } from './game/pong.module';
 import { PongGateway } from './game/pong.gateway';
 import { FriendsModule } from './friends/friends.module';
-
+import { User } from './user/user.entity';
 
 @Module({
   imports: [
@@ -26,10 +26,11 @@ import { FriendsModule } from './friends/friends.module';
     DatabasesModule,
     // UsersModule,
     AuthModule,
-	  UsersModule,
+    UsersModule,
     TwoFactorAuthModule,
     ConversationsModule,
-	PongModule,
+    PongModule,
+	FriendsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PongGateway],

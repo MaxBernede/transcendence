@@ -2,7 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  InternalServerErrorException
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -68,19 +68,23 @@ export class UserService {
         where: { id: +id },
         relations: ['matchHistory', 'friends'],
       });
-  
+
       if (!user) {
         throw new NotFoundException(`User with ID "${id}" not found`);
       }
-  
-      const fieldsToUpdate: (keyof User)[] = ['wins', 'loose', 'ladder_level', 'avatar'];
+
+      const fieldsToUpdate: (keyof User)[] = [
+        'wins',
+        'loose',
+        'ladder_level',
+        'avatar',
+      ];
       for (const field of fieldsToUpdate) {
         if (updatedData[field] !== undefined) {
           (user as Record<string, any>)[field] = updatedData[field];
         }
       }
 
-  
       if (updatedData.image) {
         console.log('Updating image:', updatedData.image);
         user.image = updatedData.image;
@@ -90,9 +94,9 @@ export class UserService {
           '/assets/Bat.jpg';
         console.log('Updated avatar based on image:', user.avatar);
       }
-  
+
       Object.assign(user, updatedData);
-  
+
       return await this.userRepository.save(user);
     } catch (error) {
       console.error(`Error updating user with ID "${id}"`);
@@ -207,13 +211,11 @@ export class UserService {
 
     if (user) {
       // user = { ...user, ...userInfo };
-      console.log("User already exist in the database");
-    } 
-    else {
+      console.log('User already exist in the database');
+    } else {
       user = this.userRepository.create(userInfo);
     }
     // console.log('User saved:', user);
-
 
     return this.userRepository.save(user);
   }
@@ -221,9 +223,11 @@ export class UserService {
   async findOneById(id: number): Promise<User> {
     return this.userRepository.findOne({ where: { id } });
   }
- 
+
   async getUserIdByUsername(friendUsername: string): Promise<number | null> {
-    const user = await this.userRepository.findOne({ where: { username: friendUsername } });
+    const user = await this.userRepository.findOne({
+      where: { username: friendUsername },
+    });
     if (!user) {
       return null;
     }
@@ -231,44 +235,41 @@ export class UserService {
   }
 
   async getUsernameById(userId: number): Promise<string> {
-		const user = await this.userRepository.findOne({
-			where: { id: userId },
-			select: ['username'],
-		});
-		return user ? user.username : 'Unknown';
-	}
-
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['username'],
+    });
+    return user ? user.username : 'Unknown';
   }
 
   async incrementWins(userId: number) {
-	console.log(`⚡ Incrementing WINS for User ID: ${userId}`);
-  
-	const user = await this.userRepository.findOne({ where: { id: userId } });
-	if (!user) {
-	  console.error("❌ User not found in database.");
-	  throw new NotFoundException("User not found");
-	}
-  
-	user.wins += 1;
-	console.log(`✅ New wins count: ${user.wins}`);
-	await this.userRepository.save(user);
-	return user;
+    console.log(`⚡ Incrementing WINS for User ID: ${userId}`);
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      console.error('❌ User not found in database.');
+      throw new NotFoundException('User not found');
+    }
+
+    user.wins += 1;
+    console.log(`✅ New wins count: ${user.wins}`);
+    await this.userRepository.save(user);
+    return user;
   }
-  
+
   async incrementLoose(userId: number) {
-	console.log(`⚡ Incrementing LOSSES for User ID: ${userId}`);
-  
-	const user = await this.userRepository.findOne({ where: { id: userId } });
-	if (!user) {
-	  console.error("❌ User not found in database.");
-	  throw new NotFoundException("User not found");
-	}
-  
-	user.loose += 1;
-	console.log(`✅ New losses count: ${user.loose}`);
-	await this.userRepository.save(user);
-	return user;
+    console.log(`⚡ Incrementing LOSSES for User ID: ${userId}`);
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      console.error('❌ User not found in database.');
+      throw new NotFoundException('User not found');
+    }
+
+    user.loose += 1;
+    console.log(`✅ New losses count: ${user.loose}`);
+    await this.userRepository.save(user);
+    return user;
   }
-  
   
 }
