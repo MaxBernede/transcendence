@@ -8,7 +8,7 @@
       "Username": "user",
       "Password": "postgres",
       "SSLMode": "prefer",
-      "MaintenanceDB": "postgresdbb"
+      "MaintenanceDB": "postgres"
     }
   }
 }

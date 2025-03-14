@@ -10,7 +10,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   port: +process.env.POSTGRES_PORT || 5432,
   username: process.env.POSTGRES_USER || 'user',
   password: process.env.POSTGRES_PASSWORD || 'postgres',
-  database: process.env.POSTGRES_DB || 'postgresdbb',
+  database: process.env.POSTGRES_DB || 'postgres',
   entities: [User, Match, Chat, Conversation, UserConversation, FriendsEntity],
   synchronize: true, // For development only
   migrations: ['dist/migrations/*.js'],
