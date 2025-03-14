@@ -31,7 +31,7 @@ export class FriendsService {
 
     const friendId = await this.userService.getUserIdByUsername(friendUsername)
     if (!friendId) throw new ConflictException('Friend username not found');
-    if (friendId === mainId) throw new ConflictException('Cannot add yourself as friend');
+    if (friendId == mainId) throw new ConflictException('Cannot add yourself as friend');
     if (!['request', 'friends', 'blocked'].includes(action)) throw new ConflictException('Invalid action')
 
     // Check if the users already have a relationship (friendship, request, or blocked)
@@ -45,15 +45,15 @@ export class FriendsService {
     if (existingRelationship) {
 
       // leave without doingn anything
-      if (existingRelationship.status === 'blocked' && existingRelationship.mainUserId !== mainId) {
+      if (existingRelationship.status == 'blocked' && existingRelationship.mainUserId !== mainId) {
         return { message: 'You have been blocked by this user', status: 'ok' };
       }
 
       // If the relationship already exists, check the status
-      if (existingRelationship.status === 'friends' && action === 'request') {
+      if (existingRelationship.status == 'friends' && action == 'request') {
         throw new ConflictException('You are already friends with this user');
       }
-      if (existingRelationship.status === 'blocked' && action === 'friends') {
+      if (existingRelationship.status == 'blocked' && action == 'friends') {
         throw new ConflictException('This user is blocked');
       }
       // Update status if necessary (e.g., from "request" to "friends" or "blocked")
@@ -212,7 +212,7 @@ export class FriendsService {
     // Remove the friend relationship from the database
     const result = await this.friendsRepository.delete(id);
 
-    if (result.affected === 0) {
+    if (result.affected == 0) {
       throw new Error('Friend not found');
     }
 
