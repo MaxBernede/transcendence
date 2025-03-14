@@ -229,7 +229,8 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
       }
     }
     const avatarUrl = `http://localhost:3000/uploads/avatars/${file.filename}`;
-    console.log('New avatar URL:', avatarUrl);
+    // console.log('New avatar URL:', avatarUrl);
+    // console.log('userId:', userId);
     await this.userService.updateAvatar(userId, avatarUrl);
     return { avatar: avatarUrl };
   }

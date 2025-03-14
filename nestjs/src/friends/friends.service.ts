@@ -88,14 +88,15 @@ export class FriendsService {
     if (existingRelationship) {
       // If already blocked, do nothing
       if (existingRelationship.status == 'blocked') {
-        throw new ConflictException('This user is already blocked');
+        throw new ConflictException('This user is already blocked or blocked you');
       }
   
       // Update status to 'blocked'
       existingRelationship.status = 'blocked';
       await this.friendsRepository.save(existingRelationship);
       return existingRelationship;
-    } else {
+    } 
+    else {
       // If no relationship exists, create a new blocked relationship
       const newBlocked = this.friendsRepository.create({
         mainUserId: mainId,

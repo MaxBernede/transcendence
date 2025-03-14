@@ -87,8 +87,8 @@ export class User {
     () => UserConversation,
     (userConversation) => userConversation.user,
   )
-  @Column({ nullable: true })
-  socketId: string;
-  
   userConversations: UserConversation[];
+  
+  @Column({ nullable: true })
+  socketId: string;  
 }

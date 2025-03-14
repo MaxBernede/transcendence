@@ -11,6 +11,7 @@ import { Match } from '../match/match.entity';
 import { CreateUserDto } from './dto/createUser.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UserConversation } from '@/conversations/entities/conversation.entity';
 
 @Injectable()
 export class UserService {
@@ -19,6 +20,8 @@ export class UserService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Match)
     private readonly matchRepository: Repository<Match>,
+    @InjectRepository(UserConversation)
+    private userConversationRepository: Repository<UserConversation>,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -97,7 +100,6 @@ export class UserService {
 
       Object.assign(user, updatedData);
 
-	  	return user; //TODO: double check this.
       return await this.userRepository.save(user);
     } catch (error) {
       console.error(`Error updating user with ID "${id}"`);
@@ -111,9 +113,7 @@ export class UserService {
   async updateAvatar(id: string, avatarUrl: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: +id } });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
 
     if (
       user.avatar &&
@@ -131,7 +131,8 @@ export class UserService {
     }
 
     user.avatar = avatarUrl; // Set new avatar URL
-    return this.userRepository.save(user);
+    await this.userRepository.update(user.id, { avatar: avatarUrl });
+    return this.userRepository.findOne({ where: { id: user.id } });
   }
 
   async findOne(idOrUsername: string | number): Promise<User> {
