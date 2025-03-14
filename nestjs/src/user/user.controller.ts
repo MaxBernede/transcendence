@@ -18,19 +18,15 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { extname } from 'path';
 import { UserService } from './user.service';
 import { MatchService } from '../match/match.service';
-import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { CreateUserDto } from './dto/createUser.dto';
 import { Match } from '../match/match.entity';
-import { Public } from 'src/decorators/public.decorator';
-// import { AuthGuard } from 'src/auth/auth.guard';
 import axios from 'axios';
 import { Response } from 'express';
 import * as fs from 'fs';
 import * as cookie from 'cookie';
-// import { JwtAuthGuard } from 'src/temp-jwt.guard';
 import { GetUserPayload } from 'src/test.decorator';
 import { TokenPayload } from 'src/auth/dto/token-payload';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -53,18 +49,6 @@ export class UserController {
   async createUser(@Body() createUserDto: CreateUserDto) {
     return this.userService.createUser(createUserDto);
   }
-
-//   @UseGuards(JwtAuthGuard)
-//   @Get('me')
-//   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-//     // console.log(request);
-//     // console.log('cookies', request.headers['cookie']);
-//     // console.log('user');
-//     const existingUser = await this.userRepository.findOne({
-//       where: { email: payload.email },
-//     });
-//     return existingUser;
-//   }
 
 @UseGuards(JwtAuthGuard)
 @Get('me')

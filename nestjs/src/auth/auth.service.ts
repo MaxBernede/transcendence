@@ -101,12 +101,6 @@ export class AuthService {
     });
   }
 
-  // async handleSuccessful2FA(res: Response, user: User, jwt: string) {
-
-  //   this.setJwtCookie(res, jwt);
-  //   return res.redirect(`http://localhost:3001/user/${this.getUserIdFromJwt(jwt)}`);
-  // }
-
 	getUserIdFromJwt(jwt: string): string {
 		const decoded = this.jwtService.decode(jwt) as TokenPayload;
 		return decoded.sub.toString();

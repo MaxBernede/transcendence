@@ -24,9 +24,6 @@ export class FriendsService {
     return this.friendsRepository.save(friend);
   }
 
-
-  ///  TEN ETAIT LA MEC TU DOIS CODER LA FRIEND LOGIC
-
   async handleFriendAction(mainId: number, friendUsername: string, action: string) {
 
     const friendId = await this.userService.getUserIdByUsername(friendUsername)

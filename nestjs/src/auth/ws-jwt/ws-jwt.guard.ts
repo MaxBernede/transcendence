@@ -2,15 +2,12 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Observable } from 'rxjs';
 import { Socket } from 'socket.io';
-import * as cookieParser from 'cookie-parser';
-import { verify } from 'jsonwebtoken';
 
 @Injectable()
 export class WsJwtGuard implements CanActivate {

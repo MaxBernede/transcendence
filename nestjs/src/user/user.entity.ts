@@ -7,10 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Match } from '../match/match.entity';
-import {
-  Chat,
-  UserConversation,
-} from 'src/conversations/entities/conversation.entity';
+import { UserConversation } from 'src/conversations/entities/conversation.entity';
 
 @Entity('user')
 export class User {

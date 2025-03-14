@@ -2,7 +2,6 @@ import { Controller, Post, Body, Get, Res } from '@nestjs/common';
 import { TwoFactorAuthService } from './two-factor-auth.service';
 import { UserService } from 'src/user/user.service';
 import { Response } from 'express';
-import { Public } from 'src/decorators/public.decorator';
 
 @Controller('2fa')
 export class TwoFactorAuthController {

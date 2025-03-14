@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { typeOrmConfig } from './ormconfig';
-import { DatabasesModule } from './database/database.module'; // ✅ Fixed import
 import { UsersModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
@@ -10,11 +9,9 @@ import { TwoFactorAuthModule } from './auth/two-factor-auth/two-factor-auth.modu
 import { ConversationsModule } from './conversations/conversations.module';
 import { AppService } from './app.service';
 import { PongModule } from './game/pong.module';
-import { PongGateway } from './game/pong.gateway';
 import { FriendsModule } from './friends/friends.module';
 import { User } from './user/user.entity';
 import { EventsGateway } from './events/events.gateway';
-import { ConversationsGateway } from './conversations/conversations.gateway';
 
 @Module({
   imports: [
@@ -24,9 +21,6 @@ import { ConversationsGateway } from './conversations/conversations.gateway';
     }),
     TypeOrmModule.forFeature([User]),
     TypeOrmModule.forRoot(typeOrmConfig),
-    // TypeOrmModule.forFeature([User]),
-    DatabasesModule,
-    // UsersModule,
     AuthModule,
     UsersModule,
     TwoFactorAuthModule,
@@ -35,7 +29,6 @@ import { ConversationsGateway } from './conversations/conversations.gateway';
 	FriendsModule,
   ],
   controllers: [AppController],
-//   providers: [AppService, EventsGateway, PongGateway],
   providers: [AppService, EventsGateway],
 })
 export class AppModule {}
