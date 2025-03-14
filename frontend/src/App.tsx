@@ -21,6 +21,7 @@ import { io, Socket } from "socket.io-client";
 import EventsHandler from "./events/EventsHandler";
 
 import { Toaster } from "./components/ui/sonner";
+import TwoFASetup from "./pages/login/2FASetup";
 
 export const UserContext = createContext<{
 	userData: UserData | null;
@@ -52,32 +53,10 @@ function App() {
 	  const [socket, setSocket] = useState<Socket | null>(null);
 
 	  useEffect(() => {
-		// const newSocket = io("http://localhost:3000/events", {
-		//   withCredentials: true,
-		// });
-		// setSocket(newSocket);
-		// console.log("Connected to the socket");
-	
-		// newSocket.on("serverToClientEvents", (data: any) => {
-		//   console.log("Received data from the server:", data);
-		// });
-	
-		// return () => {
-		//   console.log("Cleaning up socket connection");
-		//   newSocket.disconnect();
-		// };
+
 	
 		const eventsHandler = EventsHandler.getInstance();
-		// const handleServerEvent = (data: any) => {
-		//   console.log("Received data from the server:", data);
-		// };
-	
-		// eventsHandler.on("serverToClientEvents", handleServerEvent);
-	
-		// return () => {
-		//   // Clean up the listener (socket connection remains active in EventsHandler)
-		//   eventsHandler.off("serverToClientEvents", handleServerEvent);
-		// };
+
 	  }, []);
   return (
     <UserContext.Provider
@@ -98,7 +77,7 @@ function App() {
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
           <Route path="/2FA" element={<TwoFactorAuth />} />
 		  <Route path="/friends" element={<Friends />} />
-          {/* <Route path="/TwoFA" element={<TwoFA />} /> */}
+          <Route path="/2FASetup" element={<TwoFASetup/>} />
 		  <Route path="/pong" element={<PongPage />} /> 
 		          {/* Only wrap /chat route with UserProvider */}
 				  <Route path="/chat/*" element={<UserProviderWrapper />}>
@@ -114,7 +93,7 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
-    // </UserContext.Provider>
+    </UserContext.Provider>
   );
 }
 

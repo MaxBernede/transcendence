@@ -57,7 +57,7 @@ const UserPage: React.FC = () => {
       />
 
       {userData?.secret_2fa ? (
-			<h1>✅ Activated: {userData?.secret_2fa}</h1>
+			<h1>✅ 2FA Activated</h1>
 		) : (
 			<h1>❌ 2FA not activated</h1>
 		)}
