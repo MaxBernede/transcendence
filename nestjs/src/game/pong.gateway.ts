@@ -8,7 +8,6 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { DatabasesService } from '../database/database.service';
 import { PongService } from './pong.service';
 
 export const players = new Map<
@@ -23,7 +22,6 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   constructor(
-    private readonly databaseService: DatabasesService,
     private readonly pongService: PongService,
   ) {}
 
