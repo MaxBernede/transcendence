@@ -239,7 +239,7 @@ useEffect(() => {
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [paddle1Y, paddle2Y]);
+  }, [paddle1Y, paddle2Y, ballStarted]);
 
   useEffect(() => {
     socket.on("gameOver", (data) => {
@@ -359,6 +359,11 @@ useEffect(() => {
         setTimeout(() => {
             console.log("Requesting fresh player info from server...");
             socket.emit("requestPlayers");
+
+		//start the ball after reset
+		console.log("Triggering ball movement...");
+		socket.emit("startBall");
+			
         }, 500);
     });
 

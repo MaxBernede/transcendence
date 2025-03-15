@@ -306,6 +306,24 @@ public resetGame(server: Server) {
 
     server.emit("gameReset");  // Notify frontend to close popup
     server.emit("gameState", this.gameState);
+
+	    // start the ball automatically after a small delay
+		setTimeout(() => {
+			console.log("Auto-starting ball after reset...");
+			this.ballMoving = false; // Allow paddle move to trigger start
+			this.startBall(server);
+		}, 1000);
+}
+
+public startBall(server: Server) {
+    if (this.ballMoving) return; // Don't start if already moving
+
+    console.log("First paddle move detected, starting ball movement...");
+    this.ballMoving = true;
+    this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
+    this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+
+    this.startGameLoop(server); // Restart game loop
 }
 
 

@@ -134,29 +134,33 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit('updatePlayers', Array.from(players.values()));
   }
 
-  /** Handles player ready event */
-  @SubscribeMessage('playerReady')
-  handlePlayerReady(@ConnectedSocket() client: Socket) {
+  
+
+@SubscribeMessage('playerReady')
+handlePlayerReady(@ConnectedSocket() client: Socket) {
     const playerInfo = players.get(client.id);
     if (!playerInfo) {
-      console.error('Unknown player tried to reset the game.');
-      return;
+        console.error('Unknown player tried to reset the game.');
+        return;
     }
 
-    console.log('Player ${playerInfo.playerNumber} is ready!');
+    console.log(`Player ${playerInfo.playerNumber} is ready!`);
     this.pongService.incrementReadyPlayers();
 
     if (this.pongService.areBothPlayersReady()) {
-      console.log('Both players confirmed! Resetting game...');
-      this.pongService.resetGame(this.server);
-      this.server.emit('bothPlayersReady'); // Notify front-end
+        console.log("Both players confirmed! Resetting game...");
+        this.pongService.resetGame(this.server);
+
+        setTimeout(() => {
+            this.server.emit("bothPlayersReady"); // Notify frontend
+            this.pongService.startGameLoop(this.server); // Automatically start game
+        }, 500);  // Small delay to ensure sync
     } else {
-      console.log('Waiting for second player...');
-      this.server.emit('waitingForOpponent', {
-        waitingFor: playerInfo.username,
-      });
+        console.log("Waiting for second player...");
+        this.server.emit("waitingForOpponent", { waitingFor: playerInfo.username });
     }
-  }
+}
+
 
   // Handles player movement
   @SubscribeMessage('playerMove')
