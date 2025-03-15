@@ -50,7 +50,7 @@ const Pong = () => {
 	const [loggedInUser, setLoggedInUser] = useState<string>("");
 	const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
 	const hasListener = useRef(false);
-	const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
+	const [ballPosition, setBallPosition] = useState({ x: 386, y: 294 });
 	
 
 	  // Reset game state when the page refreshes
@@ -131,7 +131,7 @@ useEffect(() => {
         setScore1(0);
         setScore2(0);
         setBallStarted(false);
-        setBallPosition({ x: 390, y: 294 });
+        setBallPosition({ x: 386, y: 294 });
         setPaddle1Y(250);
         setPaddle2Y(250);
     });
@@ -270,7 +270,7 @@ useEffect(() => {
         setWinner(null);
         setScore1(0);
         setScore2(0);
-        setBallPosition({ x: 390, y: 294 });
+        setBallPosition({ x: 386, y: 294 });
         setPaddle1Y(250);
         setPaddle2Y(250);
         setPaddleHeight1(100);
@@ -306,7 +306,7 @@ useEffect(() => {
 		setWinner(null);
         setScore1(0);
         setScore2(0);
-        setBallPosition({ x: 390, y: 294 });
+        setBallPosition({ x: 386, y: 294 });
         setPaddle1Y(250);
         setPaddle2Y(250);
         setPaddleHeight1(100);
@@ -348,7 +348,7 @@ useEffect(() => {
         setPlayersReady(2); // Ensure both players are marked as ready
         setScore1(0);
         setScore2(0);
-        setBallPosition({ x: 390, y: 294 });
+        setBallPosition({ x: 386, y: 294 });
         setPaddle1Y(250);
         setPaddle2Y(250);
         setPaddleHeight1(100);

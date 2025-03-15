@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 @Injectable()
 export class PongService {
     private gameState = {
-        ball: { x: 390, y: 294, vx: 0, vy: 0 },
+        ball: { x: 386, y: 294, vx: 0, vy: 0 },
         paddle1: { y: 250 },
         paddle2: { y: 250 },
         score: { player1: 0, player2: 0 },
@@ -147,7 +147,7 @@ export class PongService {
 			console.log(" Power-Up bounced off X wall!");
 			this.powerUpState.vx *= -1; 
 		}
-		if (this.powerUpState.y <= 0 || this.powerUpState.y >= 600) {
+		if (this.powerUpState.y <= 0 || this.powerUpState.y >= 550) {
 			console.log(" Power-Up bounced off Y wall!");
 			this.powerUpState.vy *= -1;
 		}
@@ -170,7 +170,7 @@ export class PongService {
         ball.y += ball.vy;
 
         // Ball bounces off top/bottom walls
-        if (ball.y <= 0 || ball.y >= 600) ball.vy *= -1;
+        if (ball.y <= 0 || ball.y >= 570) ball.vy *= -1;
 
         // Check collisions and score updates
         this.checkCollisions(server);
@@ -216,9 +216,9 @@ export class PongService {
     const paddle2 = this.gameState.paddle2;
 
     // Paddle collision logic
-    if (ball.x <= 30 && ball.y >= paddle1.y && ball.y <= paddle1.y + 100) {
+    if (ball.x <= 20 && ball.y >= paddle1.y && ball.y <= paddle1.y + 100) {
         ball.vx = Math.abs(ball.vx);
-    } else if (ball.x >= 770 && ball.y >= paddle2.y && ball.y <= paddle2.y + 100) {
+    } else if (ball.x >= 750 && ball.y >= paddle2.y && ball.y <= paddle2.y + 100) {
         ball.vx = -Math.abs(ball.vx);
     }
 
@@ -270,7 +270,7 @@ private resetBall(server: Server) {
     this.ballMoving = false; // Stop ball movement
 
     // Reset ball position
-    this.gameState.ball = { x: 390, y: 294, vx: 0, vy: 0 };
+    this.gameState.ball = { x: 386, y: 294, vx: 0, vy: 0 };
 
     // Reset paddles to middle
     this.gameState.paddle1.y = 250;
@@ -295,7 +295,7 @@ public resetGame(server: Server) {
 
     //  Make sure game is inactive and doesn't start automatically!
     this.gameState = {
-        ball: { x: 390, y: 294, vx: 0, vy: 0 },
+        ball: { x: 386, y: 294, vx: 0, vy: 0 },
         paddle1: { y: 250 },
         paddle2: { y: 250 },
         score: { player1: 0, player2: 0 },
@@ -332,7 +332,7 @@ spawnPowerUp(server: Server) {
 
     console.log("⚡ Spawning power-up...");
 
-    const randomX = Math.floor(Math.random() * 600) + 100;
+    const randomX = Math.floor(Math.random() * 570) + 100;
     const randomY = Math.floor(Math.random() * 300) + 50;
     const powerUpTypes: Array<"shrinkOpponent" | "speedBoost" | "enlargePaddle"> = [
         "shrinkOpponent", "speedBoost", "enlargePaddle"

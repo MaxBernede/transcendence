@@ -6,7 +6,7 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
   const [paddle2Y, setPaddle2Y] = useState(250);
   const [paddleHeight1, setPaddleHeight1] = useState(100); 
   const [paddleHeight2, setPaddleHeight2] = useState(100); 
-  const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
+  const [ballPosition, setBallPosition] = useState({ x: 380, y: 294 });
   const [score1, setScore1] = useState(0);
   const [score2, setScore2] = useState(0);
   const [winner, setWinner] = useState<string | null>(null);
