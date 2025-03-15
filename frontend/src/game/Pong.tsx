@@ -437,19 +437,24 @@ return (
         </button>
     </div>
 )}
-
-
-      </div>
-
-      <div className="pong-buttons">
-        <button className="toggle-button" onClick={() => setPowerUpsEnabled((prev) => !prev)}>
-          {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
-        </button>
-        <button className="toggle-button" onClick={() => setDarkBackground((prev) => !prev)}>
-          {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
-        </button>
-      </div>
     </div>
+	<div className="pong-buttons">
+    <button 
+        className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
+        onClick={() => setPowerUpsEnabled((prev) => !prev)}
+    >
+        {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
+    </button>
+    
+    <button 
+        className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
+        onClick={() => setDarkBackground((prev) => !prev)}
+    >
+        {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
+    </button>
+</div>
+
+    	</div>
   );
 }
 

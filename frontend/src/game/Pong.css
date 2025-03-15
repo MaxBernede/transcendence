@@ -284,3 +284,13 @@
 	border-radius: 5px;
   }
   
+
+.toggle-button.disabled {
+    background-color: gray !important;
+    opacity: 0.6;
+}
+
+.toggle-button.disabled.dark-mode {
+    background-color: #333333 !important;
+}
+
