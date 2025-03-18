@@ -408,7 +408,7 @@ useEffect(() => {
 
 useEffect(() => {
     socket.on("powerUpsToggled", (data) => {
-        console.log("⚡ Power-ups toggled:", data.enabled);
+        console.log("Power-ups toggled:", data.enabled);
         setPowerUpsEnabled(data.enabled); 
     });
 
@@ -417,7 +417,46 @@ useEffect(() => {
     };
 }, []);
 
+const [isCooldown, setIsCooldown] = useState(false);
+const [cooldownTime, setCooldownTime] = useState(0);
 
+useEffect(() => {
+    socket.on("powerUpCooldown", (data) => {
+        console.log(`Cooldown activated for ${data.cooldown}ms`);
+        setIsCooldown(true);
+        setCooldownTime(data.cooldown);
+
+        let remainingTime = data.cooldown;
+        const interval = setInterval(() => {
+            remainingTime -= 100;
+            setCooldownTime(remainingTime);
+
+            if (remainingTime <= 0) {
+                clearInterval(interval);
+                setIsCooldown(false);
+                setCooldownTime(0);
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
+    });
+
+    return () => {
+        socket.off("powerUpCooldown");
+    };
+}, []);
+
+
+const handleDisablePowerUps = () => {
+    if (isCooldown) return;
+
+    const newState = !powerUpsEnabled;
+    setPowerUpsEnabled(newState);
+    socket.emit("togglePowerUps", { enabled: newState });
+};
+
+// Progress bar calculation
+const cooldownProgress = Math.max(0, Math.min(100, ((5000 - cooldownTime) / 5000) * 100));
 
 return (
     <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
@@ -450,27 +489,38 @@ return (
     </div>
 )}
     </div>
-	<div className="pong-buttons">
+    <div className="pong-buttons">
+    {/* Disable Power-Ups Button with Cooldown */}
+    <div className="cooldown-container">
     <button 
     className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
-    onClick={() => {
-        const newState = !powerUpsEnabled;
-        setPowerUpsEnabled(newState);
-        socket.emit("togglePowerUps", { enabled: newState }); 
-    }}
+    onClick={handleDisablePowerUps}
+    disabled={isCooldown}
 >
-    {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
+    {isCooldown ? `COOLDOWN (${(cooldownTime / 1000).toFixed(1)}s)` : 
+                  (powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS")}
 </button>
 
-    
-    <button 
-        className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
-        onClick={() => setDarkBackground((prev) => !prev)}
-    >
-        {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
-    </button>
-</div>
 
+        {/* Cooldown Progress Bar */}
+        {isCooldown && (
+            <div className="cooldown-bar">
+                <div className="cooldown-progress" style={{ width: `${cooldownProgress}%` }}></div>
+                {cooldownProgress.toFixed(0)}%
+            </div>
+        )}
+    </div>
+
+    {/* Dark Mode Button */}
+    <button 
+    className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
+    onClick={() => setDarkBackground((prev) => !prev)}
+    style={{ minWidth: "120px" }} // Adjust width
+>
+    {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
+</button>
+
+    </div>
     	</div>
   );
 }

@@ -241,10 +241,11 @@ handlePlayerReady(@ConnectedSocket() client: Socket) {
           return;
       }
   
-      console.log(`🔁 Power-ups toggled in room ${roomId}: ${data.enabled}`);
-  
-      // Broadcast the change to ALL players in the room
+      console.log(`Power-ups toggled in room ${roomId}: ${data.enabled}`);
+
       this.server.to(roomId).emit('powerUpsToggled', { enabled: data.enabled });
+
+      console.log(`Starting cooldown for power-ups in room ${roomId}`);
+       this.server.to(roomId).emit("powerUpCooldown", { cooldown: 5000 });
   }
-  
 }

@@ -294,3 +294,19 @@
     background-color: #333333 !important;
 }
 
+.cooldown-bar {
+    width: 200px;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin-top: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.cooldown-progress {
+    height: 100%;
+    background-color: #ff3385;
+    transition: width 0.1s linear; /* Smooth animation */
+}
+
