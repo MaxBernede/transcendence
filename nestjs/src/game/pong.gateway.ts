@@ -220,4 +220,31 @@ handlePlayerReady(@ConnectedSocket() client: Socket) {
   handlePowerUpCollected(@MessageBody() data: { player: number }) {
     this.pongService.applyPowerUpEffect(data.player, this.server);
   }
+
+  @SubscribeMessage('togglePowerUps')
+  handleTogglePowerUps(
+      @MessageBody() data: { enabled: boolean },
+      @ConnectedSocket() client: Socket
+  ) {
+      let roomId = null;
+  
+      // Find the room where the player is
+      for (const [id, players] of activeRooms.entries()) {
+          if (players.includes(client.id)) {
+              roomId = id;
+              break;
+          }
+      }
+  
+      if (!roomId) {
+          console.warn(`⚠️ Player ${client.id} is not assigned to any room.`);
+          return;
+      }
+  
+      console.log(`🔁 Power-ups toggled in room ${roomId}: ${data.enabled}`);
+  
+      // Broadcast the change to ALL players in the room
+      this.server.to(roomId).emit('powerUpsToggled', { enabled: data.enabled });
+  }
+  
 }

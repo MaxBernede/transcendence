@@ -406,6 +406,18 @@ useEffect(() => {
     };
 }, [playerNumber]);
 
+useEffect(() => {
+    socket.on("powerUpsToggled", (data) => {
+        console.log("⚡ Power-ups toggled:", data.enabled);
+        setPowerUpsEnabled(data.enabled); 
+    });
+
+    return () => {
+        socket.off("powerUpsToggled");
+    };
+}, []);
+
+
 
 return (
     <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
@@ -440,11 +452,16 @@ return (
     </div>
 	<div className="pong-buttons">
     <button 
-        className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
-        onClick={() => setPowerUpsEnabled((prev) => !prev)}
-    >
-        {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
-    </button>
+    className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
+    onClick={() => {
+        const newState = !powerUpsEnabled;
+        setPowerUpsEnabled(newState);
+        socket.emit("togglePowerUps", { enabled: newState }); 
+    }}
+>
+    {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
+</button>
+
     
     <button 
         className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
@@ -458,4 +475,4 @@ return (
   );
 }
 
-export default Pong;
+export default Pong;    
