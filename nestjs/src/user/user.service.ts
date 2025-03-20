@@ -88,18 +88,7 @@ export class UserService {
         }
       }
 
-      if (updatedData.image) {
-        console.log('Updating image:', updatedData.image);
-        user.image = updatedData.image;
-        user.avatar =
-          updatedData.image.link ||
-          updatedData.image.versions?.large ||
-          '/assets/Bat.jpg';
-        console.log('Updated avatar based on image:', user.avatar);
-      }
-
       Object.assign(user, updatedData);
-
       return await this.userRepository.save(user);
     } catch (error) {
       console.error(`Error updating user with ID "${id}"`);
