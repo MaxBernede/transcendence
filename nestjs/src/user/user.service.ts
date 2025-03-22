@@ -38,7 +38,6 @@ export class UserService {
     const newUser = this.userRepository.create({
       username,
       email,
-      password,
       avatar: image?.link || '/assets/Bat.jpg',
       image,
     });
@@ -69,25 +68,20 @@ export class UserService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: +id },
-        relations: ['matchHistory', 'friends'],
+        relations: ['friends', 'wonMatches', 'lostMatches'],
       });
-
+  
       if (!user) {
         throw new NotFoundException(`User with ID "${id}" not found`);
       }
-
-      const fieldsToUpdate: (keyof User)[] = [
-        'wins',
-        'loose',
-        'ladder_level',
-        'avatar',
-      ];
+  
+      const fieldsToUpdate: (keyof User)[] = ['wins', 'loose', 'avatar'];
       for (const field of fieldsToUpdate) {
         if (updatedData[field] !== undefined) {
           (user as Record<string, any>)[field] = updatedData[field];
         }
       }
-
+  
       if (updatedData.image) {
         console.log('Updating image:', updatedData.image);
         user.image = updatedData.image;
@@ -97,13 +91,12 @@ export class UserService {
           '/assets/Bat.jpg';
         console.log('Updated avatar based on image:', user.avatar);
       }
-
+  
       Object.assign(user, updatedData);
-
+  
       return await this.userRepository.save(user);
     } catch (error) {
-      console.error(`Error updating user with ID "${id}"`);
-      // console.error(`Error updating user with ID "${id}":`, error);
+      console.error(`Error updating user with ID "${id}":`, error); // 🔍 Log détaillé
       throw new InternalServerErrorException(
         'An error occurred while updating the user',
       );
@@ -159,19 +152,6 @@ export class UserService {
 
     console.log('Final user data:', user);
     return user;
-  }
-
-  async findOneWithMatchHistory(
-    idOrUsername: string,
-  ): Promise<{ user: User; matchHistory: Match[] }> {
-    const user = await this.findOne(idOrUsername);
-
-    const matchHistory = await this.matchRepository.find({
-      where: { user: { id: user.id } },
-      relations: ['user'],
-    });
-
-    return { user, matchHistory };
   }
 
   async addFriend(userId: number, friendId: number): Promise<User> {

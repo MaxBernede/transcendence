@@ -36,7 +36,6 @@
 
 - The backend returns the user data, including:
 
-	Stats (wins, losses, ladder_level).
 	Avatar (image.link or avatar fallback).
 	Achievements (eager-loaded with relations: ['achievements']).
 	Match History (queried from the match_history table).
@@ -93,7 +92,6 @@
 	{
 	"wins": 10,
 	"loose": 5,
-	"ladder_level": 3
 	}
 
 ## UPDATE MATCH HISTORY:

@@ -49,7 +49,6 @@ export const PublicUserInfoSchema = z.object({
   createdAt: z.string(),
   wins: z.number(),
   losses: z.number(),
-  ladderLevel: z.number(),
 
   groupRole: z.string(),
   banned: z.boolean(),

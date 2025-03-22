@@ -12,6 +12,7 @@ import { PongModule } from './game/pong.module';
 import { FriendsModule } from './friends/friends.module';
 import { User } from './user/user.entity';
 import { EventsGateway } from './events/events.gateway';
+import { MatchModule } from './match/match.module';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import { EventsGateway } from './events/events.gateway';
     TwoFactorAuthModule,
     ConversationsModule,
     PongModule,
-	FriendsModule,
+	  FriendsModule,
+    MatchModule,
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway],

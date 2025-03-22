@@ -252,31 +252,4 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     }
   }
 
-  @Get('user/:id/match-history')
-  async getMatchHistory(@Param('id', ParseIntPipe) id: number) {
-    const matchHistory = await this.matchService.findByUser(id);
-
-    if (!matchHistory || matchHistory.length === 0) {
-      return []; // Ensure an empty array is returned if no matches exist
-    }
-
-    // commented because match database changed
-    return [];
-    // id: match.id,
-    // type: match.type,
-    // opponent: match.opponent,
-    // result: match.result,
-    // score: match.score,
-    // description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
-    // date: new Date(match.date).toLocaleDateString('en-GB'),
-  }
-
-  @Put(':id/match-history')
-  async updateMatchHistory(
-    @Param('id', ParseIntPipe) userId: number,
-    @Body() matchUpdates: Match[],
-  ) {
-    return this.matchService.updateMatchHistory(userId, matchUpdates);
-  }
-
 }

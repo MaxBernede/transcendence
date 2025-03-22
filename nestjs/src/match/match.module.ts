@@ -5,9 +5,9 @@ import { MatchService } from './match.service';
 import { MatchController } from './match.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Match])],
-  controllers: [MatchController],
-  providers: [MatchService],
-  exports: [MatchService, TypeOrmModule],
+	imports: [TypeOrmModule.forFeature([Match])],
+	controllers: [MatchController],
+	providers: [MatchService],
+	exports: [MatchService],
 })
 export class MatchModule {}

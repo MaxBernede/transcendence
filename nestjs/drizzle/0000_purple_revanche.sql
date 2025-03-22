@@ -56,7 +56,6 @@ CREATE TABLE "user" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"wins" integer DEFAULT 0 NOT NULL,
 	"loose" integer DEFAULT 0 NOT NULL,
-	"ladder_level" integer DEFAULT 0 NOT NULL,
 	"activity_status" varchar,
 	"image" json,
 	"newUser" boolean DEFAULT true NOT NULL,

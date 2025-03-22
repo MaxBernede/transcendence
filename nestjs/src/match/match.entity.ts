@@ -1,32 +1,23 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
-import { User } from '../user/user.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { User } from 'src/user/user.entity';
 
-@Entity('match_history')
+@Entity()
 export class Match {
-  @PrimaryGeneratedColumn()
-  id: number;
+	@PrimaryGeneratedColumn()
+	id: number;
 
-  @Column()
-  type: string;
+	@ManyToOne(() => User, { nullable: false })
+	winner: User;
 
-  @Column()
-  opponent: string;
+	@ManyToOne(() => User, { nullable: false })
+	looser: User;
 
-  @Column()
-  result: string;
+	@Column()
+	winnerScore: number;
 
-  @Column()
-  score: string;
+	@Column()
+	looserScore: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  date: Date;
-
-  @ManyToOne(() => User, (user) => user.matchHistory, { onDelete: 'CASCADE' })
-  user: User;
+	@CreateDateColumn()
+	date: Date;
 }
