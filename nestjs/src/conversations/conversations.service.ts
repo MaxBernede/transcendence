@@ -446,6 +446,20 @@ export class ConversationsService {
       receiverConversation,
     ]);
 
+    // Add users to the conversation room
+    this.conversationsGateway.addUserToRoom(senderId, newConversation.id);
+    this.conversationsGateway.addUserToRoom(receiverId, newConversation.id);
+
+    // Send event to both users to add the conversation to their list
+    const eventData: z.infer<typeof AddConversationToListSchema> = {
+      conversationId: newConversation.id,
+    };
+    this.eventsGateway.sendEventToUser(
+      EventsType.ADD_CONVERSATION_TO_LIST,
+      [senderId, receiverId],
+      eventData,
+    );
+
     console.log('The conversation has been successfully created.');
     return newConversation;
   }

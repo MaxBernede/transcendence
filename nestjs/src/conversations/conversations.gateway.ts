@@ -365,4 +365,38 @@ export class ConversationsGateway
 
     this.wss.to(message.conversationId).emit('chatToClient', res);
   }
+
+  // New explicit handler for joining a room
+  @SubscribeMessage('joinRoom')
+  async handleJoinRoom(client: Socket, data: { conversationId: string }): Promise<void> {
+    const isValid = await this.validateClient(client);
+    if (isValid === false) {
+      return;
+    }
+
+    const user = client['user'];
+    console.log(`User ${user.username} manually joining room ${data.conversationId}`);
+
+    // Check if user has access to this conversation
+    try {
+      const userConversation = await this.userConversationRepository.findOne({
+        where: {
+          userId: user.sub,
+          conversationId: data.conversationId,
+          banned: false,
+        },
+      });
+      
+      if (!userConversation) {
+        console.log(`User ${user.username} doesn't have access to conversation ${data.conversationId}`);
+        return;
+      }
+
+      // Join the room
+      client.join(data.conversationId);
+      console.log(`User ${user.username} joined room: ${data.conversationId}`);
+    } catch (error) {
+      console.error('Error joining room:', error);
+    }
+  }
 }
