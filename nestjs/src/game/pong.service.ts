@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Server } from 'socket.io';
+import { Socket } from 'socket.io';
 
 @Injectable()
 export class PongService {
@@ -354,17 +355,29 @@ spawnPowerUp(server: Server) {
     server.emit("powerUpSpawned", this.powerUpState);
 }
 
-createMatch(dto: { userId: number; roomId: string }) {
-	if (this.rooms.has(dto.roomId)) {
-	  const room = this.rooms.get(dto.roomId);
-	  if (room && !room.player2) {
-		room.player2 = dto.userId;
+
+createMatch(dto: { userId: number; roomId: string }, client: Socket): { message: string; room: string } {
+	const existingRoom = this.rooms.get(dto.roomId);
+  
+	if (existingRoom) {
+	  const { player1, player2 } = existingRoom;
+  
+	  if (player1 && player2) {
+		client.emit("roomFull");
+		return { message: "Room is full", room: dto.roomId };
+	  }
+  
+	  if (player1 !== dto.userId && player2 !== dto.userId) {
+		existingRoom.player2 = dto.userId;
 	  }
 	} else {
 	  this.rooms.set(dto.roomId, { player1: dto.userId });
 	}
+  
 	return { message: 'Match created or joined', room: dto.roomId };
   }
+  
+
   
   getRoomInfo(roomId: string) {
 	return this.rooms.get(roomId) ?? { error: 'Room not found' };
@@ -378,5 +391,7 @@ createMatch(dto: { userId: number; roomId: string }) {
 	}
 	return { error: 'User not found in any room' };
   }
+
+  
 
 }

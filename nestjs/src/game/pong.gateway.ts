@@ -59,63 +59,74 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const socketsMap = this.server?.sockets?.sockets;
       if (socketsMap && socketsMap.size > 0) return socketsMap;
   
-      console.warn(`⏳ Waiting for socketsMap... attempt ${attempt}`);
+      console.warn(`waiting for socketsMap... attempt ${attempt}`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
     return null;
   }
   
-  private emitPlayerInfo() {
-    const players = waitingQueue.map(p => ({
-      username: p.username,
-      playerNumber: p.playerNumber,
-    }));
+  private emitPlayerInfoForRoom(roomId: string) {
+	const room = activeRooms.get(roomId);
+	if (!room) return;
   
-    this.server?.emit("playerInfo", players);
+	const socket1 = connectedUsers.get(room.player1.userId);
+	const socket2 = connectedUsers.get(room.player2.userId);
+  
+	const playerInfo = [
+	  { username: room.player1.username, playerNumber: 1 },
+	  { username: room.player2.username, playerNumber: 2 },
+	];
+  
+	socket1?.emit("playerInfo", playerInfo);
+	socket2?.emit("playerInfo", playerInfo);
   }
+  
   
   private async tryMatchPlayers() {
     if (waitingQueue.length < 2) return;
-  
+
     const player1 = waitingQueue.shift()!;
     const player2 = waitingQueue.shift()!;
-  
+
     const socket1 = connectedUsers.get(player1.userId);
     const socket2 = connectedUsers.get(player2.userId);
-  
+
     if (!socket1 || !socket2) {
-      console.warn("⚠️ Missing socket(s), requeueing players...");
       if (socket1) waitingQueue.unshift(player1);
       if (socket2) waitingQueue.unshift(player2);
       return;
     }
-  
+
     const roomId = `room-${uuidv4()}`;
     activeRooms.set(roomId, { player1, player2 });
-  
-    console.log(`creating room: ${roomId}`);
-    console.log(`players: ${player1.username} (${socket1.id}) vs ${player2.username} (${socket2.id})`);
-  
-    try {
-      await socket1.join(roomId);
-      await socket2.join(roomId);
-    } catch (err) {
-      console.error("error joining sockets to room:", err);
-      return;
-    }
-  
+
+    await socket1.join(roomId);
+    await socket2.join(roomId);
+
+    players.set(socket1.id, { username: player1.username, playerNumber: 1 });
+    players.set(socket2.id, { username: player2.username, playerNumber: 2 });
+
     const playersPayload = [
       { userId: player1.userId, username: player1.username },
       { userId: player2.userId, username: player2.username },
     ];
-  
+
     const roomPayload = { roomId, players: playersPayload };
-  
+    const playerInfo = [
+      { username: player1.username, playerNumber: 1 },
+      { username: player2.username, playerNumber: 2 },
+    ];
+
+    socket1.emit("playerInfo", playerInfo);
+    socket2.emit("playerInfo", playerInfo);
+
     socket1.emit("gameRoomUpdate", roomPayload);
     socket2.emit("gameRoomUpdate", roomPayload);
-  
+
     console.log("gameRoomUpdate emitted to both clients:", roomPayload);
+    this.pongService.resetGame(this.server);
   }
+  
   
 
 handleConnection(client: Socket) {
@@ -159,83 +170,130 @@ handleConnection(client: Socket) {
   });
 }
 
+private cleanupRoomBySocket(client: Socket) {
+    for (const [roomId, room] of activeRooms.entries()) {
+      const { player1, player2 } = room;
+      const isInRoom = player1.socketId === client.id || player2.socketId === client.id;
+
+      if (isInRoom) {
+        const opponent = player1.socketId === client.id ? player2 : player1;
+        const opponentSocket = connectedUsers.get(opponent.userId);
+
+        if (opponentSocket) {
+          opponentSocket.emit("opponentDisconnected");
+        }
+
+        activeRooms.delete(roomId);
+        console.log(`cleaned up room ${roomId} due to disconnect of ${client.id}`);
+        break;
+      }
+    }
+  }
+
   /** Handles player disconnect */
   handleDisconnect(client: Socket) {
-    console.log(`Player disconnected: ${client.id}`);
+	console.log(`Player disconnected: ${client.id}`);
   
-    // find the userId from connectedUsers map
-    const entry = [...connectedUsers.entries()].find(([_, socket]) => socket.id === client.id);
-    if (entry) {
-      const [userId] = entry;
-      connectedUsers.delete(userId);
-      console.log(`removed socket for userId ${userId} from connectedUsers`);
-    }
+	const userId = this.socketToUser.get(client.id);
+	if (userId) {
+	  connectedUsers.delete(userId);
+	  this.socketToUser.delete(client.id);
+	  console.log(`Removed socket for userId ${userId}`);
+	}
   
-    // remove from waitingQueue
-    const index = waitingQueue.findIndex(p => p.socketId === client.id);
-    if (index !== -1) {
-      const player = waitingQueue.splice(index, 1)[0];
-      console.log(`🧹 Removed ${player.username} from waiting queue`);
-    }
+	const queueIndex = waitingQueue.findIndex(p => p.socketId === client.id);
+	if (queueIndex !== -1) {
+	  const player = waitingQueue.splice(queueIndex, 1)[0];
+	  console.log(`Removed ${player.username} from waiting queue`);
+	}
   
-    // mark as disconnected idk if necessary?
-    const playerData = players.get(client.id);
-    if (playerData) {
-      players.delete(client.id);
-      players.set(`DISCONNECTED-${playerData.username}`, { ...playerData });
-    }
+	const playerData = players.get(client.id);
+	if (playerData) {
+	  players.delete(client.id);
+	}
   
-    this.emitPlayerInfo();
+	let roomId: string | undefined;
+  
+	for (const [id, room] of activeRooms.entries()) {
+	  if (room.player1.socketId === client.id || room.player2.socketId === client.id) {
+		roomId = id;
+		break;
+	  }
+	}
+  
+	this.cleanupRoomBySocket(client);
+  
+	if (roomId) {
+	  this.emitPlayerInfoForRoom(roomId);
+	}
   }
+  
   
 
   /** Handles player registration */
   @SubscribeMessage("registerUser")
-  async handleRegisterUser(client: Socket, payload: any) {
-    const { username } = typeof payload === "string" ? { username: payload } : payload;
-    console.log("Looking for user:", username);
-  
-    const user = await this.userService.findByUsername(username);
-    if (!user) {
-      console.error("User not found for registration:", username);
+async handleRegisterUser(client: Socket, payload: any) {
+  const { username } = typeof payload === "string" ? { username: payload } : payload;
+  console.log("Looking for user:", username);
+
+  const user = await this.userService.findByUsername(username);
+  if (!user) {
+    console.error("User not found for registration:", username);
+    return;
+  }
+
+  // Check if already in a room
+  const existingRoom = this.pongService.getRoomByUserId(user.id);
+  if (!("error" in existingRoom)) {
+    const { roomId, player1, player2 } = existingRoom;
+
+    if (player1 && player2) {
+      console.warn(`Room ${roomId} is full. Rejecting new registration for user ${username}`);
+      client.emit("roomFull");
       return;
     }
-  
-    // track user socket
-    connectedUsers.set(user.id, client);
-    this.socketToUser.set(client.id, user.id);
-  
-    // register in global players map (crucial fix)
-    const playerNumber = waitingQueue.length === 0 ? 1 : 2;
-    players.set(client.id, {
-      username,
-      playerNumber,
-    });
-  
-    console.log(`registering player: ${username} (UUID: ${user.id}) with socket ${client.id}`);
-  
-    // Notify frontend
-    client.emit("registered");
-  
-    // Cleanup duplicates in waitingQueue
-    const existingIndex = waitingQueue.findIndex(p => p.userId === user.id);
-    if (existingIndex !== -1) {
-      waitingQueue.splice(existingIndex, 1);
-    }
-  
-    const player = { userId: user.id, username, socketId: client.id, playerNumber };
-    waitingQueue.push(player);
-  
-    this.emitPlayerInfo();
-  
-    if (!this.server?.sockets?.sockets) {
-      console.warn("Server not ready, delaying match attempt...");
-      setTimeout(() => this.tryMatchPlayers(), 1000);
-    } else {
-      this.tryMatchPlayers();
-    }
   }
-  
+
+  // Check if already matched
+  const alreadyMatched = [...activeRooms.values()].some(
+    room => room.player1.userId === user.id || room.player2.userId === user.id
+  );
+
+  if (alreadyMatched) {
+    console.warn(`user ${username} is already in a game. Skipping registration.`);
+    client.emit("alreadyInGame");
+    return;
+  }
+
+  // Track connection
+  connectedUsers.set(user.id, client);
+  this.socketToUser.set(client.id, user.id);
+
+  const playerNumber = waitingQueue.length === 0 ? 1 : 2;
+  players.set(client.id, { username, playerNumber });
+
+  console.log(`Registering player: ${username} (UUID: ${user.id}) with socket ${client.id}`);
+  client.emit("registered");
+
+  // Ensure no duplicates in waitingQueue
+  const existingIndex = waitingQueue.findIndex(p => p.userId === user.id);
+  if (existingIndex !== -1) {
+    waitingQueue.splice(existingIndex, 1);
+  }
+
+  const player = { userId: user.id, username, socketId: client.id, playerNumber };
+  waitingQueue.push(player);
+
+//   this.emitPlayerInfo(roomId);
+
+  if (!this.server?.sockets?.sockets) {
+    console.warn("Server not ready, delaying match attempt...");
+    setTimeout(() => this.tryMatchPlayers(), 1000);
+  } else {
+    this.tryMatchPlayers();
+  }
+}
+
   
 
   /** Handles game state request */
@@ -248,40 +306,47 @@ handleConnection(client: Socket) {
   /** Handles players request */
   @SubscribeMessage('requestPlayers')
   handleRequestPlayers(@ConnectedSocket() client: Socket) {
-    console.log('Sending player info:', Array.from(players.values()));
-    client.emit('playerInfo', Array.from(players.values()));
+	let roomId: string | undefined;
+  
+	for (const [id, room] of activeRooms.entries()) {
+	  if (
+		room.player1.socketId === client.id ||
+		room.player2.socketId === client.id
+	  ) {
+		roomId = id;
+		break;
+	  }
+	}
+  
+	if (roomId) {
+	  const room = activeRooms.get(roomId);
+	  const playerInfo = [
+		{ username: room!.player1.username, playerNumber: 1 },
+		{ username: room!.player2.username, playerNumber: 2 },
+	  ];
+	  console.log(`Sending player info for room ${roomId}:`, playerInfo);
+	  client.emit('playerInfo', playerInfo);
+	} else {
+	  console.warn(`No active room found for socket ${client.id}`);
+	  client.emit('playerInfo', []);
+	}
   }
-
-  /** Broadcasts players update */
-  private broadcastPlayers() {
-    this.server.emit('updatePlayers', Array.from(players.values()));
-  }
+  
 
   
-@SubscribeMessage('playerReady')
-handlePlayerReady(@ConnectedSocket() client: Socket) {
-    const playerInfo = players.get(client.id);
-    if (!playerInfo) {
-        console.error('Unknown player tried to reset the game.');
-        return;
-    }
-
-    console.log(`Player ${playerInfo.playerNumber} is ready!`);
-    this.pongService.incrementReadyPlayers();
-
-    if (this.pongService.areBothPlayersReady()) {
-        console.log("Both players confirmed! Resetting game...");
-        this.pongService.resetGame(this.server);
-
-        setTimeout(() => {
-            this.server.emit("bothPlayersReady"); // Notify frontend
-            this.pongService.startGameLoop(this.server); // Automatically start game
-        }, 500);  // Small delay to ensure sync
-    } else {
-        console.log("Waiting for second player...");
-        this.server.emit("waitingForOpponent", { waitingFor: playerInfo.username });
-    }
-}
+  @SubscribeMessage("playerReady")
+  handlePlayerReady(@ConnectedSocket() client: Socket) {
+	const playerInfo = players.get(client.id);
+	if (!playerInfo) return;
+  
+	this.pongService.incrementReadyPlayers();
+	if (this.pongService.areBothPlayersReady()) {
+	  this.server.emit("bothPlayersReady");
+	  this.pongService.resetGame(this.server);
+	} else {
+	  client.emit("waitingForOpponent", { waitingFor: playerInfo.username });
+	}
+  } 
 
 
   // Handles player movement
@@ -373,4 +438,6 @@ handlePlayerReady(@ConnectedSocket() client: Socket) {
       console.log(`Starting cooldown for power-ups in room ${roomId}`);
        this.server.to(roomId).emit("powerUpCooldown", { cooldown: 5000 });
   }
+
+  
 }

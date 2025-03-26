@@ -6,11 +6,10 @@ import { CreatePongDto } from './dto/create_pong.dto';
 export class PongController {
   constructor(private readonly pongService: PongService) {}
 
-  @Post('create')
-  async createMatch(@Body() createPongDto: CreatePongDto) {
-    return await this.pongService.createMatch(createPongDto);
-  }
-  
+//   @Post('create')
+//   async createMatch(@Body() createPongDto: CreatePongDto) {
+//     return await this.pongService.createMatch(createPongDto);
+//   }
 
   @Get(':roomId')
   async getRoom(@Param('roomId') roomId: string) {
