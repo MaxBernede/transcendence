@@ -7,6 +7,8 @@ import Scoreboard from "./Scoreboard";
 import PowerUp from "./PowerUp";
 import { usePongGame } from "./hooks/usePongGame";
 import axios from "axios";
+import { useCallback } from "react";
+
 
 // this file connects to a Websocket server to sync real time movement
 // and manages the game state (ball, paddle, scores) + handles player input
@@ -23,6 +25,10 @@ const Pong = () => {
 	const [winner, setWinner] = useState<string | null>(null);
 	const [score1, setScore1] = useState<number>(0);
 	const [score2, setScore2] = useState<number>(0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [isRegistered, setIsRegistered] = useState(false);
+
 	
 	const {
 		gameContainerRef,
@@ -43,7 +49,9 @@ const Pong = () => {
 		setBallStarted,
 		setPaddleHeight1,
 		setPaddleHeight2,
-	} = usePongGame(socket, playerNumber);
+        // roomId,
+        // setRoomId,
+	} = usePongGame(socket, playerNumber, roomId, setRoomId);
 
 	const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
 	const [darkBackground, setDarkBackground] = useState(false);
@@ -51,7 +59,7 @@ const Pong = () => {
 	const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
 	const hasListener = useRef(false);
 	const [ballPosition, setBallPosition] = useState({ x: 386, y: 294 });
-	
+
 
 	  // Reset game state when the page refreshes
 	  useEffect(() => {
@@ -77,6 +85,7 @@ const Pong = () => {
       .then((response) => {
         if (response.data.username) {
           setLoggedInUser(response.data.username);
+          setUserId(response.data.id.toString());
         }
       })
       .catch(() => console.error("Failed to fetch user data"));
@@ -86,10 +95,23 @@ const Pong = () => {
 // once loggedinuser is set it registers player to server and lists connected players
 useEffect(() => {
     if (loggedInUser) {
-        socket.emit("registerUser", loggedInUser);
-        socket.emit("requestPlayers");
+      socket.emit("registerUser", { userId: userId, username: loggedInUser }); // ✅ Correct structure
+      socket.emit("requestPlayers");
     }
-}, [loggedInUser]);
+  }, [loggedInUser, userId]);
+  
+  // Runs once on component mount
+useEffect(() => {
+    socket.on("updatePaddle", ({ player, y }) => {
+      if (player === 1) setPaddle1Y(y);
+      else if (player === 2) setPaddle2Y(y);
+    });
+  
+    return () => {
+      socket.off("updatePaddle");
+    };
+  }, []);
+  
 
 
 // when page is load this checks if playernumber is stored in local storage
@@ -197,49 +219,57 @@ useEffect(() => {
     };
 }, [loggedInUser, playerNumber]);
 
+useEffect(() => {
+    console.log("roomId from hook:", roomId);
+  }, [roomId]);  
+
+
+  useEffect(() => {
+    socket.on("registered", () => {
+      setIsRegistered(true);
+    });
+  
+    return () => {
+      socket.off("registered");
+    };
+  }, []);
+  
+
 
 // when user presses W / S / up / down it moves paddles and sends it to server
-  const handleKeyDown = (event: KeyboardEvent) => {
-	if (winner)
-			return;
-		
+const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (!isRegistered || !roomId || winner) return;
+  
+    const opponentFound = opponentUsername !== "WAITING...";
     let newY = 0;
-
-    console.log("playerNumber: ", playerNumber);
+  
     if (playerNumber === 1) {
       if (event.key === "w" || event.key === "ArrowUp") {
         newY = Math.max(paddle1Y - 20, 0);
         setPaddle1Y(newY);
-        socket.emit("playerMove", { player: 1, y: newY });
+        socket.emit("playerMove", { player: 1, y: newY, roomId });
       } else if (event.key === "s" || event.key === "ArrowDown") {
         newY = Math.min(paddle1Y + 20, 500);
         setPaddle1Y(newY);
-        socket.emit("playerMove", { player: 1, y: newY });
+        socket.emit("playerMove", { player: 1, y: newY, roomId });
       }
     } else if (playerNumber === 2) {
       if (event.key === "w" || event.key === "ArrowUp") {
         newY = Math.max(paddle2Y - 20, 0);
         setPaddle2Y(newY);
-        socket.emit("playerMove", { player: 2, y: newY });
+        socket.emit("playerMove", { player: 2, y: newY, roomId });
       } else if (event.key === "s" || event.key === "ArrowDown") {
         newY = Math.min(paddle2Y + 20, 500);
         setPaddle2Y(newY);
-        socket.emit("playerMove", { player: 2, y: newY });
+        socket.emit("playerMove", { player: 2, y: newY, roomId });
       }
     }
-
-	if (!ballStarted) {
-		console.log("First paddle move detected, starting ball movement...");
-		setBallStarted(true);
-		socket.emit("startBall");
-	  }
-  };
-
-  // when user presses W / S / Up / Down it moves paddle and sends it to server
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [paddle1Y, paddle2Y, ballStarted]);
+  
+    if (!ballStarted && isRegistered && opponentFound) {
+      setBallStarted(true);
+      socket.emit("startBall");
+    }
+  }, [isRegistered, roomId, winner, opponentUsername, playerNumber, paddle1Y, paddle2Y, ballStarted]);
 
   useEffect(() => {
     socket.on("gameOver", (data) => {
@@ -257,9 +287,6 @@ useEffect(() => {
         socket.off("gameReset");
     };
 }, [socket]);
-
-
-
 
 
 useEffect(() => {
@@ -454,6 +481,27 @@ const handleDisablePowerUps = () => {
     setPowerUpsEnabled(newState);
     socket.emit("togglePowerUps", { enabled: newState });
 };
+
+useEffect(() => {
+    const handleRoomUpdate = ({ roomId }: { roomId: string }) => {
+      console.log("🎯 Hook received roomId:", roomId);
+      setRoomId(roomId);
+    };
+  
+    socket.on("gameRoomUpdate", handleRoomUpdate);
+  
+    return () => {
+      socket.off("gameRoomUpdate", handleRoomUpdate); //  cleanup
+    };
+  }, []);
+  
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+  
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
 // Progress bar calculation
 const cooldownProgress = Math.max(0, Math.min(100, ((5000 - cooldownTime) / 5000) * 100));

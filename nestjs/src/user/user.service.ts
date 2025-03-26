@@ -238,28 +238,36 @@ export class UserService {
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      console.error('❌ User not found in database.');
+      console.error('user not found in database.');
       throw new NotFoundException('User not found');
     }
 
     user.wins += 1;
-    console.log(`✅ New wins count: ${user.wins}`);
+    console.log(`new wins count: ${user.wins}`);
     await this.userRepository.save(user);
     return user;
   }
 
   async incrementLoose(userId: number) {
-    console.log(`⚡ Incrementing LOSSES for User ID: ${userId}`);
+    console.log(`incrementing LOSSES for User ID: ${userId}`);
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      console.error('❌ User not found in database.');
+      console.error('user not found in database.');
       throw new NotFoundException('User not found');
     }
 
     user.loose += 1;
-    console.log(`✅ New losses count: ${user.loose}`);
+    console.log(`new losses count: ${user.loose}`);
     await this.userRepository.save(user);
     return user;
   }
+
+
+  async findByUsername(username: string): Promise<User | null> {
+    const users = await this.userRepository.find();
+    console.log('all users:', users);
+    return users.find(u => u.username === username) ?? null;
+  }
+  
 }

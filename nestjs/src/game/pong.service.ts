@@ -25,6 +25,8 @@ export class PongService {
     private ballMoving: boolean = false;
     private gameLoopInterval: NodeJS.Timeout | null = null;
 	private winnerDeclared: boolean = false;
+	private rooms = new Map<string, { player1: number; player2?: number }>();
+
 
     constructor() {}
 
@@ -351,5 +353,30 @@ spawnPowerUp(server: Server) {
     console.log("Emitting power-up:", this.powerUpState);
     server.emit("powerUpSpawned", this.powerUpState);
 }
+
+createMatch(dto: { userId: number; roomId: string }) {
+	if (this.rooms.has(dto.roomId)) {
+	  const room = this.rooms.get(dto.roomId);
+	  if (room && !room.player2) {
+		room.player2 = dto.userId;
+	  }
+	} else {
+	  this.rooms.set(dto.roomId, { player1: dto.userId });
+	}
+	return { message: 'Match created or joined', room: dto.roomId };
+  }
+  
+  getRoomInfo(roomId: string) {
+	return this.rooms.get(roomId) ?? { error: 'Room not found' };
+  }
+  
+  getRoomByUserId(userId: number) {
+	for (const [roomId, room] of this.rooms.entries()) {
+	  if (room.player1 === userId || room.player2 === userId) {
+		return { roomId, ...room };
+	  }
+	}
+	return { error: 'User not found in any room' };
+  }
 
 }
