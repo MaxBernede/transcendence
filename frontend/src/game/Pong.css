@@ -310,3 +310,17 @@
     transition: width 0.1s linear; /* Smooth animation */
 }
 
+.pong-reconnect-banner {
+	position: absolute;
+	top: 10px;
+	left: 50%;
+	transform: translateX(-50%);
+	background-color: #fff3cd;
+	color: #856404;
+	border: 1px solid #ffeeba;
+	padding: 10px 20px;
+	border-radius: 6px;
+	font-size: 1rem;
+	z-index: 999;
+  }
+  

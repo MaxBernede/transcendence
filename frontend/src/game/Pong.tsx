@@ -227,6 +227,8 @@ useEffect(() => {
   useEffect(() => {
     socket.on("registered", () => {
       setIsRegistered(true);
+      socket.emit("requestPlayers");
+      socket.emit("playerReady");
     });
   
     return () => {
@@ -234,11 +236,15 @@ useEffect(() => {
     };
   }, []);
   
+  
 
 
 // when user presses W / S / up / down it moves paddles and sends it to server
 const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!isRegistered || !roomId || winner) return;
+  console.log("Key pressed:", event.key);
+
+
+    if (!isRegistered || !roomId || winner || isReconnecting) return;
   
     const opponentFound = opponentUsername !== "WAITING...";
     let newY = 0;
@@ -446,6 +452,8 @@ useEffect(() => {
 
 const [isCooldown, setIsCooldown] = useState(false);
 const [cooldownTime, setCooldownTime] = useState(0);
+const [isReconnecting, setIsReconnecting] = useState(false);
+
 
 useEffect(() => {
     socket.on("powerUpCooldown", (data) => {
@@ -503,74 +511,141 @@ useEffect(() => {
     };
   }, [handleKeyDown]);
 
+  useEffect(() => {
+    const handleLeave = () => {
+      socket.emit("leaveGame");
+    };
+  
+    window.addEventListener("beforeunload", handleLeave);
+  
+    return () => {
+      socket.emit("leaveGame");
+      window.removeEventListener("beforeunload", handleLeave);
+    };
+  }, []);
+  
+  useEffect(() => {
+    socket.on("opponentDisconnected", () => {
+      console.warn("⚠️ Opponent disconnected!");
+      setOpponentUsername("WAITING...");
+      setWinner(null);
+      setScore1(0);
+      setScore2(0);
+      setBallPosition({ x: 386, y: 294 });
+      setPaddle1Y(250);
+      setPaddle2Y(250);
+      setPaddleHeight1(100);
+      setPaddleHeight2(100);
+      setBallStarted(false);
+      setIsReconnecting(true);
+      setCooldownTime(15000); // 15s
+  
+      // countdown until message changes
+      const interval = setInterval(() => {
+        setCooldownTime(prev => {
+          if (prev <= 1000) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1000;
+        });
+      }, 1000);
+    });
+  
+    socket.on("resumeGame", () => {
+      console.log("game resumed after reconnect");
+      setIsReconnecting(false);
+    });
+  
+    return () => {
+      socket.off("opponentDisconnected");
+      socket.off("resumeGame");
+    };
+  }, []);
+  
+  
+  
+
 // Progress bar calculation
 const cooldownProgress = Math.max(0, Math.min(100, ((5000 - cooldownTime) / 5000) * 100));
 
 return (
-    <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
-		<Scoreboard
-		score1={score1}  // Player 1's score always on the left
-		score2={score2}  // Player 2's score always on the right
-		darkMode={darkBackground}
-		loggedInUser={playerNumber === 1 ? loggedInUser : opponentUsername} 
-		opponentUsername={playerNumber === 1 ? opponentUsername : loggedInUser} 
-		/>
-      <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
-        <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
+  <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
 
-        <Paddle key={`left-${paddle1Y}`} position="left" top={paddle1Y ?? 0} height={paddleHeight1} color={darkBackground ? "#555555" : "#ff66b2"} />
-        <Paddle key={`right-${paddle2Y}`} position="right" top={paddle2Y ?? 0} height={paddleHeight2} color={darkBackground ? "#555555" : "#ff66b2"} />
-
-        <Ball x={ballPosition.x} y={ballPosition.y} color={darkBackground ? "#666666" : "#ff3385"} />
-
-        {powerUpsEnabled && isPowerUpActive && powerUpType && (
-          <PowerUp x={powerUpX ?? 0} y={powerUpY ?? 0} isActive={isPowerUpActive} type={powerUpType} darkMode={darkBackground} />
-        )}
-
-        {/* ADD WINNER POPUP HERE */}
-		{winner && (
-    <div className="pong-winner-popup">
-        <h2>{winner} WINS! 🎉</h2>
-        <button className="play-again-button" onClick={handleResetGame}>
-            PLAY AGAIN
-        </button>
-    </div>
+    {isReconnecting && (
+  <div className="pong-reconnect-banner">
+    {cooldownTime > 0 ? (
+      <p>Opponent disconnected. Waiting {Math.ceil(cooldownTime / 1000)}s to reconnect...</p>
+    ) : (
+      <>
+        <p>Opponent did not return. Please refresh to start a new game.</p>
+        {/* <button onClick={handleResetGame}>PLAY AGAIN</button> */}
+      </>
+    )}
+  </div>
 )}
+
+
+    <Scoreboard
+      score1={score1}
+      score2={score2}
+      darkMode={darkBackground}
+      loggedInUser={playerNumber === 1 ? loggedInUser : opponentUsername}
+      opponentUsername={playerNumber === 1 ? opponentUsername : loggedInUser}
+    />
+
+    <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
+      <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
+
+      <Paddle key={`left-${paddle1Y}`} position="left" top={paddle1Y ?? 0} height={paddleHeight1} color={darkBackground ? "#555555" : "#ff66b2"} />
+      <Paddle key={`right-${paddle2Y}`} position="right" top={paddle2Y ?? 0} height={paddleHeight2} color={darkBackground ? "#555555" : "#ff66b2"} />
+
+      <Ball x={ballPosition.x} y={ballPosition.y} color={darkBackground ? "#666666" : "#ff3385"} />
+
+      {powerUpsEnabled && isPowerUpActive && powerUpType && (
+        <PowerUp x={powerUpX ?? 0} y={powerUpY ?? 0} isActive={isPowerUpActive} type={powerUpType} darkMode={darkBackground} />
+      )}
+
+      {winner && (
+        <div className="pong-winner-popup">
+          <h2>{winner} WINS! 🎉</h2>
+          <button className="play-again-button" onClick={handleResetGame}>
+            PLAY AGAIN
+          </button>
+        </div>
+      )}
     </div>
+
     <div className="pong-buttons">
-    {/* Disable Power-Ups Button with Cooldown */}
-    <div className="cooldown-container">
-    <button 
-    className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
-    onClick={handleDisablePowerUps}
-    disabled={isCooldown}
->
-    {isCooldown ? `COOLDOWN (${(cooldownTime / 1000).toFixed(1)}s)` : 
-                  (powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS")}
-</button>
+      <div className="cooldown-container">
+        <button
+          className={`toggle-button ${darkBackground ? "disabled" : ""}`}
+          onClick={handleDisablePowerUps}
+          disabled={isCooldown}
+        >
+          {isCooldown ? `COOLDOWN (${(cooldownTime / 1000).toFixed(1)}s)` :
+            (powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS")}
+        </button>
 
-
-        {/* Cooldown Progress Bar */}
         {isCooldown && (
-            <div className="cooldown-bar">
-                <div className="cooldown-progress" style={{ width: `${cooldownProgress}%` }}></div>
-                {cooldownProgress.toFixed(0)}%
-            </div>
+          <div className="cooldown-bar">
+            <div className="cooldown-progress" style={{ width: `${cooldownProgress}%` }}></div>
+            {cooldownProgress.toFixed(0)}%
+          </div>
         )}
-    </div>
+      </div>
 
-    {/* Dark Mode Button */}
-    <button 
-    className={`toggle-button ${darkBackground ? "disabled" : ""}`} 
-    onClick={() => setDarkBackground((prev) => !prev)}
-    style={{ minWidth: "120px" }} // Adjust width
->
-    {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
-</button>
-
+      <button
+        className={`toggle-button ${darkBackground ? "disabled" : ""}`}
+        onClick={() => setDarkBackground((prev) => !prev)}
+        style={{ minWidth: "120px" }}
+      >
+        {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
+      </button>
     </div>
-    	</div>
-  );
+  </div>
+);
+
 }
 
 export default Pong;    

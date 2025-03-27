@@ -12,6 +12,7 @@ import { PongService } from './pong.service';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from "../user/user.service";
 import { CreatePongDto } from './dto/create_pong.dto';
+// import { OnModuleInit } from '@nestjs/common';
 
 export const players = new Map<
   string,
@@ -24,11 +25,18 @@ interface WaitingPlayer {
   playerNumber: number; 
 }
 
+type Room = {
+  player1: WaitingPlayer;
+  player2: WaitingPlayer;
+};
+
+ 
 const waitingQueue: WaitingPlayer[] = [];
 
 const activeRooms = new Map<string, { player1: WaitingPlayer, player2: WaitingPlayer }>();
 const userIdToSocketId = new Map<string, string>();  // Optional: reverse lookup
 const connectedUsers = new Map<number, Socket>();
+const disconnectTimers = new Map<string, NodeJS.Timeout>();
 
 
 @WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
@@ -125,20 +133,82 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     console.log("gameRoomUpdate emitted to both clients:", roomPayload);
     this.pongService.resetGame(this.server);
-  }
-  
-  
 
+// ADD THIRD MOCK USER TO TEST
+if (!waitingQueue.some(p => p.userId === 999)) {
+  const mockUser = {
+    userId: 999,
+    username: 'mock-user',
+    socketId: 'mock-socket-id',
+    playerNumber: 1,
+  };
+  waitingQueue.push(mockUser);
+  console.log('mock user added to waiting queue after first match.');
+  console.log("Current waiting queue:", waitingQueue.map(p => p.username));
+  }
+  // ADD FOURTH MOCK USER TO TEST
+if (!waitingQueue.some(p => p.userId === 9999)) {
+  const mockUser = {
+    userId: 9999,
+    username: 'mock-user2',
+    socketId: 'mock-socket-id2',
+    playerNumber: 2,
+  };
+  waitingQueue.push(mockUser);
+  console.log('mock user added to waiting queue after first match.');
+  console.log("Current waiting queue:", waitingQueue.map(p => p.username));
+  }
+}
+  
+  
 handleConnection(client: Socket) {
   console.log(`handleConnection: ${client.id}`);
   client.emit("waitingForOpponent", { waitingFor: client.id });
 
   client.on("register", (player: WaitingPlayer) => {
-    console.log(`registered user: ${player.username} (ID: ${player.userId}) for socket ${client.id}`);
+    console.log(`Registered: ${player.username} (ID: ${player.userId}) ↔ Socket ${client.id}`);
 
     connectedUsers.set(player.userId, client);
     this.socketToUser.set(client.id, player.userId);
 
+    // 🔄 Reconnect Logic
+    const roomEntry = [...activeRooms.entries()].find(
+      ([, room]) => room.player1.userId === player.userId || room.player2.userId === player.userId
+    );
+
+    if (roomEntry) {
+      const [roomId, room] = roomEntry;
+      const isPlayer1 = room.player1.userId === player.userId;
+
+      if (isPlayer1) room.player1.socketId = client.id;
+      else room.player2.socketId = client.id;
+
+      // 🧹 Cancel disconnect timeout
+      const timer = disconnectTimers.get(roomId);
+      if (timer) {
+        clearTimeout(timer);
+        disconnectTimers.delete(roomId);
+        console.log(`✅ ${player.username} reconnected to room ${roomId}`);
+      }
+
+      // 🎮 Resume Game
+      const socket1 = connectedUsers.get(room.player1.userId);
+      const socket2 = connectedUsers.get(room.player2.userId);
+
+      const playerInfo = [
+        { username: room.player1.username, playerNumber: 1 },
+        { username: room.player2.username, playerNumber: 2 },
+      ];
+
+      socket1?.emit("resumeGame");
+      socket2?.emit("resumeGame");
+      socket1?.emit("playerInfo", playerInfo);
+      socket2?.emit("playerInfo", playerInfo);
+
+      return;
+    }
+
+    // ➕ Fresh registration to matchmaking
     const entry: WaitingPlayer = {
       socketId: client.id,
       userId: player.userId,
@@ -147,28 +217,67 @@ handleConnection(client: Socket) {
     };
 
     const i = waitingQueue.findIndex(p => p.socketId === client.id);
-    if (i !== -1) {
-      waitingQueue[i] = entry;
-    } else {
-      waitingQueue.push(entry);
-    }
+    if (i !== -1) waitingQueue[i] = entry;
+    else waitingQueue.push(entry);
 
     this.tryMatchPlayers();
   });
 
   client.on("disconnect", () => {
     const userId = this.socketToUser.get(client.id);
-    console.log(`disconnected: ${client.id} (user ${userId ?? "unknown"})`);
+    console.log(`⛔ Disconnected: ${client.id} (user ${userId ?? "unknown"})`);
 
     if (userId) {
       connectedUsers.delete(userId);
       this.socketToUser.delete(client.id);
     }
 
-    const i = waitingQueue.findIndex(p => p.socketId === client.id);
-    if (i !== -1) waitingQueue.splice(i, 1);
+    // 💥 Remove from waiting queue
+    const index = waitingQueue.findIndex(p => p.socketId === client.id);
+    if (index !== -1) waitingQueue.splice(index, 1);
+
+    // ⏳ Start disconnect timeout for room player
+    const roomEntry = [...activeRooms.entries()].find(
+      ([, room]) => room.player1.socketId === client.id || room.player2.socketId === client.id
+    );
+
+    if (roomEntry) {
+      const [roomId, room] = roomEntry;
+      console.log(`Starting disconnect timer for room ${roomId}`);
+
+      const timer = setTimeout(() => {
+        console.log(`💀 Disconnect timeout expired for room ${roomId}`);
+        activeRooms.delete(roomId);
+
+        const opponent =
+        room.player1.socketId === client.id ? room.player2 : room.player1;
+      
+      if (opponent?.socketId) {
+        const socketsMap = this.server?.sockets?.sockets;
+        const opponentSocket = socketsMap?.get(opponent.socketId);
+      
+        if (opponentSocket) {
+          opponentSocket.emit("opponentDisconnected");
+      
+          waitingQueue.push({
+            username: opponent.username,
+            socketId: opponent.socketId,
+            userId: opponent.userId,
+            playerNumber: opponent.playerNumber,
+          });
+      
+          this.emitPlayerInfoForRoom(roomId);
+          this.tryMatchPlayers();
+        }
+      }      
+        disconnectTimers.delete(roomId);
+      }, 15000); // 15 seconds
+
+      disconnectTimers.set(roomId, timer);
+    }
   });
 }
+
 
 private cleanupRoomBySocket(client: Socket) {
     for (const [roomId, room] of activeRooms.entries()) {
@@ -190,45 +299,47 @@ private cleanupRoomBySocket(client: Socket) {
     }
   }
 
-  /** Handles player disconnect */
-  handleDisconnect(client: Socket) {
-	console.log(`Player disconnected: ${client.id}`);
-  
-	const userId = this.socketToUser.get(client.id);
-	if (userId) {
-	  connectedUsers.delete(userId);
-	  this.socketToUser.delete(client.id);
-	  console.log(`Removed socket for userId ${userId}`);
-	}
-  
-	const queueIndex = waitingQueue.findIndex(p => p.socketId === client.id);
-	if (queueIndex !== -1) {
-	  const player = waitingQueue.splice(queueIndex, 1)[0];
-	  console.log(`Removed ${player.username} from waiting queue`);
-	}
-  
-	const playerData = players.get(client.id);
-	if (playerData) {
-	  players.delete(client.id);
-	}
-  
-	let roomId: string | undefined;
-  
-	for (const [id, room] of activeRooms.entries()) {
-	  if (room.player1.socketId === client.id || room.player2.socketId === client.id) {
-		roomId = id;
-		break;
-	  }
-	}
-  
-	this.cleanupRoomBySocket(client);
-  
-	if (roomId) {
-	  this.emitPlayerInfoForRoom(roomId);
-	}
+  private findRoomBySocketId(socketId: string): [string, Room] | undefined {
+    return [...activeRooms.entries()].find(
+      ([, room]) =>
+        room.player1.socketId === socketId ||
+        room.player2.socketId === socketId
+    );
   }
   
-  
+
+  /** Handles player disconnect */
+private pendingReconnections = new Map<string, NodeJS.Timeout>();
+
+handleDisconnect(client: Socket) {
+  const userId = this.socketToUser.get(client.id);
+  const roomEntry = this.findRoomBySocketId(client.id);
+
+  if (roomEntry) {
+    const [roomId, room] = roomEntry;
+    const opponent = room.player1.socketId === client.id ? room.player2 : room.player1;
+
+    // Temporarily pause the game
+    this.server.to(roomId).emit("opponentDisconnected");
+
+    // Give 15 seconds for reconnection
+    const timeout = setTimeout(() => {
+      console.log(`Player ${client.id} did not reconnect in time`);
+
+      this.cleanupRoomBySocket(client);
+      this.emitPlayerInfoForRoom(roomId);
+      this.tryMatchPlayers();
+
+      this.pendingReconnections.delete(roomId);
+    }, 15000);
+
+    this.pendingReconnections.set(roomId, timeout);
+  }
+
+  // Normal cleanup
+  connectedUsers.delete(userId!);
+  this.socketToUser.delete(client.id);
+}  
 
   /** Handles player registration */
   @SubscribeMessage("registerUser")
@@ -284,14 +395,19 @@ async handleRegisterUser(client: Socket, payload: any) {
   const player = { userId: user.id, username, socketId: client.id, playerNumber };
   waitingQueue.push(player);
 
+  console.log("Current waiting queue:", waitingQueue.map(p => p.username));
+
+
 //   this.emitPlayerInfo(roomId);
 
-  if (!this.server?.sockets?.sockets) {
-    console.warn("Server not ready, delaying match attempt...");
-    setTimeout(() => this.tryMatchPlayers(), 1000);
-  } else {
-    this.tryMatchPlayers();
-  }
+const socketsMap = await this.waitForSocketsMap();
+if (!socketsMap) {
+  console.error("server sockets not available after retries. Cannot match players.");
+  return;
+}
+
+this.tryMatchPlayers();
+
 }
 
   
@@ -336,17 +452,21 @@ async handleRegisterUser(client: Socket, payload: any) {
   
   @SubscribeMessage("playerReady")
   handlePlayerReady(@ConnectedSocket() client: Socket) {
-	const playerInfo = players.get(client.id);
-	if (!playerInfo) return;
+    const playerInfo = players.get(client.id);
+    if (!playerInfo) return;
   
-	this.pongService.incrementReadyPlayers();
-	if (this.pongService.areBothPlayersReady()) {
-	  this.server.emit("bothPlayersReady");
-	  this.pongService.resetGame(this.server);
-	} else {
-	  client.emit("waitingForOpponent", { waitingFor: playerInfo.username });
-	}
-  } 
+    this.pongService.incrementReadyPlayers();
+    
+    if (this.pongService.areBothPlayersReady()) {
+      this.server.emit("bothPlayersReady");
+      this.pongService.resetGame(this.server);
+    } else {
+      client.emit("waitingForOpponent", { waitingFor: playerInfo.username });
+    }
+  
+    this.tryMatchPlayers();
+  }
+  
 
 
   // Handles player movement
@@ -439,5 +559,12 @@ async handleRegisterUser(client: Socket, payload: any) {
        this.server.to(roomId).emit("powerUpCooldown", { cooldown: 5000 });
   }
 
-  
+  @SubscribeMessage('leaveGame')
+handleLeaveGame(@ConnectedSocket() client: Socket) {
+  console.log(`${client.id} manually left the game`);
+  this.handleDisconnect(client);
+
+  this.tryMatchPlayers();
+}
+ 
 }
