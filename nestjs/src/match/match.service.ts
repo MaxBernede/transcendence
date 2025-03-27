@@ -15,4 +15,19 @@ export class MatchService {
 	async getAllMatches() {
 		return this.matchRepo.find({ relations: ['winner', 'looser'] });
 	}
+
+	async getMatchesByUser(userId: number) {
+		return this.matchRepo.find({
+			where: [{ winner: { id: userId } }, { looser: { id: userId } }],
+			relations: ['winner', 'looser'],
+			select: {
+				id: true,
+				winnerScore: true,
+				looserScore: true,
+				date: true,
+				winner: { id: true, username: true },
+				looser: { id: true, username: true }
+			}
+		});
+	}
 }

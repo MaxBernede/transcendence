@@ -9,6 +9,7 @@ import { handleImageChange } from '../utils/UserHandlers';
 import { updateUserUsername } from '../utils/UserLogic';
 import { UserContext } from '../App'; // Import UserContext
 import ProfileBanner from '../components/ProfileBanner';
+import MatchList from '../components/MatchList';
 
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +31,7 @@ const UserPage: React.FC = () => {
           wins={userData?.wins || 0}
           losses={userData?.losses || 0}
         />
-        <MatchHistory matchHistory={matchHistory} />
+        <MatchList userId={id ? id : ""}/>
       </div>
     </div>
   );
