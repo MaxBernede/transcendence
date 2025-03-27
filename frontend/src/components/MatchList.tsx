@@ -62,12 +62,32 @@ export default function MatchList({ userId }: { userId: string }) {
 				<p>No matches found.</p>
 			) : (
 				<ul>
-					{matches.map(match => (
-						<li key={match.id} className="p-2 border-b">
-							Match {match.id}: {match.winner.id === Number(userId) ? "Win" : "Loss"} 
-							({match.winnerScore} - {match.looserScore}) on {new Date(match.date).toLocaleDateString()}
-						</li>
-					))}
+					{matches.map((match) => {
+						// Determine background color based on win/loss
+						const isWin = match.winner.id === Number(userId);
+						const backgroundColor = isWin ? 'bg-green-100' : 'bg-red-100';
+
+						return (
+							<li
+								key={match.id}
+								className={`p-4 border-b rounded-lg ${backgroundColor} shadow-md mb-2`}
+							>
+								<p className="font-semibold">Match {match.id}</p>
+								<p>
+									{isWin ? 'You won!' : 'You lost!'} ({match.winnerScore} - {match.looserScore})
+								</p>
+								<p>
+									Your Score: <strong>{isWin ? match.winnerScore : match.looserScore}</strong>
+								</p>
+								<p>
+									Opponent Score: <strong>{isWin ? match.looserScore : match.winnerScore}</strong>
+								</p>
+								<p className="text-gray-500 text-sm">
+									Played on {new Date(match.date).toLocaleDateString()}
+								</p>
+							</li>
+						);
+					})}
 				</ul>
 			)}
 		</div>

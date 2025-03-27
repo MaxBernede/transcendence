@@ -20,21 +20,34 @@ const UserPage: React.FC = () => {
 
   return (
     <div className="user-page-container">
-      <ProfileBanner></ProfileBanner>
+      <ProfileBanner />
       <div className="content-container">
         <div className="user-info">
-          <p>userId: {userData?.intraId}</p>
-          {/* check if username is same as user to print button */}
-          <LogoutButton /> 
+          <LogoutButton />
         </div>
-        <Stats
-          wins={userData?.wins || 0}
-          losses={userData?.losses || 0}
-        />
-        <MatchList userId={id ? id : ""}/>
+
+        {/* Stats centered */}
+        <div className="stats flex justify-center w-full mb-2 text-xl font-semibold text-white-800">
+          <div className="wins mx-8">
+            <strong className="text-4xl font-extrabold text-green-600">Wins:</strong> 
+            <span className="text-3xl">{userData?.wins || 0}</span>
+          </div>
+          <div className="losses mx-8">
+            <strong className="text-4xl font-extrabold text-red-600">Losses:</strong> 
+            <span className="text-3xl">{userData?.losses || 0}</span>
+          </div>
+        </div>
+      </div>
+  
+      {/* Match History below, full width */}
+      <div className="match-history mt-6 w-full">
+        <MatchList userId={id ? id : ""} />
       </div>
     </div>
   );
+  
+  
+  
 };
 
 export default UserPage;

@@ -19,12 +19,10 @@ const LogoutButton: React.FC = () => {
 
 	return (
 		<div className={'mainContainer'}>
-			<br />
 			<div className={'inputContainer'}>
 				<Button
 					variant="contained"
 					color="error"  // button color red for error
-					sx={{ marginTop: '20px' }}
 					onClick={handleLogout}
 				>
 					Log Out
