@@ -14,11 +14,6 @@ export class MatchController {
 		return this.matchService.createMatch(body.winnerId, body.looserId, body.winnerScore, body.looserScore);
 	}
 
-	@Get()
-	async getAllMatches() {
-		return this.matchService.getAllMatches();
-	}
-
 	@Get(':userId')
 	async getMatchesByUser(@Param('userId') userId: string) {
 		const parsedId = parseInt(userId, 10);
