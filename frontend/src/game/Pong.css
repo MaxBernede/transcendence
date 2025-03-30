@@ -310,17 +310,34 @@
     transition: width 0.1s linear; /* Smooth animation */
 }
 
-.pong-reconnect-banner {
+.pong-reconnect-popup {
 	position: absolute;
-	top: 10px;
+	top: 40%;
 	left: 50%;
-	transform: translateX(-50%);
-	background-color: #fff3cd;
-	color: #856404;
-	border: 1px solid #ffeeba;
-	padding: 10px 20px;
-	border-radius: 6px;
-	font-size: 1rem;
+	transform: translate(-50%, -50%);
+	background: rgba(255, 102, 178, 0.9);
+	padding: 20px 30px;
+	border-radius: 16px;
+	font-weight: bold;
 	z-index: 999;
+	box-shadow: 0 0 10px rgba(0,0,0,0.3);
+	color: white;
+	text-align: center;
   }
+  
+  .cooldown-button {
+	position: relative;
+	overflow: hidden;
+  }
+  
+  .cooldown-fill {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	height: 100%;
+	background-color: rgba(255, 255, 255, 0.3);
+	z-index: 0;
+	transition: width 1s linear;
+  }
+  
   

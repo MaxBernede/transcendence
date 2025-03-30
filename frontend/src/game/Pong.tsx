@@ -28,6 +28,10 @@ const Pong = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [powerUpCooldown, setPowerUpCooldown] = useState(false);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const cooldownInterval = useRef<NodeJS.Timeout | null>(null);
+  const cooldownRef = useRef<NodeJS.Timeout | null>(null);
 
 	
 	const {
@@ -49,17 +53,28 @@ const Pong = () => {
 		setBallStarted,
 		setPaddleHeight1,
 		setPaddleHeight2,
-        // roomId,
-        // setRoomId,
+    // roomId,
+    // setRoomId,
 	} = usePongGame(socket, playerNumber, roomId, setRoomId);
-
+  
 	const [powerUpsEnabled, setPowerUpsEnabled] = useState(true);
 	const [darkBackground, setDarkBackground] = useState(false);
 	const [loggedInUser, setLoggedInUser] = useState<string>("");
 	const [opponentUsername, setOpponentUsername] = useState<string>("WAITING...");
 	const hasListener = useRef(false);
 	const [ballPosition, setBallPosition] = useState({ x: 386, y: 294 });
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [cooldownActive, setCooldownActive] = useState(false);
+  const [cooldownDuration, setCooldownDuration] = useState(3000); // ms
 
+
+  useEffect(() => {
+    const storedRoomId = localStorage.getItem("roomId");
+    if (storedRoomId) {
+      console.log("Restored roomId from localStorage:", storedRoomId);
+      setRoomId(storedRoomId);
+    }
+  }, []);
 
 	  // Reset game state when the page refreshes
 	  useEffect(() => {
@@ -94,11 +109,22 @@ const Pong = () => {
 
 // once loggedinuser is set it registers player to server and lists connected players
 useEffect(() => {
-    if (loggedInUser) {
-      socket.emit("registerUser", { userId: userId, username: loggedInUser }); // ✅ Correct structure
-      socket.emit("requestPlayers");
+  if (loggedInUser) {
+    socket.emit("registerUser", {
+      userId,
+      username: loggedInUser,
+      roomId
+    });
+        socket.emit("requestPlayers");
+
+    if (opponentUsername === "WAITING...") {
+      setScore1(0);
+      setScore2(0);
+      setWinner(null);
     }
-  }, [loggedInUser, userId]);
+  }
+}, [loggedInUser, userId]);
+
   
   // Runs once on component mount
 useEffect(() => {
@@ -125,46 +151,59 @@ useEffect(() => {
 
 
   // listens for gamestate updates from server and updates opponents paddle and ball position
+  const justResetRef = useRef(false);
+
   useEffect(() => {
-    if (hasListener.current) return; // Prevent duplicate listeners
+    if (hasListener.current) return;
     hasListener.current = true;
-
+  
     const handleGameState = (state: any) => {
-        if (!state?.paddle1 || !state?.paddle2 || !state?.ball) return;
-
-        setPaddle1Y(state.paddle1.y);
-        setPaddle2Y(state.paddle2.y);
-        setBallPosition({ x: state.ball.x, y: state.ball.y });
-
-        if (!ballStarted && state.ball.vx !== 0 && state.ball.vy !== 0) {
-            setBallStarted(true);
-        }
-
-        if (score1 !== state.score.player1 || score2 !== state.score.player2) {
-            console.log(`Updating Scores: P1=${state.score.player1} P2=${state.score.player2}`);
-            setScore1(state.score.player1);
-            setScore2(state.score.player2);
-        }
+      if (!state?.paddle1 || !state?.paddle2 || !state?.ball) return;
+  
+      setPaddle1Y(state.paddle1.y);
+      setPaddle2Y(state.paddle2.y);
+      setBallPosition({ x: state.ball.x, y: state.ball.y });
+  
+      if (!ballStarted && state.ball.vx !== 0 && state.ball.vy !== 0) {
+        setBallStarted(true);
+      }
+  
+      // ignore game state if we just reset
+      if (justResetRef.current) {
+        console.log("ignoring old gameState after reset.");
+        justResetRef.current = false;
+        return;
+      }
+  
+      setScore1(state.score.player1);
+      setScore2(state.score.player2);
     };
-
+  
+    const handleGameReset = () => {
+      console.log("game reset triggered");
+      setScore1(0);
+      setScore2(0);
+      setBallStarted(false);
+      ballStartedRef.current = false;
+      setBallPosition({ x: 386, y: 294 });
+      setPaddle1Y(250);
+      setPaddle2Y(250);
+      justResetRef.current = true;
+  
+      // Optionally: socket.emit("requestGameState"); ← only if backend resets too
+    };
+  
     socket.on("gameState", handleGameState);
-    socket.on("gameReset", () => {
-        console.log("Game reset detected! Resetting everything...");
-        setScore1(0);
-        setScore2(0);
-        setBallStarted(false);
-        setBallPosition({ x: 386, y: 294 });
-        setPaddle1Y(250);
-        setPaddle2Y(250);
-    });
-
+    socket.on("gameReset", handleGameReset);
+  
     return () => {
-        socket.off("gameState", handleGameState);
-        socket.off("gameReset");
-        hasListener.current = false; // Allow re-registering on component re-mount
+      socket.off("gameState", handleGameState);
+      socket.off("gameReset", handleGameReset);
+      hasListener.current = false;
     };
-}, []);
-
+  }, [ballStarted]);
+  
+  
 
 
 // checks session storage for playernumber and restores it if exists
@@ -181,7 +220,9 @@ useEffect(() => {
   // listens to playerinfo updates from Websocket server
   useEffect(() => {
     const handlePlayerInfo = (players: Player[]) => {
-        console.log("Received updated player info:", players);
+      console.log("👥 Live players in room:", players);
+
+        currentPlayersRef.current = players;
 
         if (!loggedInUser) return;
 
@@ -206,10 +247,14 @@ useEffect(() => {
         if (opponent) {
             console.log(`Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`);
             setOpponentUsername(opponent.username);
-        } else {
+
+            if (players.length === 2) {
+              setIsReconnecting(false);
+            }
+            } else {
             console.warn("Opponent not found, setting to WAITING...");
             setOpponentUsername("WAITING...");
-        }
+          }
     };
 
     socket.on("playerInfo", handlePlayerInfo);
@@ -235,47 +280,72 @@ useEffect(() => {
       socket.off("registered");
     };
   }, []);
+
+
+  const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
+  const [reconnectPopupShown, setReconnectPopupShown] = useState(false);
+
+useEffect(() => {
+  if (playerInfo.length === 0 && !reconnectPopupShown) {
+    const timeout = setTimeout(() => {
+      if (playerInfo.length === 0) {
+        setReconnectPopupShown(true);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }
+}, [playerInfo, reconnectPopupShown]);
+
   
   
+  const ballStartedRef = useRef(false);
 
 
 // when user presses W / S / up / down it moves paddles and sends it to server
 const handleKeyDown = useCallback((event: KeyboardEvent) => {
-  console.log("Key pressed:", event.key);
+  if (!isRegistered || !roomId || winner || isReconnecting) return;
 
+  const opponentFound = opponentUsername !== "WAITING...";
+  let newY = 0;
 
-    if (!isRegistered || !roomId || winner || isReconnecting) return;
-  
-    const opponentFound = opponentUsername !== "WAITING...";
-    let newY = 0;
-  
-    if (playerNumber === 1) {
-      if (event.key === "w" || event.key === "ArrowUp") {
-        newY = Math.max(paddle1Y - 20, 0);
-        setPaddle1Y(newY);
-        socket.emit("playerMove", { player: 1, y: newY, roomId });
-      } else if (event.key === "s" || event.key === "ArrowDown") {
-        newY = Math.min(paddle1Y + 20, 500);
-        setPaddle1Y(newY);
-        socket.emit("playerMove", { player: 1, y: newY, roomId });
-      }
-    } else if (playerNumber === 2) {
-      if (event.key === "w" || event.key === "ArrowUp") {
-        newY = Math.max(paddle2Y - 20, 0);
-        setPaddle2Y(newY);
-        socket.emit("playerMove", { player: 2, y: newY, roomId });
-      } else if (event.key === "s" || event.key === "ArrowDown") {
-        newY = Math.min(paddle2Y + 20, 500);
-        setPaddle2Y(newY);
-        socket.emit("playerMove", { player: 2, y: newY, roomId });
-      }
+  if (playerNumber === 1) {
+    if (event.key === "w" || event.key === "ArrowUp") {
+      newY = Math.max(paddle1Y - 20, 0);
+      setPaddle1Y(newY);
+      socket.emit("playerMove", { player: 1, y: newY, roomId });
+    } else if (event.key === "s" || event.key === "ArrowDown") {
+      newY = Math.min(paddle1Y + 20, 500);
+      setPaddle1Y(newY);
+      socket.emit("playerMove", { player: 1, y: newY, roomId });
     }
-  
-    if (!ballStarted && isRegistered && opponentFound) {
-      setBallStarted(true);
-      socket.emit("startBall");
+  } else if (playerNumber === 2) {
+    if (event.key === "w" || event.key === "ArrowUp") {
+      newY = Math.max(paddle2Y - 20, 0);
+      setPaddle2Y(newY);
+      socket.emit("playerMove", { player: 2, y: newY, roomId });
+    } else if (event.key === "s" || event.key === "ArrowDown") {
+      newY = Math.min(paddle2Y + 20, 500);
+      setPaddle2Y(newY);
+      socket.emit("playerMove", { player: 2, y: newY, roomId });
     }
-  }, [isRegistered, roomId, winner, opponentUsername, playerNumber, paddle1Y, paddle2Y, ballStarted]);
+  }
+
+  if (!ballStartedRef.current && opponentFound) {
+    setBallStarted(true);
+    ballStartedRef.current = true;
+    socket.emit("startBall");
+  }
+}, [
+  isRegistered,
+  roomId,
+  winner,
+  isReconnecting,
+  opponentUsername,
+  playerNumber,
+  paddle1Y,
+  paddle2Y,
+]);
+
 
   useEffect(() => {
     socket.on("gameOver", (data) => {
@@ -308,7 +378,9 @@ useEffect(() => {
         setPaddle2Y(250);
         setPaddleHeight1(100);
         setPaddleHeight2(100);
-		setBallStarted(false);
+		  setBallStarted(false);
+      ballStartedRef.current = false;
+
 
         // Add delay to avoid syncing issues
         setTimeout(() => {
@@ -345,6 +417,8 @@ useEffect(() => {
         setPaddleHeight1(100);
         setPaddleHeight2(100);
         setBallStarted(false);
+        ballStartedRef.current = false;
+
 
         // Restore correct opponent name
         setTimeout(() => {
@@ -364,7 +438,8 @@ const [isPlayerReady, setIsPlayerReady] = useState<boolean>(false); // Track if 
 
 const handleResetGame = () => {
     console.log("Player clicked 'Play Again'... Waiting for opponent.");
-    
+
+    localStorage.removeItem("roomId"); 
     setWinner(null);  // Hide popup for THIS player
     setOpponentUsername("WAITING..."); // Show "WAITING..." until both players click
     setIsPlayerReady(true); // Mark THIS player as ready
@@ -387,6 +462,8 @@ useEffect(() => {
         setPaddleHeight1(100);
         setPaddleHeight2(100);
         setBallStarted(false);
+        ballStartedRef.current = false;
+
 
         // Request fresh player data AFTER the game resets
         setTimeout(() => {
@@ -429,7 +506,7 @@ useEffect(() => {
 useEffect(() => {
     socket.on("playerWaiting", (playerNum) => {
         if (playerNum !== playerNumber) {
-            console.log("⏳ Opponent is waiting...");
+            console.log("Opponent is waiting...");
             setOpponentUsername("WAITING...");
         }
     });
@@ -450,58 +527,60 @@ useEffect(() => {
     };
 }, []);
 
-const [isCooldown, setIsCooldown] = useState(false);
-const [cooldownTime, setCooldownTime] = useState(0);
-const [isReconnecting, setIsReconnecting] = useState(false);
-
-
 useEffect(() => {
-    socket.on("powerUpCooldown", (data) => {
-        console.log(`Cooldown activated for ${data.cooldown}ms`);
-        setIsCooldown(true);
-        setCooldownTime(data.cooldown);
+  const handleOpponentLeft = () => {
+    alert("Opponent left the game. please refresh to start new game!");
+    window.location.reload(); // or navigate("/lobby") if using react-router
+  };
 
-        let remainingTime = data.cooldown;
-        const interval = setInterval(() => {
-            remainingTime -= 100;
-            setCooldownTime(remainingTime);
+  socket.on("opponentLeft", handleOpponentLeft);
 
-            if (remainingTime <= 0) {
-                clearInterval(interval);
-                setIsCooldown(false);
-                setCooldownTime(0);
-            }
-        }, 100);
-
-        return () => clearInterval(interval);
-    });
-
-    return () => {
-        socket.off("powerUpCooldown");
-    };
+  return () => {
+    socket.off("opponentLeft", handleOpponentLeft);
+  };
 }, []);
 
 
 const handleDisablePowerUps = () => {
-    if (isCooldown) return;
+  if (cooldownActive) return;
 
-    const newState = !powerUpsEnabled;
-    setPowerUpsEnabled(newState);
-    socket.emit("togglePowerUps", { enabled: newState });
+  const newState = !powerUpsEnabled;
+
+  // Emit toggle + request cooldown start for both players
+  socket.emit("togglePowerUps", { enabled: newState });
+
+  // NOTE: cooldown will be triggered by socket event, not locally here anymore
 };
 
+
+
 useEffect(() => {
-    const handleRoomUpdate = ({ roomId }: { roomId: string }) => {
-      console.log("🎯 Hook received roomId:", roomId);
-      setRoomId(roomId);
-    };
-  
-    socket.on("gameRoomUpdate", handleRoomUpdate);
-  
-    return () => {
-      socket.off("gameRoomUpdate", handleRoomUpdate); //  cleanup
-    };
-  }, []);
+  const handleRoomUpdate = ({ roomId }: { roomId: string }) => {
+    console.log("🎯 Hook received roomId:", roomId);
+    setRoomId(roomId);
+    localStorage.setItem("roomId", roomId);
+
+    // Reset score when joining new room
+    setScore1(0);
+    setScore2(0);
+    setWinner(null);
+    setBallPosition({ x: 386, y: 294 });
+    setPaddle1Y(250);
+    setPaddle2Y(250);
+    setPaddleHeight1(100);
+    setPaddleHeight2(100);
+    setBallStarted(false);
+    ballStartedRef.current = false;
+
+  };
+
+  socket.on("gameRoomUpdate", handleRoomUpdate);
+
+  return () => {
+    socket.off("gameRoomUpdate", handleRoomUpdate);
+  };
+}, []);
+
   
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -511,141 +590,218 @@ useEffect(() => {
     };
   }, [handleKeyDown]);
 
-  useEffect(() => {
-    const handleLeave = () => {
-      socket.emit("leaveGame");
-    };
-  
-    window.addEventListener("beforeunload", handleLeave);
-  
-    return () => {
-      socket.emit("leaveGame");
-      window.removeEventListener("beforeunload", handleLeave);
-    };
-  }, []);
-  
-  useEffect(() => {
-    socket.on("opponentDisconnected", () => {
-      console.warn("⚠️ Opponent disconnected!");
-      setOpponentUsername("WAITING...");
-      setWinner(null);
-      setScore1(0);
-      setScore2(0);
-      setBallPosition({ x: 386, y: 294 });
-      setPaddle1Y(250);
-      setPaddle2Y(250);
-      setPaddleHeight1(100);
-      setPaddleHeight2(100);
-      setBallStarted(false);
-      setIsReconnecting(true);
-      setCooldownTime(15000); // 15s
-  
-      // countdown until message changes
-      const interval = setInterval(() => {
-        setCooldownTime(prev => {
-          if (prev <= 1000) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1000;
-        });
-      }, 1000);
-    });
-  
-    socket.on("resumeGame", () => {
-      console.log("game resumed after reconnect");
-      setIsReconnecting(false);
-    });
-  
-    return () => {
-      socket.off("opponentDisconnected");
-      socket.off("resumeGame");
-    };
-  }, []);
-  
-  
-  
+useEffect(() => {
+  const handleLeave = () => {
+    socket.emit("leaveGame");
+    localStorage.removeItem("roomId");
+  };
 
-// Progress bar calculation
-const cooldownProgress = Math.max(0, Math.min(100, ((5000 - cooldownTime) / 5000) * 100));
+  window.addEventListener("beforeunload", handleLeave);
 
-return (
-  <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
-
-    {isReconnecting && (
-  <div className="pong-reconnect-banner">
-    {cooldownTime > 0 ? (
-      <p>Opponent disconnected. Waiting {Math.ceil(cooldownTime / 1000)}s to reconnect...</p>
-    ) : (
-      <>
-        <p>Opponent did not return. Please refresh to start a new game.</p>
-        {/* <button onClick={handleResetGame}>PLAY AGAIN</button> */}
-      </>
-    )}
-  </div>
-)}
+  return () => {
+    socket.emit("leaveGame");
+    localStorage.removeItem("roomId");
+    window.removeEventListener("beforeunload", handleLeave);
+  };
+}, []);
 
 
-    <Scoreboard
-      score1={score1}
-      score2={score2}
-      darkMode={darkBackground}
-      loggedInUser={playerNumber === 1 ? loggedInUser : opponentUsername}
-      opponentUsername={playerNumber === 1 ? opponentUsername : loggedInUser}
-    />
+const currentPlayersRef = useRef<{ username: string; playerNumber: number }[]>([]);
 
-    <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
-      <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
+useEffect(() => {
+  let disconnectTimeout: NodeJS.Timeout | null = null;
 
-      <Paddle key={`left-${paddle1Y}`} position="left" top={paddle1Y ?? 0} height={paddleHeight1} color={darkBackground ? "#555555" : "#ff66b2"} />
-      <Paddle key={`right-${paddle2Y}`} position="right" top={paddle2Y ?? 0} height={paddleHeight2} color={darkBackground ? "#555555" : "#ff66b2"} />
+  const getCurrentPlayers = () => currentPlayersRef.current;
 
-      <Ball x={ballPosition.x} y={ballPosition.y} color={darkBackground ? "#666666" : "#ff3385"} />
+  const handleOpponentDisconnected = () => {
+    console.warn("⚠️ Opponent disconnected! Waiting before showing popup...");
+    setIsReconnecting(true);
 
-      {powerUpsEnabled && isPowerUpActive && powerUpType && (
-        <PowerUp x={powerUpX ?? 0} y={powerUpY ?? 0} isActive={isPowerUpActive} type={powerUpType} darkMode={darkBackground} />
-      )}
+    // Start timeout: only show disconnected state if no new player appears
+    disconnectTimeout = setTimeout(() => {
+      const currentPlayers = getCurrentPlayers(); // You must implement this to return latest player list
 
-      {winner && (
-        <div className="pong-winner-popup">
-          <h2>{winner} WINS! 🎉</h2>
-          <button className="play-again-button" onClick={handleResetGame}>
-            PLAY AGAIN
-          </button>
+      if (currentPlayers.length < 2) {
+        console.log("Still no opponent, triggering reconnect state.");
+        localStorage.removeItem("gameState");
+        localStorage.removeItem("roomId");
+
+        setOpponentUsername("WAITING...");
+        setWinner(null);
+        setScore1(0);
+        setScore2(0);
+        setBallPosition({ x: 386, y: 294 });
+        setPaddle1Y(250);
+        setPaddle2Y(250);
+        setPaddleHeight1(100);
+        setPaddleHeight2(100);
+        setBallStarted(false);
+        ballStartedRef.current = false;
+        setIsReconnecting(true);
+      } else {
+        console.log("Opponent already reconnected. Skipping reset.");
+      }
+    }, 2000); // 2s grace window
+  };
+
+  const handleResumeGame = () => {
+    console.log("Game resumed after reconnect");
+    if (disconnectTimeout) clearTimeout(disconnectTimeout);
+    setIsReconnecting(false);
+  };
+
+  socket.on("opponentDisconnected", handleOpponentDisconnected);
+  socket.on("resumeGame", handleResumeGame);
+
+  return () => {
+    socket.off("opponentDisconnected", handleOpponentDisconnected);
+    socket.off("resumeGame", handleResumeGame);
+    if (disconnectTimeout) clearTimeout(disconnectTimeout);
+  };
+}, [userId]);
+
+useEffect(() => {
+  return () => {
+    console.log("Cleaning up all socket and key event listeners...");
+
+    socket.off("gameState");
+    socket.off("playerInfo");
+    socket.off("powerUp");
+    socket.off("gameReset");
+    socket.off("waitingForOpponent");
+    socket.off("registered");
+    socket.off("gameRoomUpdate");
+    socket.off("gameOver");
+    socket.off("bothPlayersReady");
+    socket.off("playersReady");
+    socket.off("playerWaiting");
+    socket.off("opponentDisconnected");
+    socket.off("resumeGame");
+
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, []);
+
+useEffect(() => {
+  return () => {
+    console.log("[CLEANUP] Component unmounted. Leaving game.");
+    socket.emit("leaveGame");
+    localStorage.removeItem("roomId");
+  };
+}, []);
+
+const [showReconnectPopup, setShowReconnectPopup] = useState(false);
+
+useEffect(() => {
+  if (isReconnecting) {
+    setShowReconnectPopup(true);
+  }
+}, [isReconnecting]);
+
+useEffect(() => {
+  const timeout = setTimeout(() => {
+    if (!isReconnecting) setShowReconnectPopup(false);
+  }, 5000);
+  return () => clearTimeout(timeout);
+}, [showReconnectPopup]);
+
+useEffect(() => {
+  socket.on("powerUpsCooldown", ({ duration }) => {
+    setPowerUpCooldown(true);
+    setCooldownTime(duration / 1000); // convert ms → seconds
+
+    cooldownInterval.current = setInterval(() => {
+      setCooldownTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownInterval.current!);
+          setPowerUpCooldown(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  });
+
+  return () => {
+    socket.off("powerUpsCooldown");
+  };
+}, []);
+
+
+  return (
+    <div className={`pong-wrapper ${darkBackground ? "dark-mode" : ""}`} style={{ backgroundColor: darkBackground ? "#222222" : "#ffe6f1" }}>
+      {showReconnectPopup && (
+        <div className="pong-reconnect-popup">
+          <h3>Opponent disconnected!</h3>
+          <p>Waiting for them to reconnect...</p>
         </div>
       )}
-    </div>
 
-    <div className="pong-buttons">
-      <div className="cooldown-container">
-        <button
-          className={`toggle-button ${darkBackground ? "disabled" : ""}`}
-          onClick={handleDisablePowerUps}
-          disabled={isCooldown}
-        >
-          {isCooldown ? `COOLDOWN (${(cooldownTime / 1000).toFixed(1)}s)` :
-            (powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS")}
-        </button>
-
-        {isCooldown && (
-          <div className="cooldown-bar">
-            <div className="cooldown-progress" style={{ width: `${cooldownProgress}%` }}></div>
-            {cooldownProgress.toFixed(0)}%
+      {isReconnecting && (
+        <div className="pong-reconnect-popup">
+          <h3>Opponent disconnected!</h3>
+          <p>Waiting for them to reconnect...</p>
+        </div>
+      )}
+      <Scoreboard
+        score1={score1}
+        score2={score2}
+        darkMode={darkBackground}
+        loggedInUser={playerNumber === 1 ? loggedInUser : opponentUsername}
+        opponentUsername={playerNumber === 1 ? opponentUsername : loggedInUser}
+      />
+  
+      <div ref={gameContainerRef} className={`pong-game-container ${darkBackground ? "dark-mode" : ""}`}>
+        <div className={`pong-center-line ${darkBackground ? "dark-mode" : ""}`}></div>
+  
+        <Paddle key={`left-${paddle1Y}`} position="left" top={paddle1Y ?? 0} height={paddleHeight1} color={darkBackground ? "#555555" : "#ff66b2"} />
+        <Paddle key={`right-${paddle2Y}`} position="right" top={paddle2Y ?? 0} height={paddleHeight2} color={darkBackground ? "#555555" : "#ff66b2"} />
+  
+        <Ball x={ballPosition.x} y={ballPosition.y} color={darkBackground ? "#666666" : "#ff3385"} />
+  
+        {powerUpsEnabled && isPowerUpActive && powerUpType && (
+          <PowerUp x={powerUpX ?? 0} y={powerUpY ?? 0} isActive={isPowerUpActive} type={powerUpType} darkMode={darkBackground} />
+        )}
+  
+        {winner && (
+          <div className="pong-winner-popup">
+            <h2>{winner} WINS! 🎉</h2>
+            <button className="play-again-button" onClick={handleResetGame}>
+              PLAY AGAIN
+            </button>
           </div>
         )}
       </div>
-
-      <button
-        className={`toggle-button ${darkBackground ? "disabled" : ""}`}
-        onClick={() => setDarkBackground((prev) => !prev)}
-        style={{ minWidth: "120px" }}
-      >
-        {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
-      </button>
+  
+      <div className="pong-buttons">
+      <div className="cooldown-container">
+        <button
+          className={`toggle-button cooldown-button ${darkBackground ? "disabled" : ""}`}
+          onClick={handleDisablePowerUps}
+          disabled={powerUpCooldown}
+        >
+          <span style={{ position: "relative", zIndex: 1 }}>
+            {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
+          </span>
+          {powerUpCooldown && (
+            <div
+              className="cooldown-fill"
+              style={{ width: `${(cooldownTime / 3) * 100}%` }}
+            />
+          )}
+        </button>
+      </div>
+  
+        <button
+          className={`toggle-button ${darkBackground ? "disabled" : ""}`}
+          onClick={() => setDarkBackground((prev) => !prev)}
+          style={{ minWidth: "120px" }}
+        >
+          {darkBackground ? "PASTEL MODE" : "GOTH MODE"}
+        </button>
+      </div>
     </div>
-  </div>
-);
-
+  );
 }
 
-export default Pong;    
+export default Pong;

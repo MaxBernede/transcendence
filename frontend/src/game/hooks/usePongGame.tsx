@@ -83,25 +83,6 @@ export const usePongGame = (
 		setWinner(null); // Hide popup
 	};
 	
-
-
-	useEffect(() => {
-		socket.on("gameReset", () => {
-			console.log("Game reset received! Closing winner popup.");
-			setWinner(null); 
-		});
-	
-		socket.on("bothPlayersReady", () => {
-			console.log("Both players are ready! Waiting for confirmation...");
-			setWinner(null);
-		});
-	
-		return () => {
-			socket.off("gameReset");
-			socket.off("bothPlayersReady");
-		};
-	}, [socket]);
-	
     
     useEffect(() => {
         const handleGameRoomUpdate = ({ roomId }: { roomId: string }) => {

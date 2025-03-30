@@ -12,7 +12,6 @@ import { PongService } from './pong.service';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from "../user/user.service";
 import { CreatePongDto } from './dto/create_pong.dto';
-// import { OnModuleInit } from '@nestjs/common';
 
 export const players = new Map<
   string,
@@ -67,7 +66,6 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const socketsMap = this.server?.sockets?.sockets;
       if (socketsMap && socketsMap.size > 0) return socketsMap;
   
-      console.warn(`waiting for socketsMap... attempt ${attempt}`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
     return null;
@@ -75,7 +73,10 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
   private emitPlayerInfoForRoom(roomId: string) {
 	const room = activeRooms.get(roomId);
-	if (!room) return;
+	if (!room) {
+    console.warn(`⚠️ emitPlayerInfoForRoom called for non-existent room ${roomId}`);
+    return;
+  }
   
 	const socket1 = connectedUsers.get(room.player1.userId);
 	const socket2 = connectedUsers.get(room.player2.userId);
@@ -91,192 +92,197 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
   
   private async tryMatchPlayers() {
-    if (waitingQueue.length < 2) return;
-
-    const player1 = waitingQueue.shift()!;
-    const player2 = waitingQueue.shift()!;
-
-    const socket1 = connectedUsers.get(player1.userId);
-    const socket2 = connectedUsers.get(player2.userId);
-
-    if (!socket1 || !socket2) {
-      if (socket1) waitingQueue.unshift(player1);
-      if (socket2) waitingQueue.unshift(player2);
-      return;
-    }
-
-    const roomId = `room-${uuidv4()}`;
-    activeRooms.set(roomId, { player1, player2 });
-
-    await socket1.join(roomId);
-    await socket2.join(roomId);
-
-    players.set(socket1.id, { username: player1.username, playerNumber: 1 });
-    players.set(socket2.id, { username: player2.username, playerNumber: 2 });
-
-    const playersPayload = [
-      { userId: player1.userId, username: player1.username },
-      { userId: player2.userId, username: player2.username },
-    ];
-
-    const roomPayload = { roomId, players: playersPayload };
-    const playerInfo = [
-      { username: player1.username, playerNumber: 1 },
-      { username: player2.username, playerNumber: 2 },
-    ];
-
-    socket1.emit("playerInfo", playerInfo);
-    socket2.emit("playerInfo", playerInfo);
-
-    socket1.emit("gameRoomUpdate", roomPayload);
-    socket2.emit("gameRoomUpdate", roomPayload);
-
-    console.log("gameRoomUpdate emitted to both clients:", roomPayload);
-    this.pongService.resetGame(this.server);
-
-// ADD THIRD MOCK USER TO TEST
-if (!waitingQueue.some(p => p.userId === 999)) {
-  const mockUser = {
-    userId: 999,
-    username: 'mock-user',
-    socketId: 'mock-socket-id',
-    playerNumber: 1,
-  };
-  waitingQueue.push(mockUser);
-  console.log('mock user added to waiting queue after first match.');
-  console.log("Current waiting queue:", waitingQueue.map(p => p.username));
-  }
-  // ADD FOURTH MOCK USER TO TEST
-if (!waitingQueue.some(p => p.userId === 9999)) {
-  const mockUser = {
-    userId: 9999,
-    username: 'mock-user2',
-    socketId: 'mock-socket-id2',
-    playerNumber: 2,
-  };
-  waitingQueue.push(mockUser);
-  console.log('mock user added to waiting queue after first match.');
-  console.log("Current waiting queue:", waitingQueue.map(p => p.username));
-  }
-}
+    while (waitingQueue.length >= 2) {
+      const player1 = waitingQueue.shift()!;
+      const player2 = waitingQueue.shift()!;
   
+      const socket1 = connectedUsers.get(player1.userId);
+      const socket2 = connectedUsers.get(player2.userId);
   
-handleConnection(client: Socket) {
-  console.log(`handleConnection: ${client.id}`);
-  client.emit("waitingForOpponent", { waitingFor: client.id });
-
-  client.on("register", (player: WaitingPlayer) => {
-    console.log(`Registered: ${player.username} (ID: ${player.userId}) ↔ Socket ${client.id}`);
-
-    connectedUsers.set(player.userId, client);
-    this.socketToUser.set(client.id, player.userId);
-
-    // 🔄 Reconnect Logic
-    const roomEntry = [...activeRooms.entries()].find(
-      ([, room]) => room.player1.userId === player.userId || room.player2.userId === player.userId
-    );
-
-    if (roomEntry) {
-      const [roomId, room] = roomEntry;
-      const isPlayer1 = room.player1.userId === player.userId;
-
-      if (isPlayer1) room.player1.socketId = client.id;
-      else room.player2.socketId = client.id;
-
-      // 🧹 Cancel disconnect timeout
-      const timer = disconnectTimers.get(roomId);
-      if (timer) {
-        clearTimeout(timer);
-        disconnectTimers.delete(roomId);
-        console.log(`✅ ${player.username} reconnected to room ${roomId}`);
-      }
-
-      // 🎮 Resume Game
-      const socket1 = connectedUsers.get(room.player1.userId);
-      const socket2 = connectedUsers.get(room.player2.userId);
-
-      const playerInfo = [
-        { username: room.player1.username, playerNumber: 1 },
-        { username: room.player2.username, playerNumber: 2 },
-      ];
-
-      socket1?.emit("resumeGame");
-      socket2?.emit("resumeGame");
-      socket1?.emit("playerInfo", playerInfo);
-      socket2?.emit("playerInfo", playerInfo);
-
-      return;
-    }
-
-    // ➕ Fresh registration to matchmaking
-    const entry: WaitingPlayer = {
-      socketId: client.id,
-      userId: player.userId,
-      username: player.username,
-      playerNumber: player.playerNumber,
-    };
-
-    const i = waitingQueue.findIndex(p => p.socketId === client.id);
-    if (i !== -1) waitingQueue[i] = entry;
-    else waitingQueue.push(entry);
-
-    this.tryMatchPlayers();
-  });
-
-  client.on("disconnect", () => {
-    const userId = this.socketToUser.get(client.id);
-    console.log(`⛔ Disconnected: ${client.id} (user ${userId ?? "unknown"})`);
-
-    if (userId) {
-      connectedUsers.delete(userId);
-      this.socketToUser.delete(client.id);
-    }
-
-    // 💥 Remove from waiting queue
-    const index = waitingQueue.findIndex(p => p.socketId === client.id);
-    if (index !== -1) waitingQueue.splice(index, 1);
-
-    // ⏳ Start disconnect timeout for room player
-    const roomEntry = [...activeRooms.entries()].find(
-      ([, room]) => room.player1.socketId === client.id || room.player2.socketId === client.id
-    );
-
-    if (roomEntry) {
-      const [roomId, room] = roomEntry;
-      console.log(`Starting disconnect timer for room ${roomId}`);
-
-      const timer = setTimeout(() => {
-        console.log(`💀 Disconnect timeout expired for room ${roomId}`);
-        activeRooms.delete(roomId);
-
-        const opponent =
-        room.player1.socketId === client.id ? room.player2 : room.player1;
-      
-      if (opponent?.socketId) {
-        const socketsMap = this.server?.sockets?.sockets;
-        const opponentSocket = socketsMap?.get(opponent.socketId);
-      
-        if (opponentSocket) {
-          opponentSocket.emit("opponentDisconnected");
-      
-          waitingQueue.push({
-            username: opponent.username,
-            socketId: opponent.socketId,
-            userId: opponent.userId,
-            playerNumber: opponent.playerNumber,
-          });
-      
-          this.emitPlayerInfoForRoom(roomId);
-          this.tryMatchPlayers();
+      if (!socket1 || !socket2) {
+        if (socket1 && !waitingQueue.some(p => p.userId === player1.userId)) {
+          waitingQueue.unshift(player1);
         }
-      }      
-        disconnectTimers.delete(roomId);
-      }, 15000); // 15 seconds
-
-      disconnectTimers.set(roomId, timer);
+        if (socket2 && !waitingQueue.some(p => p.userId === player2.userId)) {
+          waitingQueue.unshift(player2);
+        }
+        continue;
+      }
+  
+      const roomId = `room-${uuidv4()}`;
+      activeRooms.set(roomId, { player1, player2 });
+  
+      await socket1.join(roomId);
+      await socket2.join(roomId);
+  
+      players.set(socket1.id, { username: player1.username, playerNumber: 1 });
+      players.set(socket2.id, { username: player2.username, playerNumber: 2 });
+  
+      const playersPayload = [
+        { userId: player1.userId, username: player1.username },
+        { userId: player2.userId, username: player2.username },
+      ];
+      const roomPayload = { roomId, players: playersPayload };
+      const playerInfo = [
+        { username: player1.username, playerNumber: 1 },
+        { username: player2.username, playerNumber: 2 },
+      ];
+  
+      socket1.emit("playerInfo", playerInfo);
+      socket2.emit("playerInfo", playerInfo);
+      socket1.emit("gameRoomUpdate", roomPayload);
+      socket2.emit("gameRoomUpdate", roomPayload);
+  
+      console.log("gameRoomUpdate emitted to both clients:", roomPayload);
+  
+      this.pongService.resetGame(this.server, roomId);
     }
-  });
-}
+  
+    console.log("current waiting queue:", waitingQueue.map(p => p.username));
+  }
+  handleConnection(client: Socket) {
+    console.log(`handleConnection: ${client.id}`);
+    client.emit("waitingForOpponent", { waitingFor: client.id });
+  
+    client.on("register", (player: WaitingPlayer & { roomId?: string }) => {
+      console.log(`Registered: ${player.username} (ID: ${player.userId}) ↔ Socket ${client.id}`);
+  
+      connectedUsers.set(player.userId, client);
+      this.socketToUser.set(client.id, player.userId);
+  
+      // clear disconnect timer
+      for (const [roomId, timeout] of disconnectTimers.entries()) {
+        const room = activeRooms.get(roomId);
+        if (!room) continue;
+  
+        const isPlayer =
+          room.player1.userId === player.userId || room.player2.userId === player.userId;
+        if (isPlayer) {
+          clearTimeout(timeout);
+          disconnectTimers.delete(roomId);
+          console.log(`🧹 Cleared stale disconnect timer for room ${roomId} (user ${player.username})`);
+        }
+      }
+  
+      // reconnecting to known room
+      if (player.roomId) {
+        const room = activeRooms.get(player.roomId);
+        if (
+          room &&
+          (room.player1.userId === player.userId || room.player2.userId === player.userId)
+        ) {
+          console.log(`reconnecting ${player.username} to existing room ${player.roomId}`);
+  
+          if (room.player1.userId === player.userId) room.player1.socketId = client.id;
+          else room.player2.socketId = client.id;
+  
+          const socket1 = connectedUsers.get(room.player1.userId);
+          const socket2 = connectedUsers.get(room.player2.userId);
+  
+          const playerInfo = [
+            { username: room.player1.username, playerNumber: 1 },
+            { username: room.player2.username, playerNumber: 2 },
+          ];
+  
+          client.emit("resumeGame"); //  only send popup to reconnecting client
+          socket1?.emit("playerInfo", playerInfo);
+          socket2?.emit("playerInfo", playerInfo);
+  
+          const opponent = room.player1.userId === player.userId ? room.player2 : room.player1;
+          const opponentSocket = connectedUsers.get(opponent.userId);
+          opponentSocket?.emit("opponentReconnected");
+  
+          return;
+        }
+      }
+  
+      // fallback — not in room, queue player
+      const entry: WaitingPlayer = {
+        socketId: client.id,
+        userId: player.userId,
+        username: player.username,
+        playerNumber: player.playerNumber,
+      };
+  
+      const i = waitingQueue.findIndex(p => p.socketId === client.id);
+      if (i !== -1) waitingQueue[i] = entry;
+      else waitingQueue.push(entry);
+  
+      this.tryMatchPlayers();
+    });
+  
+    // disconnect logic
+    client.on("disconnect", () => {
+      const userId = this.socketToUser.get(client.id);
+      console.log(`disconnected: ${client.id} (user ${userId ?? "unknown"})`);
+  
+      if (userId) {
+        connectedUsers.delete(userId);
+        this.socketToUser.delete(client.id);
+      }
+  
+      const index = waitingQueue.findIndex(p => p.socketId === client.id);
+      if (index !== -1) waitingQueue.splice(index, 1);
+  
+      const roomEntry = [...activeRooms.entries()].find(
+        ([, room]) => room.player1.socketId === client.id || room.player2.socketId === client.id
+      );
+  
+      if (roomEntry) {
+        const [roomId, room] = roomEntry;
+        console.log(`starting disconnect timer for room ${roomId}`);
+  
+        const timer = setTimeout(() => {
+          const stillRoom = activeRooms.get(roomId);
+          if (!stillRoom) return;
+  
+          if (
+            stillRoom.player1.socketId !== client.id &&
+            stillRoom.player2.socketId !== client.id
+          ) {
+            console.log("player reconnected with a new socket. Skip timeout cleanup.");
+            return;
+          }
+  
+          console.log(`player ${client.id} did not reconnect in time. Cleaning up room ${roomId}`);
+          activeRooms.delete(roomId);
+          this.emitPlayerInfoForRoom(roomId);
+
+          
+  
+          const opponent =
+            stillRoom.player1.socketId === client.id ? stillRoom.player2 : stillRoom.player1;
+
+            if (!opponent?.socketId) {
+              console.warn(`⚠️ No valid opponent socket for room ${roomId}, skipping emit`);
+              disconnectTimers.delete(roomId);
+              return;
+            }
+
+            
+
+  
+            if (!waitingQueue.some(p => p.userId === opponent.userId)) {
+              waitingQueue.push({
+                username: opponent.username,
+                socketId: opponent.socketId,
+                userId: opponent.userId,
+                playerNumber: opponent.playerNumber,
+              });
+            }
+  
+            this.emitPlayerInfoForRoom(roomId);
+            this.tryMatchPlayers();
+  
+          disconnectTimers.delete(roomId);
+        }, 5000);
+  
+        disconnectTimers.set(roomId, timer);
+      }
+    });
+  }
+  
+  
 
 
 private cleanupRoomBySocket(client: Socket) {
@@ -292,7 +298,14 @@ private cleanupRoomBySocket(client: Socket) {
           opponentSocket.emit("opponentDisconnected");
         }
 
+        if (opponentSocket) {
+          opponentSocket.emit("opponentLeft");
+          opponentSocket.emit("playerInfo", []);
+        }
+        
+
         activeRooms.delete(roomId);
+        this.emitPlayerInfoForRoom(roomId);
         console.log(`cleaned up room ${roomId} due to disconnect of ${client.id}`);
         break;
       }
@@ -307,39 +320,46 @@ private cleanupRoomBySocket(client: Socket) {
     );
   }
   
-
-  /** Handles player disconnect */
+/** Handles player disconnect */
 private pendingReconnections = new Map<string, NodeJS.Timeout>();
 
 handleDisconnect(client: Socket) {
   const userId = this.socketToUser.get(client.id);
   const roomEntry = this.findRoomBySocketId(client.id);
 
-  if (roomEntry) {
-    const [roomId, room] = roomEntry;
-    const opponent = room.player1.socketId === client.id ? room.player2 : room.player1;
-
-    // Temporarily pause the game
-    this.server.to(roomId).emit("opponentDisconnected");
-
-    // Give 15 seconds for reconnection
-    const timeout = setTimeout(() => {
-      console.log(`Player ${client.id} did not reconnect in time`);
-
-      this.cleanupRoomBySocket(client);
-      this.emitPlayerInfoForRoom(roomId);
-      this.tryMatchPlayers();
-
-      this.pendingReconnections.delete(roomId);
-    }, 15000);
-
-    this.pendingReconnections.set(roomId, timeout);
-  }
-
-  // Normal cleanup
   connectedUsers.delete(userId!);
   this.socketToUser.delete(client.id);
-}  
+
+  if (!roomEntry) return;
+
+  const [roomId, room] = roomEntry;
+  const opponent = room.player1.socketId === client.id ? room.player2 : room.player1;
+
+  // emit to opponent socket directly
+  const opponentSocket = connectedUsers.get(opponent.userId);
+  if (opponentSocket) {
+    opponentSocket.emit("opponentDisconnected");
+  }
+
+  // 5s grace period to reconnect
+  const timeout = setTimeout(() => {
+    const stillInRoom = this.findRoomBySocketId(client.id);
+    if (!stillInRoom) return;
+
+    console.log(`🧹 Cleaning up room ${roomId} due to timeout`);
+
+    // stop game loop & cleanup
+    this.pongService.cleanupRoom(roomId); 
+    this.cleanupRoomBySocket(client);
+    this.emitPlayerInfoForRoom(roomId);
+    this.tryMatchPlayers();
+
+    this.pendingReconnections.delete(roomId);
+  }, 5000);
+
+  this.pendingReconnections.set(roomId, timeout);
+}
+
 
   /** Handles player registration */
   @SubscribeMessage("registerUser")
@@ -353,30 +373,46 @@ async handleRegisterUser(client: Socket, payload: any) {
     return;
   }
 
-  // Check if already in a room
-  const existingRoom = this.pongService.getRoomByUserId(user.id);
-  if (!("error" in existingRoom)) {
-    const { roomId, player1, player2 } = existingRoom;
+  // Clean up stale rooms on reconnect
+  for (const [roomId, room] of activeRooms.entries()) {
+    const isPlayer =
+      room.player1.userId === user.id || room.player2.userId === user.id;
 
-    if (player1 && player2) {
-      console.warn(`Room ${roomId} is full. Rejecting new registration for user ${username}`);
-      client.emit("roomFull");
-      return;
+    const stillConnected =
+      connectedUsers.has(room.player1.userId) &&
+      connectedUsers.has(room.player2.userId);
+
+    if (isPlayer && !stillConnected) {
+      console.log(`removing stale room ${roomId} on reconnect`);
+      activeRooms.delete(roomId);
+      this.pongService.cleanupRoom(roomId);
     }
   }
 
-  // Check if already matched
-  const alreadyMatched = [...activeRooms.values()].some(
-    room => room.player1.userId === user.id || room.player2.userId === user.id
-  );
-
-  if (alreadyMatched) {
-    console.warn(`user ${username} is already in a game. Skipping registration.`);
+  // If user is already in an active game room, reject registration
+  const existingRoom = this.pongService.getRoomByUserId(user.id);
+  if (!("error" in existingRoom)) {
+    console.warn(`User ${username} is already in a game. Skipping registration.`);
     client.emit("alreadyInGame");
     return;
   }
 
-  // Track connection
+  // Prevent stale queue: remove if already queued
+  const existingIndex = waitingQueue.findIndex(p => p.userId === user.id);
+  if (existingIndex !== -1) {
+    waitingQueue.splice(existingIndex, 1);
+    console.log(`Removed duplicate entry of ${username} from waiting queue.`);
+  }
+
+  // Prevent duplicate socket registration
+  if (connectedUsers.has(user.id)) {
+    const oldSocket = connectedUsers.get(user.id);
+    if (oldSocket && oldSocket.id !== client.id) {
+      oldSocket.disconnect(true);
+    }
+  }
+
+  // Track socket connection and user mapping
   connectedUsers.set(user.id, client);
   this.socketToUser.set(client.id, user.id);
 
@@ -386,38 +422,34 @@ async handleRegisterUser(client: Socket, payload: any) {
   console.log(`Registering player: ${username} (UUID: ${user.id}) with socket ${client.id}`);
   client.emit("registered");
 
-  // Ensure no duplicates in waitingQueue
-  const existingIndex = waitingQueue.findIndex(p => p.userId === user.id);
-  if (existingIndex !== -1) {
-    waitingQueue.splice(existingIndex, 1);
-  }
-
-  const player = { userId: user.id, username, socketId: client.id, playerNumber };
+  // Add to queue
+  const player = {
+    userId: user.id,
+    username,
+    socketId: client.id,
+    playerNumber,
+  };
   waitingQueue.push(player);
 
-  console.log("Current waiting queue:", waitingQueue.map(p => p.username));
+  console.log("current waiting queue:", waitingQueue.map(p => p.username));
 
-
-//   this.emitPlayerInfo(roomId);
-
-const socketsMap = await this.waitForSocketsMap();
-if (!socketsMap) {
-  console.error("server sockets not available after retries. Cannot match players.");
-  return;
+  // Attempt to match now
+  this.tryMatchPlayers();
 }
 
-this.tryMatchPlayers();
-
-}
-
-  
 
   /** Handles game state request */
   @SubscribeMessage('requestGameState')
   handleRequestGameState(@ConnectedSocket() client: Socket) {
     console.log('Sending fresh game state to: ${client.id}');
-    client.emit('gameState', this.pongService.getGameState());
-  }
+    const roomId = this.findRoomBySocketId(client.id)?.[0];
+    if (roomId) {
+      const gameState = this.pongService.getGameState(roomId);
+      if (gameState) {
+        client.emit('gameState', gameState);
+      }
+    }
+      }
 
   /** Handles players request */
   @SubscribeMessage('requestPlayers')
@@ -455,11 +487,13 @@ this.tryMatchPlayers();
     const playerInfo = players.get(client.id);
     if (!playerInfo) return;
   
-    this.pongService.incrementReadyPlayers();
-    
-    if (this.pongService.areBothPlayersReady()) {
+    const roomId = this.findRoomBySocketId(client.id)?.[0];
+    if (!roomId) return;
+    this.pongService.incrementReadyPlayers(roomId);
+        
+    if (this.pongService.areBothPlayersReady(roomId)) {
       this.server.emit("bothPlayersReady");
-      this.pongService.resetGame(this.server);
+      this.pongService.resetGame(this.server, roomId);
     } else {
       client.emit("waitingForOpponent", { waitingFor: playerInfo.username });
     }
@@ -491,14 +525,19 @@ this.tryMatchPlayers();
       return;
     }
   
+    const gameState = this.pongService.getGameState(roomId);
+    if (!gameState) return;
+    
     const prevY =
       playerInfo.playerNumber === 1
-        ? this.pongService.getGameState().paddle1.y
-        : this.pongService.getGameState().paddle2.y;
+        ? gameState.paddle1.y
+        : gameState.paddle2.y;
+    
   
     if (Math.abs(prevY - data.y) < 5) return;
   
     const updated = this.pongService.updatePaddlePosition(
+      data.roomId,
       playerInfo.playerNumber,
       data.y,
       this.server,
@@ -517,54 +556,111 @@ this.tryMatchPlayers();
       y: data.y,
     });
   
-    const updatedState = this.pongService.getGameState();
-    this.server.to(roomId).emit('gameState', updatedState);
+    const updatedState = this.pongService.getGameState(roomId);
+    if (updatedState) {
+      this.server.to(roomId).emit('gameState', updatedState);
+    }    
   }
   
 
   /** Handles power-up collection */
   @SubscribeMessage('powerUpCollected')
-  handlePowerUpCollected(@MessageBody() data: { player: number }) {
-    this.pongService.applyPowerUpEffect(data.player, this.server);
+  handlePowerUpCollected(
+    @MessageBody() data: { player: number },
+    @ConnectedSocket() client: Socket
+  ) {
+    const roomEntry = [...activeRooms.entries()].find(
+      ([, room]) =>
+        room.player1.socketId === client.id ||
+        room.player2.socketId === client.id
+    );
+  
+    if (!roomEntry) return;
+    const [roomId] = roomEntry;
+  
+    this.pongService.applyPowerUpEffect(roomId, data.player, this.server);
   }
-
+  
   @SubscribeMessage('togglePowerUps')
   handleTogglePowerUps(
-      @MessageBody() data: { enabled: boolean },
-      @ConnectedSocket() client: Socket
+    @MessageBody() data: { enabled: boolean },
+    @ConnectedSocket() client: Socket
   ) {
-      let roomId = null;
+    const roomEntry = [...activeRooms.entries()].find(
+      ([, room]) =>
+        room.player1.socketId === client.id ||
+        room.player2.socketId === client.id
+    );
   
-      // Find the room where the player is
-      for (const [id, room] of activeRooms.entries()) {
-        if (
-          room.player1.socketId === client.id ||
-          room.player2.socketId === client.id
-        ) {
-          roomId = id;
-          break;
-        }
-      }      
+    if (!roomEntry) {
+      console.warn(`player ${client.id} is not assigned to any room.`);
+      return;
+    }
   
-      if (!roomId) {
-          console.warn(`⚠️ Player ${client.id} is not assigned to any room.`);
-          return;
-      }
+    const [roomId] = roomEntry;
   
-      console.log(`Power-ups toggled in room ${roomId}: ${data.enabled}`);
-
-      this.server.to(roomId).emit('powerUpsToggled', { enabled: data.enabled });
-
-      console.log(`Starting cooldown for power-ups in room ${roomId}`);
-       this.server.to(roomId).emit("powerUpCooldown", { cooldown: 5000 });
+    console.log(`Power-ups toggled in room ${roomId}: ${data.enabled}`);
+  
+    // emit new power-up state to both players
+    this.server.to(roomId).emit('powerUpsToggled', { enabled: data.enabled });
+  
+    // emit synced cooldown trigger (e.g. 3s)
+    const cooldownMs = 3000;
+    this.server.to(roomId).emit("powerUpsCooldown", { duration: cooldownMs });
+  
+    console.log(`cooldown of ${cooldownMs}ms emitted to room ${roomId}`);
   }
+  
 
   @SubscribeMessage('leaveGame')
-handleLeaveGame(@ConnectedSocket() client: Socket) {
-  console.log(`${client.id} manually left the game`);
-  this.handleDisconnect(client);
+  handleLeaveGame(@ConnectedSocket() client: Socket) {
+    console.log(`${client.id} manually left the game`);
+  
+    const roomEntry = this.findRoomBySocketId(client.id);
+    if (!roomEntry) {
+      console.log("No active room found for socket", client.id);
+      return;
+    }
+  
+    const [roomId, room] = roomEntry;
+  
+    // Cleanly stop game loop
+    this.pongService.cleanupRoom(roomId);
+  
+    // Notify opponent
+    const opponent =
+      room.player1.socketId === client.id ? room.player2 : room.player1;
+  
+    const opponentSocket = connectedUsers.get(opponent.userId);
+    opponentSocket?.emit('opponentLeft');
 
-  this.tryMatchPlayers();
-}
+        // Notify opponent BEFORE deleting room
+    if (opponentSocket) {
+      opponentSocket.emit("opponentLeft");
+      opponentSocket.emit("playerInfo", []);
+    }
+
+    activeRooms.delete(roomId);
+    this.emitPlayerInfoForRoom(roomId); // still okay here
+
+  
+    // Remove room & socket references
+    activeRooms.delete(roomId)
+    this.emitPlayerInfoForRoom(roomId);
+
+    players.delete(client.id);
+    this.socketToUser.delete(client.id);
+    connectedUsers.delete(this.socketToUser.get(client.id)!);
+  
+    console.log(`cleaned up room ${roomId} after ${client.id} left`);
+  
+    // Add opponent back to queue (if not already)
+    if (!waitingQueue.some(p => p.userId === opponent.userId)) {
+      waitingQueue.push(opponent);
+    }
+  
+    this.tryMatchPlayers();
+  }
+  
  
 }
