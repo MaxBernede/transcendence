@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 
-export const usePongGame = (socket: Socket, playerNumber: number) => {
+export const usePongGame = (
+    socket: Socket,
+    playerNumber: number,
+    roomId: string | null,
+    setRoomId: React.Dispatch<React.SetStateAction<string | null>>
+  ) => {
+  
+
   const [paddle1Y, setPaddle1Y] = useState(250);
   const [paddle2Y, setPaddle2Y] = useState(250);
   const [paddleHeight1, setPaddleHeight1] = useState(100); 
   const [paddleHeight2, setPaddleHeight2] = useState(100); 
-  const [ballPosition, setBallPosition] = useState({ x: 390, y: 294 });
+  const [ballPosition, setBallPosition] = useState({ x: 380, y: 294 });
   const [score1, setScore1] = useState(0);
   const [score2, setScore2] = useState(0);
   const [winner, setWinner] = useState<string | null>(null);
@@ -16,7 +23,6 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
   const [isPowerUpActive, setIsPowerUpActive] = useState(false);
   const [ballStarted, setBallStarted] = useState(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
-  const [roomId, setRoomId] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -63,17 +69,6 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
         socket.off("bothPlayersReady");
     };
 	}, [socket]);
-
-	useEffect(() => {
-		socket.on("gameRoomUpdate", (data) => {
-			console.log("Assigned to room:", data.roomId);
-			setRoomId(data.roomId);
-		});
-	
-		return () => {
-			socket.off("gameRoomUpdate");
-		};
-	}, []);
 	
 
 	const handleStartGame = () => {
@@ -88,26 +83,20 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
 		setWinner(null); // Hide popup
 	};
 	
-
-
-	useEffect(() => {
-		socket.on("gameReset", () => {
-			console.log("Game reset received! Closing winner popup.");
-			setWinner(null); 
-		});
-	
-		socket.on("bothPlayersReady", () => {
-			console.log("Both players are ready! Waiting for confirmation...");
-			setWinner(null);
-		});
-	
-		return () => {
-			socket.off("gameReset");
-			socket.off("bothPlayersReady");
-		};
-	}, [socket]);
-	
-
+    
+    useEffect(() => {
+        const handleGameRoomUpdate = ({ roomId }: { roomId: string }) => {
+          console.log("received roomId:", roomId);
+          setRoomId(roomId);
+        };
+      
+        socket.on("gameRoomUpdate", handleGameRoomUpdate);
+      
+        return () => {
+          socket.off("gameRoomUpdate", handleGameRoomUpdate);
+        };
+      }, []);
+      
 	
 
   // Listen for Paddle Size Change Power-ups
@@ -157,6 +146,6 @@ export const usePongGame = (socket: Socket, playerNumber: number) => {
       setPaddle1Y,
       setPaddle2Y,
       setPaddleHeight1,
-      setPaddleHeight2
+      setPaddleHeight2,
   };
 };

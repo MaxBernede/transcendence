@@ -284,3 +284,60 @@
 	border-radius: 5px;
   }
   
+
+.toggle-button.disabled {
+    background-color: gray !important;
+    opacity: 0.6;
+}
+
+.toggle-button.disabled.dark-mode {
+    background-color: #333333 !important;
+}
+
+.cooldown-bar {
+    width: 200px;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin-top: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.cooldown-progress {
+    height: 100%;
+    background-color: #ff3385;
+    transition: width 0.1s linear; /* Smooth animation */
+}
+
+.pong-reconnect-popup {
+	position: absolute;
+	top: 40%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background: rgba(255, 102, 178, 0.9);
+	padding: 20px 30px;
+	border-radius: 16px;
+	font-weight: bold;
+	z-index: 999;
+	box-shadow: 0 0 10px rgba(0,0,0,0.3);
+	color: white;
+	text-align: center;
+  }
+  
+  .cooldown-button {
+	position: relative;
+	overflow: hidden;
+  }
+  
+  .cooldown-fill {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	height: 100%;
+	background-color: rgba(255, 255, 255, 0.3);
+	z-index: 0;
+	transition: width 1s linear;
+  }
+  
+  
