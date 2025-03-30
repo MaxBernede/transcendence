@@ -345,17 +345,29 @@ handleDisconnect(client: Socket) {
   const timeout = setTimeout(() => {
     const stillInRoom = this.findRoomBySocketId(client.id);
     if (!stillInRoom) return;
-
+  
+    const [roomId, room] = stillInRoom;
+  
+    const opponent =
+      room.player1.socketId === client.id ? room.player2 : room.player1;
+  
+    const opponentSocket = connectedUsers.get(opponent.userId);
+  
+    // only clean up room if opponent has left as well
+    if (opponentSocket) {
+      console.log(`player ${client.id} did not reconnect, but opponent still here. Keeping room ${roomId}`);
+      return;
+    }
+  
     console.log(`🧹 Cleaning up room ${roomId} due to timeout`);
-
-    // stop game loop & cleanup
-    this.pongService.cleanupRoom(roomId); 
+    this.pongService.cleanupRoom(roomId);
     this.cleanupRoomBySocket(client);
     this.emitPlayerInfoForRoom(roomId);
     this.tryMatchPlayers();
-
+  
     this.pendingReconnections.delete(roomId);
   }, 5000);
+  
 
   this.pendingReconnections.set(roomId, timeout);
 }

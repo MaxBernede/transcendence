@@ -84,7 +84,7 @@ const Pong = () => {
 		  setWinner(null);
 		  setScore1(0);
 		  setScore2(0);
-		  socket.emit("resetGame"); 
+		  // socket.emit("resetGame"); 
 		};
 	
 		window.addEventListener("beforeunload", handleBeforeUnload);
@@ -330,7 +330,7 @@ const handleKeyDown = useCallback((event: KeyboardEvent) => {
     }
   }
 
-  if (!ballStartedRef.current && opponentFound) {
+  if (!ballStartedRef.current && opponentFound && !winner) {
     setBallStarted(true);
     ballStartedRef.current = true;
     socket.emit("startBall");
@@ -556,7 +556,7 @@ const handleDisablePowerUps = () => {
 
 useEffect(() => {
   const handleRoomUpdate = ({ roomId }: { roomId: string }) => {
-    console.log("🎯 Hook received roomId:", roomId);
+    console.log("hook received roomId:", roomId);
     setRoomId(roomId);
     localStorage.setItem("roomId", roomId);
 
@@ -614,7 +614,7 @@ useEffect(() => {
   const getCurrentPlayers = () => currentPlayersRef.current;
 
   const handleOpponentDisconnected = () => {
-    console.warn("⚠️ Opponent disconnected! Waiting before showing popup...");
+    // console.warn("⚠️ Opponent disconnected! Waiting before showing popup...");
     setIsReconnecting(true);
 
     // Start timeout: only show disconnected state if no new player appears
@@ -765,32 +765,30 @@ useEffect(() => {
   
         {winner && (
           <div className="pong-winner-popup">
-            <h2>{winner} WINS! 🎉</h2>
-            <button className="play-again-button" onClick={handleResetGame}>
-              PLAY AGAIN
-            </button>
+            <h2>{winner} WINS! 🎉, refresh to play a new game! </h2>
           </div>
         )}
       </div>
   
       <div className="pong-buttons">
       <div className="cooldown-container">
-        <button
-          className={`toggle-button cooldown-button ${darkBackground ? "disabled" : ""}`}
-          onClick={handleDisablePowerUps}
-          disabled={powerUpCooldown}
-        >
-          <span style={{ position: "relative", zIndex: 1 }}>
-            {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
-          </span>
-          {powerUpCooldown && (
-            <div
-              className="cooldown-fill"
-              style={{ width: `${(cooldownTime / 3) * 100}%` }}
-            />
-          )}
-        </button>
-      </div>
+      <button
+        className={`toggle-button cooldown-button ${darkBackground ? "disabled" : ""}`}
+        onClick={handleDisablePowerUps}
+        disabled={powerUpCooldown}
+      >
+        <span style={{ position: "relative", zIndex: 1 }}>
+          {powerUpsEnabled ? "DISABLE POWER-UPS" : "ENABLE POWER-UPS"}
+        </span>
+        {powerUpCooldown && (
+          <div
+            className="cooldown-fill"
+            style={{ width: `${(cooldownTime / 3) * 100}%` }}
+          />
+        )}
+      </button>
+    </div>
+
   
         <button
           className={`toggle-button ${darkBackground ? "disabled" : ""}`}
