@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { PublicUserInfo } from "./types";
 
-import { Crown, ShieldCheck } from "lucide-react";
+import { Crown, ShieldCheck, Settings } from "lucide-react";
 
 import {
   Select,
@@ -38,6 +38,7 @@ import EventsHandler from "../../events/EventsHandler";
 import { toast } from "sonner";
 import { set } from "zod";
 import { MuteSelector } from "./chat-mute";
+import { ChangePassword } from "./change-password";
 
 interface DMComponentProps {
   participants: PublicUserInfo[];
@@ -68,6 +69,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const [selectedUser, setSelectedUser] = React.useState<PublicUserInfo | null>(
     null
   );
+  const [showChangePassword, setShowChangePassword] = React.useState(false);
 
   const handleMute = (selectedUser: PublicUserInfo) => {
     console.log("Mute button clicked");
@@ -206,8 +208,22 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
 
   return (
     <div className="space-y-2 text-left min-w-[300px]">
-      <h2 className="text-lg font-bold text-gray-300">
+      <h2 className="text-lg font-bold text-gray-300 flex justify-between items-center">
         MEMBERS - {participants.length}
+        {currentUserRole === "OWNER" && (
+          <>
+            <Settings 
+              className="w-5 h-5 cursor-pointer hover:text-blue-500 transition-colors" 
+              onClick={() => setShowChangePassword(true)}
+            />
+            {showChangePassword && (
+              <ChangePassword 
+                onClose={() => setShowChangePassword(false)} 
+                conversationId={conversationId}
+              />
+            )}
+          </>
+        )}
       </h2>
 
       {users.map((participant) => (

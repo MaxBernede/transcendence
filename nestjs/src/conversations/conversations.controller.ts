@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import {
+	ChangePasswordDto,
   CreateConversationDto,
   JoinConversationDto,
   LeaveConversationDto,
@@ -89,6 +90,11 @@ export class ConversationsController {
       user,
       joinConversationDto,
     );
+  }
+
+  @Post('change-password')
+  async changePassword(@GetUserPayload() user: TokenPayload, @Body() changePasswordDto: ChangePasswordDto) {
+    return this.conversationsService.changePassword(user, changePasswordDto);
   }
 
   @Post('update-role')

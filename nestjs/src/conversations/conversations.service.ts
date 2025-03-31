@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
+	ChangePasswordDto,
   CreateConversationDto,
   JoinConversationDto,
   LeaveConversationDto,
@@ -157,6 +158,56 @@ export class ConversationsService {
     return { message: 'User removed from conversation' };
   }
 
+  async changePassword(user: TokenPayload, changePasswordDto: ChangePasswordDto) {
+    const { id, password } = changePasswordDto;
+
+	console.log('changePasswordDto:', changePasswordDto);
+
+    const conversation = await this.conversationRepository.findOneBy({
+      id,
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    if (conversation.type !== 'GROUP') {
+      throw new BadRequestException('This conversation is not a group');
+    }
+
+	//? check if user is owner of the conversation
+	const userConversation = await this.userConversationRepository.findOneBy({
+		userId: user.sub,
+		conversationId: id,
+	});
+
+	if (!userConversation) {
+		throw new UnauthorizedException('You are not part of this conversation');
+	}
+
+	if (userConversation.role !== 'OWNER') {
+		throw new UnauthorizedException('You are not the owner of this conversation');
+	}
+
+	const hashedPassword = await argon2.hash(password);
+	if (!hashedPassword) {
+		throw new BadRequestException('Error hashing the password');
+	}
+
+	if (password === '') {
+		conversation.password = null;
+		conversation.isPrivate = false;
+		await this.conversationRepository.save(conversation);
+		return { message: 'Password changed successfully' };
+	}
+
+    conversation.password = hashedPassword;
+
+	await this.conversationRepository.save(conversation);
+
+	return { message: 'Password changed successfully' };
+  }
+
   async joinConversation(
     user: TokenPayload,
     conversationId: JoinConversationDto,
@@ -170,6 +221,10 @@ export class ConversationsService {
 
     if (!conversation) {
       throw new NotFoundException('Conversation not found');
+    }
+
+    if (conversation.isPrivate) {
+      throw new UnauthorizedException('This conversation is private');
     }
 
     if (conversation.password) {
@@ -302,6 +357,7 @@ export class ConversationsService {
         createConversationDto.participants,
         createConversationDto.name,
         createConversationDto.password,
+        createConversationDto.isPrivate,
       );
     }
     throw new BadRequestException('Invalid conversation type');
@@ -312,6 +368,7 @@ export class ConversationsService {
     participants: string[],
     groupName: string,
     password: string | null,
+	isPrivate:boolean
   ) {
     if (participants.length < 1) {
       throw new BadRequestException(
@@ -347,6 +404,7 @@ export class ConversationsService {
     const newConversation = this.conversationRepository.create({
       type: 'GROUP',
       password: passwordHash,
+      isPrivate: isPrivate,
     });
 
     // if (!groupName) {

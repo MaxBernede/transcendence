@@ -105,16 +105,22 @@ const ChatPage = () => {
 
     fetchConversations();
 
-    if (socket) {
+    // Set up socket listeners - this needs to happen even if no history yet
+    const setupSocketListeners = () => {
+      if (!socket) return;
+      
+      // First remove any existing listeners to prevent duplicates
+      socket.off("chatToClient");
+      
+      // Then add the listener again
       socket.on("chatToClient", (data: any) => {
+        console.log("Received message:", data);
         const receivedMsg: Message = {
           id: data.messageId,
           text: data.message,
           timestamp: data.timestamp,
           senderUser: data.senderUser,
         };
-
-        // console.log("receivedMsg:", receivedMsg);
 
         setMessagesByRoom((prev) => {
           const updated = new Map(prev);
@@ -123,6 +129,14 @@ const ChatPage = () => {
           return updated;
         });
       });
+    };
+
+    setupSocketListeners();
+
+    // Join the conversation room explicitly when entering the chat
+    if (socket && channelId) {
+      console.log("Joining room:", channelId);
+      socket.emit("joinRoom", { conversationId: channelId });
     }
 
     return () => {
@@ -137,6 +151,7 @@ const ChatPage = () => {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !socket || !channelId) return;
 
+    // No local message addition anymore - rely solely on server response
     socket.emit("chatToServer", {
       conversationId: channelId,
       message: newMessage,
