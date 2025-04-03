@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   UseGuards,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -81,13 +82,10 @@ export class ConversationsGateway
     private readonly conversationRepository: Repository<Conversation>,
     @InjectRepository(UserConversation)
     private readonly userConversationRepository: Repository<UserConversation>,
-    // private readonly conversationsService: ConversationsService,
-    // @Inject(ConversationsService) // Lazy injection of ConversationsService
-    // private readonly conversationsService: ConversationsService,
-
+    @Inject(forwardRef(() => ConversationsService)) //? to prevent circular dependency
+    private readonly conversationsService: ConversationsService,
     @InjectRepository(Chat)
     private readonly chatRepository: Repository<Chat>,
-
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
@@ -317,6 +315,35 @@ export class ConversationsGateway
         'User does not have access to this conversation',
       );
     }
+
+	//? if conversation is a dm, check if user is blocked by the other user
+	const conversation = await this.conversationRepository.findOne({
+		where: {
+			id: message.conversationId,
+		},
+	});
+
+	if (!conversation) {
+		throw new NotFoundException('Conversation not found');
+	}
+
+	if (conversation.type === 'DM') {
+		const convUsers = await this.userConversationRepository.find({
+			where: {
+				conversationId: message.conversationId,
+			},
+		});
+
+		const user1 = convUsers[0].userId;
+		const user2 = convUsers[1].userId;
+
+		const isBlocked = await this.conversationsService.isUserBlocked(user1, user2);
+		if (isBlocked) {
+			throw new UnauthorizedException('You are blocked or blocked by the other user');
+		}
+	}
+	
+	
 
     // //? check if user AKA me, has access to the conversationId
     // try {

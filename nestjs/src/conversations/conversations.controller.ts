@@ -33,6 +33,11 @@ export class ConversationsController {
     return this.conversationsService.muteUser(user, muteData);
   }
 
+  @Post('ban-user')
+  async banUser(@GetUserPayload() user: TokenPayload, @Body() banData: any) {
+    return this.conversationsService.banUser(user, banData);
+  }
+
   //   @Post('unmute-user')
   //   async unmuteUser(
   //     @GetUserPayload() user: TokenPayload,

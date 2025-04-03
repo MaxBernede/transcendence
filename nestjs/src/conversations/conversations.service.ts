@@ -55,6 +55,7 @@ import { checkPrimeSync } from 'crypto';
 import { ucs2 } from 'punycode';
 import { argon2d } from 'argon2';
 import { Console } from 'console';
+import { FriendsEntity } from '@/friends/entities/friends.entity';
 
 @Injectable()
 export class ConversationsService {
@@ -73,7 +74,11 @@ export class ConversationsService {
 
     private readonly eventsGateway: EventsGateway,
 
+    @Inject(forwardRef(() => ConversationsGateway))
     private readonly conversationsGateway: ConversationsGateway,
+
+    @InjectRepository(FriendsEntity)
+    private readonly friendsRepository: Repository<FriendsEntity>,
   ) {}
 
   async leaveConversation(user: TokenPayload, conversationId: string) {
@@ -1338,6 +1343,74 @@ export class ConversationsService {
     return false;
   }
 
+  async banUser(user: TokenPayload, data: any) {
+    console.log('banUser:', user, data);
+    const valid = await this.hasAuthority(
+      user.sub,
+      data.id,
+      data.conversationId,
+    );
+    if (!valid) {
+      throw new UnauthorizedException(
+        'You are not authorized to mute this user',
+      );
+    }
+    console.log('valid:', valid);
+
+	const userConv = await this.userConversationRepository.findOne({
+		where: {
+		  userId: data.id,
+		  conversationId: data.conversationId,
+		},
+	  });
+	  if (!userConv) {
+		throw new NotFoundException('User not found in the conversation');
+	  }
+
+	   //? if minutes, hours and days are all 0, then mute indefinitely
+	   if (data.minutes === 0 && data.hours === 0 && data.days === 0) {
+		userConv.banned = true;
+		console.log('userConv:', userConv);
+		await this.userConversationRepository.save(userConv);
+		return { message: 'User banned successfully' };
+	  }
+  
+	  //? if minutes, hours and days are not all 0, calcualte end date
+	  const now = new Date();
+	  const end = new Date();
+  
+	  const msPerMinute = 60 * 1000;
+	  const msPerHour = 60 * msPerMinute;
+	  const msPerDay = 24 * msPerHour;
+  
+	  const totalMs =
+		now.getTime() +
+		data.minutes * msPerMinute +
+		data.hours * msPerHour +
+		data.days * msPerDay;
+  
+	  end.setTime(totalMs);
+	  userConv.banEnd = end;
+	  userConv.banned = true;
+	  await this.userConversationRepository.save(userConv);
+
+	  const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+        conversationId: data.conversationId,
+        userId: data.id,
+        action: GroupUserStatusAction.BAN,
+        duration: 0,
+        reason: 'Banned by: ' + user.username,
+      };
+      //   const userIds = users.map((u) => u.userId);
+      this.sendEventToGroupParticipants(
+        data.conversationId,
+        eventData,
+        EventsType.GROUP_USER_STATUS_UPDATED,
+      );
+
+	  return { message: 'User banned successfully' };
+}
+
   async muteUser(user: TokenPayload, data: any) {
     console.log('muteUser:', user, data);
     const valid = await this.hasAuthority(
@@ -1421,4 +1494,18 @@ export class ConversationsService {
 
     return { message: 'User unmuted successfully' };
   }
+
+  async isUserBlocked(user: number, target: number) {
+	const existingRelationship = await this.friendsRepository.findOne({
+		where: [
+		  { mainUserId: user, secondUserId: target },
+		  { mainUserId: target, secondUserId: user },
+		],
+	  });
+	  if (existingRelationship) {
+		return existingRelationship.status === 'blocked';
+	  }
+	  return false;
+  }
 }
+

@@ -39,7 +39,7 @@ import { toast } from "sonner";
 import { set } from "zod";
 import { MuteSelector } from "./chat-mute";
 import { ChangePassword } from "./change-password";
-
+import { BanSelector } from "./chat-ban";
 interface DMComponentProps {
   participants: PublicUserInfo[];
   currentUserId: number;
@@ -66,6 +66,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const banned_users = participants.filter((p) => p.banned);
 
   const [renderMuteSelect, setRenderMuteSelect] = React.useState(false);
+  const [renderBanSelect, setRenderBanSelect] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<PublicUserInfo | null>(
     null
   );
@@ -80,6 +81,17 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const handleCloseMute = () => {
     setRenderMuteSelect(false);
   };
+
+  const handleBan = (selectedUser: PublicUserInfo) => {
+    console.log("Ban button clicked");
+    setSelectedUser(selectedUser);
+    setRenderBanSelect(true);
+  };
+
+  const handleCloseBan = () => {
+    setRenderBanSelect(false);
+  };
+  
 
   const handleUnmute = async (userId: number) => {
     console.log("Unmuting user:", userId);
@@ -345,9 +357,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
                   </ContextMenuItem>
 
                   <ContextMenuItem
-                    onClick={() =>
-                      banUserFromGroup(participant.id, conversationId)
-                    }
+                    onClick={() => handleBan(participant)}
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
                     Ban
@@ -382,9 +392,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
                   </ContextMenuItem>
 
                   <ContextMenuItem
-                    onClick={() =>
-                      banUserFromGroup(participant.id, conversationId)
-                    }
+                    onClick={() => handleBan(participant)}
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
                     Ban
@@ -456,6 +464,13 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
         <MuteSelector
           targetUser={selectedUser as PublicUserInfo}
           onClose={handleCloseMute}
+          conversationId={conversationId}
+        />
+      )}
+      {renderBanSelect && (
+        <BanSelector
+          targetUser={selectedUser as PublicUserInfo}
+          onClose={handleCloseBan}
           conversationId={conversationId}
         />
       )}
