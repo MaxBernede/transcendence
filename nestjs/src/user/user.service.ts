@@ -134,10 +134,15 @@ export class UserService {
         ? { id: idOrUsername }
         : { username: idOrUsername };
 
-    const user = await this.userRepository.findOne({
-      where: whereClause,
-      relations: ['friends', 'matchHistory'],
-    });
+    // const user = await this.userRepository.findOne({
+    //   where: whereClause,
+    //   relations: ['friends', 'matchHistory'],
+    // });
+
+	const user = await this.userRepository.findOne({
+		where: whereClause,
+		relations: ['friends'],
+	  });
 
     if (!user) {
       throw new NotFoundException(
