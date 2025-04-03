@@ -11,3 +11,5 @@ dist/
 
 # Ignore system files
 .DS_Store
+
+nestjs/drizzle

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@clevali/trycatch": "^1.0.3"
+  }
+}

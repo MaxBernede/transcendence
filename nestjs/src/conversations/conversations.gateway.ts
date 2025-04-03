@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   UseGuards,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -81,13 +82,10 @@ export class ConversationsGateway
     private readonly conversationRepository: Repository<Conversation>,
     @InjectRepository(UserConversation)
     private readonly userConversationRepository: Repository<UserConversation>,
-    // private readonly conversationsService: ConversationsService,
-    // @Inject(ConversationsService) // Lazy injection of ConversationsService
-    // private readonly conversationsService: ConversationsService,
-
+    @Inject(forwardRef(() => ConversationsService)) //? to prevent circular dependency
+    private readonly conversationsService: ConversationsService,
     @InjectRepository(Chat)
     private readonly chatRepository: Repository<Chat>,
-
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
@@ -318,6 +316,35 @@ export class ConversationsGateway
       );
     }
 
+	//? if conversation is a dm, check if user is blocked by the other user
+	const conversation = await this.conversationRepository.findOne({
+		where: {
+			id: message.conversationId,
+		},
+	});
+
+	if (!conversation) {
+		throw new NotFoundException('Conversation not found');
+	}
+
+	if (conversation.type === 'DM') {
+		const convUsers = await this.userConversationRepository.find({
+			where: {
+				conversationId: message.conversationId,
+			},
+		});
+
+		const user1 = convUsers[0].userId;
+		const user2 = convUsers[1].userId;
+
+		const isBlocked = await this.conversationsService.isUserBlocked(user1, user2);
+		if (isBlocked) {
+			throw new UnauthorizedException('You are blocked or blocked by the other user');
+		}
+	}
+	
+	
+
     // //? check if user AKA me, has access to the conversationId
     // try {
     //   const userConversation = await this.userConversationRepository.findOne({
@@ -364,5 +391,39 @@ export class ConversationsGateway
     };
 
     this.wss.to(message.conversationId).emit('chatToClient', res);
+  }
+
+  // New explicit handler for joining a room
+  @SubscribeMessage('joinRoom')
+  async handleJoinRoom(client: Socket, data: { conversationId: string }): Promise<void> {
+    const isValid = await this.validateClient(client);
+    if (isValid === false) {
+      return;
+    }
+
+    const user = client['user'];
+    console.log(`User ${user.username} manually joining room ${data.conversationId}`);
+
+    // Check if user has access to this conversation
+    try {
+      const userConversation = await this.userConversationRepository.findOne({
+        where: {
+          userId: user.sub,
+          conversationId: data.conversationId,
+          banned: false,
+        },
+      });
+      
+      if (!userConversation) {
+        console.log(`User ${user.username} doesn't have access to conversation ${data.conversationId}`);
+        return;
+      }
+
+      // Join the room
+      client.join(data.conversationId);
+      console.log(`User ${user.username} joined room: ${data.conversationId}`);
+    } catch (error) {
+      console.error('Error joining room:', error);
+    }
   }
 }
