@@ -25,6 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
+import { Checkbox } from "../ui/checkbox";
 
 import { z } from "zod";
 
@@ -37,6 +38,7 @@ import { useNavigate } from "react-router-dom";
 const newGroupSchema = z.object({
   groupName: z.string().optional(),
   password: z.string().optional(),
+  isPrivate: z.boolean().default(false),
   participants: z
     .string()
     .regex(/^[a-zA-Z0-9]+$/, "Username must be alphanumeric")
@@ -59,6 +61,7 @@ export const CreateNewGroup = () => {
     defaultValues: {
       groupName: "",
       password: "",
+      isPrivate: false,
       participants: "",
     },
   });
@@ -84,6 +87,13 @@ export const CreateNewGroup = () => {
     setError(null);
   };
 
+  const handleCloseDialog = () => {
+    form.reset();
+    setParticipants([]);
+    setIsOpen(false);
+    setError(null);
+  };
+
   const customSubmit = async () => {
     const formData = form.getValues();
     // console.log("Custom form submitted", data);
@@ -93,6 +103,7 @@ export const CreateNewGroup = () => {
       type: "GROUP",
       name: formData.groupName,
       password: formData.password,
+      isPrivate: formData.isPrivate,
       participants: participants,
     };
 
@@ -109,7 +120,7 @@ export const CreateNewGroup = () => {
       console.log("Created group:", data);
       console.log("Navigating to chat page...");
       navigate(`/chat/${data.id}`);
-      setIsOpen(false);
+      handleCloseDialog();
       setError(null);
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -131,12 +142,6 @@ export const CreateNewGroup = () => {
     setLoading(false);
   };
 
-  const handleCloseDialog = () => {
-    form.reset();
-    setIsOpen(false);
-    setError(null);
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !loading) {
       e.preventDefault();
@@ -144,14 +149,16 @@ export const CreateNewGroup = () => {
     }
     if (e.key === "Escape") {
       console.log("Escape key pressed");
-      setError(null);
-      setIsOpen(false);
       handleCloseDialog();
     }
   };
 
   return (
-    <AlertDialog open={isOpen}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        handleCloseDialog();
+      }
+    }}>
       <AlertDialogTrigger asChild>
         <Button className="bg-cyan-700" onClick={handleOpenDialog}>
           Create New Group
@@ -185,23 +192,43 @@ export const CreateNewGroup = () => {
 
               <FormField
                 control={form.control}
-                name="password"
+                name="isPrivate"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor="password">
-                      Password (optional)
-                    </FormLabel>
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        placeholder="password"
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Private Group</FormLabel>
+                    </div>
                   </FormItem>
                 )}
               />
+
+              {!form.watch("isPrivate") && (
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="password">
+                        Password (optional)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="password"
+                          placeholder="password"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

@@ -27,6 +27,9 @@ export class Conversation {
   @Column({ type: 'text', default: null })
   password: string;
 
+  @Column({ type: 'boolean', default: false })
+  isPrivate: boolean;
+
   // Relationship with the UserConversation join table (many-to-one)
   @OneToMany(
     () => UserConversation,

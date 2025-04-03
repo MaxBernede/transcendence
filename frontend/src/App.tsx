@@ -70,6 +70,7 @@ function App() {
       }}
     >  
 	  <BrowserRouter>
+	  <Toaster position="bottom-right" richColors />
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />

@@ -6,6 +6,7 @@ import {
   Res,
   Req,
   UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from 'src/decorators/public.decorator';
@@ -18,6 +19,9 @@ import { User } from 'src/user/user.entity';
 import { UserService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+
+import { TokenPayload } from './dto/token-payload';
+import * as cookie from 'cookie';
 
 @Controller('auth')
 export class AuthController {
@@ -92,7 +96,7 @@ export class AuthController {
     }
   }
 
-@Public()
+  @Public()
 @Post('login')
 @ApiOperation({ summary: 'Login without password' })
 @ApiBody({
@@ -129,6 +133,67 @@ async login(@Body() loginDto: { username: string }, @Res() res: Response) {
   } catch (error) {
     console.error('Login error:', error.message);
     return res.status(500).json({ message: 'Login failed' });
+  }
+}
+
+//! FOR DEVELOPMENT PURPOSES ONLY
+@Public()
+@Post('login2')
+@ApiOperation({ summary: 'Create a new conversation' })
+@ApiBody({
+  description: 'login',
+  examples: {
+	Example: {
+	  value: {
+		username: 'user', // Only two participants for DM
+	  },
+	},
+  },
+})
+@ApiResponse({ status: 400, description: 'Bad Request' })
+async login2(@Body() loginDto: { username: string }, @Res() res: Response) {
+
+	console.log('loginDto:', loginDto);	
+  try {
+	const user = await this.userRepository.findOne({
+	  where: { username: loginDto.username },
+	});
+
+	console.log('user:', user);
+
+	if (!user) {
+	  console.log('Internal Server Error: User not found');
+	  throw new InternalServerErrorException('User not found');
+	}
+	const payload = typeof TokenPayload;
+	const p: TokenPayload = {
+	  sub: user.id,
+	  username: user.username,
+	  email: user.email,
+	};
+
+	console.log('p:', p);
+
+	const jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
+	console.log('JWT_SECRET:', jwtSecret);
+	const jwt = this.jwtService.sign(p, { secret: jwtSecret });
+
+	res.setHeader('Set-Cookie', [
+	  cookie.serialize('jwt', jwt, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: 'strict',
+		maxAge: 3600, // 1hr
+		path: '/',
+	  }),
+	]);
+	return res.json({ message: 'Login successful' });
+  } catch (error) {
+	console.error(
+	  'Failed to fetch JWT:',
+	  error.response?.data || error.message,
+	);
+	return res.status(500).json({ message: 'Failed to fetch JWT.' });
   }
 }
 }

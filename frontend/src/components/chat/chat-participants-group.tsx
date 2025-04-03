@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { PublicUserInfo } from "./types";
 
-import { Crown, ShieldCheck } from "lucide-react";
+import { Crown, ShieldCheck, Settings } from "lucide-react";
 
 import {
   Select,
@@ -38,7 +38,8 @@ import EventsHandler from "../../events/EventsHandler";
 import { toast } from "sonner";
 import { set } from "zod";
 import { MuteSelector } from "./chat-mute";
-
+import { ChangePassword } from "./change-password";
+import { BanSelector } from "./chat-ban";
 interface DMComponentProps {
   participants: PublicUserInfo[];
   currentUserId: number;
@@ -65,9 +66,11 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const banned_users = participants.filter((p) => p.banned);
 
   const [renderMuteSelect, setRenderMuteSelect] = React.useState(false);
+  const [renderBanSelect, setRenderBanSelect] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<PublicUserInfo | null>(
     null
   );
+  const [showChangePassword, setShowChangePassword] = React.useState(false);
 
   const handleMute = (selectedUser: PublicUserInfo) => {
     console.log("Mute button clicked");
@@ -78,6 +81,17 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const handleCloseMute = () => {
     setRenderMuteSelect(false);
   };
+
+  const handleBan = (selectedUser: PublicUserInfo) => {
+    console.log("Ban button clicked");
+    setSelectedUser(selectedUser);
+    setRenderBanSelect(true);
+  };
+
+  const handleCloseBan = () => {
+    setRenderBanSelect(false);
+  };
+  
 
   const handleUnmute = async (userId: number) => {
     console.log("Unmuting user:", userId);
@@ -206,8 +220,22 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
 
   return (
     <div className="space-y-2 text-left min-w-[300px]">
-      <h2 className="text-lg font-bold text-gray-300">
+      <h2 className="text-lg font-bold text-gray-300 flex justify-between items-center">
         MEMBERS - {participants.length}
+        {currentUserRole === "OWNER" && (
+          <>
+            <Settings 
+              className="w-5 h-5 cursor-pointer hover:text-blue-500 transition-colors" 
+              onClick={() => setShowChangePassword(true)}
+            />
+            {showChangePassword && (
+              <ChangePassword 
+                onClose={() => setShowChangePassword(false)} 
+                conversationId={conversationId}
+              />
+            )}
+          </>
+        )}
       </h2>
 
       {users.map((participant) => (
@@ -329,9 +357,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
                   </ContextMenuItem>
 
                   <ContextMenuItem
-                    onClick={() =>
-                      banUserFromGroup(participant.id, conversationId)
-                    }
+                    onClick={() => handleBan(participant)}
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
                     Ban
@@ -366,9 +392,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
                   </ContextMenuItem>
 
                   <ContextMenuItem
-                    onClick={() =>
-                      banUserFromGroup(participant.id, conversationId)
-                    }
+                    onClick={() => handleBan(participant)}
                     className="hover:bg-red-700 text-white px-4 py-2 rounded-md"
                   >
                     Ban
@@ -440,6 +464,13 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
         <MuteSelector
           targetUser={selectedUser as PublicUserInfo}
           onClose={handleCloseMute}
+          conversationId={conversationId}
+        />
+      )}
+      {renderBanSelect && (
+        <BanSelector
+          targetUser={selectedUser as PublicUserInfo}
+          onClose={handleCloseBan}
           conversationId={conversationId}
         />
       )}

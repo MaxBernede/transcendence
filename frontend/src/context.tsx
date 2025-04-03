@@ -6,6 +6,7 @@ import axios from "axios";
 export const userPayload = z.object({
   id: number(),
   username: string().nonempty(),
+  avatar: string().optional(),
 });
 
 export type UserPayload = z.infer<typeof userPayload>;

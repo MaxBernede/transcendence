@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -28,6 +29,15 @@ export class CreateConversationDto {
   @IsString()
   @IsOptional()
   password: string;
+
+  @ApiProperty({
+    description: 'Whether the conversation is private.',
+    example: false,
+    required: false, // Optional field, only needed for GROUP type
+  })
+  @IsBoolean()
+  @IsOptional()
+  isPrivate: boolean;
 
   @ApiProperty({
     description:
@@ -97,4 +107,13 @@ export class CreateConversationGroupDto {
   @ArrayNotEmpty()
   @IsUUID('all', { each: true }) // Ensures that all items in the array are valid UUIDs
   participants: string[]; // List of participant IDs
+}
+
+export class ChangePasswordDto {
+  @IsUUID() // Ensures that the conversationId is a valid UUID
+  @IsNotEmpty()
+  id: string; // ID of the conversation to change the password
+
+  @IsString()
+  password: string; // New password for the conversation
 }

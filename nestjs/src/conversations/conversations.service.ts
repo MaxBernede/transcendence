@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
+	ChangePasswordDto,
   CreateConversationDto,
   JoinConversationDto,
   LeaveConversationDto,
@@ -54,6 +55,7 @@ import { checkPrimeSync } from 'crypto';
 import { ucs2 } from 'punycode';
 import { argon2d } from 'argon2';
 import { Console } from 'console';
+import { FriendsEntity } from '@/friends/entities/friends.entity';
 
 @Injectable()
 export class ConversationsService {
@@ -72,7 +74,11 @@ export class ConversationsService {
 
     private readonly eventsGateway: EventsGateway,
 
+    @Inject(forwardRef(() => ConversationsGateway))
     private readonly conversationsGateway: ConversationsGateway,
+
+    @InjectRepository(FriendsEntity)
+    private readonly friendsRepository: Repository<FriendsEntity>,
   ) {}
 
   async leaveConversation(user: TokenPayload, conversationId: string) {
@@ -157,6 +163,56 @@ export class ConversationsService {
     return { message: 'User removed from conversation' };
   }
 
+  async changePassword(user: TokenPayload, changePasswordDto: ChangePasswordDto) {
+    const { id, password } = changePasswordDto;
+
+	console.log('changePasswordDto:', changePasswordDto);
+
+    const conversation = await this.conversationRepository.findOneBy({
+      id,
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    if (conversation.type !== 'GROUP') {
+      throw new BadRequestException('This conversation is not a group');
+    }
+
+	//? check if user is owner of the conversation
+	const userConversation = await this.userConversationRepository.findOneBy({
+		userId: user.sub,
+		conversationId: id,
+	});
+
+	if (!userConversation) {
+		throw new UnauthorizedException('You are not part of this conversation');
+	}
+
+	if (userConversation.role !== 'OWNER') {
+		throw new UnauthorizedException('You are not the owner of this conversation');
+	}
+
+	const hashedPassword = await argon2.hash(password);
+	if (!hashedPassword) {
+		throw new BadRequestException('Error hashing the password');
+	}
+
+	if (password === '') {
+		conversation.password = null;
+		conversation.isPrivate = false;
+		await this.conversationRepository.save(conversation);
+		return { message: 'Password changed successfully' };
+	}
+
+    conversation.password = hashedPassword;
+
+	await this.conversationRepository.save(conversation);
+
+	return { message: 'Password changed successfully' };
+  }
+
   async joinConversation(
     user: TokenPayload,
     conversationId: JoinConversationDto,
@@ -170,6 +226,10 @@ export class ConversationsService {
 
     if (!conversation) {
       throw new NotFoundException('Conversation not found');
+    }
+
+    if (conversation.isPrivate) {
+      throw new UnauthorizedException('This conversation is private');
     }
 
     if (conversation.password) {
@@ -302,6 +362,7 @@ export class ConversationsService {
         createConversationDto.participants,
         createConversationDto.name,
         createConversationDto.password,
+        createConversationDto.isPrivate,
       );
     }
     throw new BadRequestException('Invalid conversation type');
@@ -312,6 +373,7 @@ export class ConversationsService {
     participants: string[],
     groupName: string,
     password: string | null,
+	isPrivate:boolean
   ) {
     if (participants.length < 1) {
       throw new BadRequestException(
@@ -347,6 +409,7 @@ export class ConversationsService {
     const newConversation = this.conversationRepository.create({
       type: 'GROUP',
       password: passwordHash,
+      isPrivate: isPrivate,
     });
 
     // if (!groupName) {
@@ -445,6 +508,20 @@ export class ConversationsService {
       senderConversation,
       receiverConversation,
     ]);
+
+    // Add users to the conversation room
+    this.conversationsGateway.addUserToRoom(senderId, newConversation.id);
+    this.conversationsGateway.addUserToRoom(receiverId, newConversation.id);
+
+    // Send event to both users to add the conversation to their list
+    const eventData: z.infer<typeof AddConversationToListSchema> = {
+      conversationId: newConversation.id,
+    };
+    this.eventsGateway.sendEventToUser(
+      EventsType.ADD_CONVERSATION_TO_LIST,
+      [senderId, receiverId],
+      eventData,
+    );
 
     console.log('The conversation has been successfully created.');
     return newConversation;
@@ -1266,6 +1343,74 @@ export class ConversationsService {
     return false;
   }
 
+  async banUser(user: TokenPayload, data: any) {
+    console.log('banUser:', user, data);
+    const valid = await this.hasAuthority(
+      user.sub,
+      data.id,
+      data.conversationId,
+    );
+    if (!valid) {
+      throw new UnauthorizedException(
+        'You are not authorized to mute this user',
+      );
+    }
+    console.log('valid:', valid);
+
+	const userConv = await this.userConversationRepository.findOne({
+		where: {
+		  userId: data.id,
+		  conversationId: data.conversationId,
+		},
+	  });
+	  if (!userConv) {
+		throw new NotFoundException('User not found in the conversation');
+	  }
+
+	   //? if minutes, hours and days are all 0, then mute indefinitely
+	   if (data.minutes === 0 && data.hours === 0 && data.days === 0) {
+		userConv.banned = true;
+		console.log('userConv:', userConv);
+		await this.userConversationRepository.save(userConv);
+		return { message: 'User banned successfully' };
+	  }
+  
+	  //? if minutes, hours and days are not all 0, calcualte end date
+	  const now = new Date();
+	  const end = new Date();
+  
+	  const msPerMinute = 60 * 1000;
+	  const msPerHour = 60 * msPerMinute;
+	  const msPerDay = 24 * msPerHour;
+  
+	  const totalMs =
+		now.getTime() +
+		data.minutes * msPerMinute +
+		data.hours * msPerHour +
+		data.days * msPerDay;
+  
+	  end.setTime(totalMs);
+	  userConv.banEnd = end;
+	  userConv.banned = true;
+	  await this.userConversationRepository.save(userConv);
+
+	  const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+        conversationId: data.conversationId,
+        userId: data.id,
+        action: GroupUserStatusAction.BAN,
+        duration: 0,
+        reason: 'Banned by: ' + user.username,
+      };
+      //   const userIds = users.map((u) => u.userId);
+      this.sendEventToGroupParticipants(
+        data.conversationId,
+        eventData,
+        EventsType.GROUP_USER_STATUS_UPDATED,
+      );
+
+	  return { message: 'User banned successfully' };
+}
+
   async muteUser(user: TokenPayload, data: any) {
     console.log('muteUser:', user, data);
     const valid = await this.hasAuthority(
@@ -1349,4 +1494,18 @@ export class ConversationsService {
 
     return { message: 'User unmuted successfully' };
   }
+
+  async isUserBlocked(user: number, target: number) {
+	const existingRelationship = await this.friendsRepository.findOne({
+		where: [
+		  { mainUserId: user, secondUserId: target },
+		  { mainUserId: target, secondUserId: user },
+		],
+	  });
+	  if (existingRelationship) {
+		return existingRelationship.status === 'blocked';
+	  }
+	  return false;
+  }
 }
+

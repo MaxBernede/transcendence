@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import {
+	ChangePasswordDto,
   CreateConversationDto,
   JoinConversationDto,
   LeaveConversationDto,
@@ -30,6 +31,11 @@ export class ConversationsController {
   @Post('mute-user')
   async muteUser(@GetUserPayload() user: TokenPayload, @Body() muteData: any) {
     return this.conversationsService.muteUser(user, muteData);
+  }
+
+  @Post('ban-user')
+  async banUser(@GetUserPayload() user: TokenPayload, @Body() banData: any) {
+    return this.conversationsService.banUser(user, banData);
   }
 
   //   @Post('unmute-user')
@@ -89,6 +95,11 @@ export class ConversationsController {
       user,
       joinConversationDto,
     );
+  }
+
+  @Post('change-password')
+  async changePassword(@GetUserPayload() user: TokenPayload, @Body() changePasswordDto: ChangePasswordDto) {
+    return this.conversationsService.changePassword(user, changePasswordDto);
   }
 
   @Post('update-role')
