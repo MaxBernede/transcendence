@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { Socket } from 'socket.io';
+import { MatchService } from '../match/match.service'; 
 
 interface GameState {
 	ball: { x: number; y: number; vx: number; vy: number };
@@ -21,14 +22,19 @@ interface GameState {
 
 @Injectable()
 export class PongService {
+	constructor(private readonly matchService: MatchService) {}
 	
 	private gameStates = new Map<string, GameState>();
 	private powerUpStates = new Map<string, PowerUpState>();
 	private playersReady = new Map<string, number>();
 	private ballMoving = new Map<string, boolean>();
 	private gameLoopIntervals = new Map<string, NodeJS.Timeout>();	
-	private winnerDeclared: boolean = false;
+	private winnerDeclared = new Map<string, boolean>();
 	private rooms = new Map<string, { player1: number; player2?: number }>();
+	private roomToUsers = new Map<string, { id: number; username: string }[]>();
+	private userToRoom = new Map<number, string>();
+	private userInGame = new Set<number>();
+
 
 
   // Set up per-room game state
@@ -96,38 +102,41 @@ export class PongService {
 	
 
     // Starts the game loop
-	// Starts the game loop for a specific room
-public startGameLoop(roomId: string, server: Server) {
-	if (this.gameLoopIntervals.has(roomId)) return;
-
-	console.log(`🎮 Starting game loop for room ${roomId}...`);
-	const interval = setInterval(() => {
-		const gameState = this.gameStates.get(roomId);
-		const powerUpState = this.powerUpStates.get(roomId);
-
-		if (!gameState || !powerUpState) return;
-
-		// Emit current game state to the room
-		server.to(roomId).emit("gameState", gameState);
-
-		if (!this.ballMoving.get(roomId) && !powerUpState.isActive) return;
-
-		if (this.ballMoving.get(roomId)) {
-			this.updateGameState(roomId, server);
-		}
-
-		if (powerUpState.isActive) {
-			this.updatePowerUpState(roomId, server);
-			this.checkPowerUpCollision(roomId, server);
-		}
-
-		if (Math.random() < 0.05 && !powerUpState.isActive) {
-			this.spawnPowerUp(roomId, server);
-		}
-	}, 1000 / 60);
-
-	this.gameLoopIntervals.set(roomId, interval);
-}
+	public startGameLoop(roomId: string, server: Server) {
+		if (this.gameLoopIntervals.has(roomId)) return;
+	
+		console.log(`starting game loop for room ${roomId}...`);
+		const interval = setInterval(() => {
+			const gameState = this.gameStates.get(roomId);
+			const powerUpState = this.powerUpStates.get(roomId);
+	
+			if (!gameState || !powerUpState) return;
+	
+			// Emit current game state to the room
+			server.to(roomId).emit("gameState", gameState);
+	
+			if (!this.ballMoving.get(roomId) && !powerUpState.isActive) return;
+	
+			if (this.ballMoving.get(roomId)) {
+				// await inside async fn doesn't work here, but we can handle errors safely
+				this.updateGameState(roomId, server).catch(err =>
+					console.error(`updateGameState error in room ${roomId}:`, err)
+				);
+			}
+	
+			if (powerUpState.isActive) {
+				this.updatePowerUpState(roomId, server);
+				this.checkPowerUpCollision(roomId, server);
+			}
+	
+			if (Math.random() < 0.05 && !powerUpState.isActive) {
+				this.spawnPowerUp(roomId, server);
+			}
+		}, 1000 / 60);
+	
+		this.gameLoopIntervals.set(roomId, interval);
+	}
+	
 
 	
 private checkPowerUpCollision(roomId: string, server: Server) {
@@ -173,7 +182,7 @@ private checkPowerUpCollision(roomId: string, server: Server) {
 	
 
     // Updates game state every frame 
-	private updateGameState(roomId: string, server: Server) {
+	private async updateGameState(roomId: string, server: Server) {
 		const gameState = this.gameStates.get(roomId);
 		if (!gameState) return;
 	  
@@ -209,26 +218,75 @@ private checkPowerUpCollision(roomId: string, server: Server) {
 	}
 	
 
-	private checkGameOver(roomId: string, server: Server) {
+	private async checkGameOver(roomId: string, server: Server) {
+		if (this.winnerDeclared.get(roomId)) return;
+	
 		const gameState = this.gameStates.get(roomId);
 		if (!gameState) return;
-
+	
+		const room = this.rooms.get(roomId);
+		if (!room || room.player1 == null || room.player2 == null) {
+			console.warn(`Invalid room data. player1 or player2 is null for room: ${roomId}`);
+			return false;
+		}
+	
+		let winnerId: number;
+		let looserId: number;
+		let looserScore: number;
+	
 		if (gameState.score.player1 >= 3) {
+			this.winnerDeclared.set(roomId, true);
 			console.log("Player 1 Wins!");
-			this.winnerDeclared = true;
-			this.stopGame(roomId, server); // Freeze game state!
-			server.emit("gameOver", { winner: "Player 1" });
+	
+			winnerId = room.player1;
+			looserId = room.player2;
+			looserScore = gameState.score.player2;
+	
+			server.to(roomId).emit("gameOver", {
+				winner: "Player 1",
+				finalScore: {
+					player1: gameState.score.player1,
+					player2: gameState.score.player2,
+				}
+			});
+	
+			this.stopGame(roomId, server);
+	
 		} else if (gameState.score.player2 >= 3) {
+			this.winnerDeclared.set(roomId, true);
 			console.log("Player 2 Wins!");
-			this.winnerDeclared = true;
-			this.stopGame(roomId, server); // Freeze game state!
-			server.emit("gameOver", { winner: "Player 2" });
+	
+			winnerId = room.player2;
+			looserId = room.player1;
+			looserScore = gameState.score.player1;
+	
+			server.to(roomId).emit("gameOver", {
+				winner: "Player 2",
+				finalScore: {
+					player1: gameState.score.player1,
+					player2: gameState.score.player2,
+				}
+			});
+	
+			this.stopGame(roomId, server);
+		} else {
+			return;
+		}
+	
+		// now the vars are definitely defined
+		try {
+			await this.matchService.createMatch(winnerId, looserId, 3, looserScore);
+			console.log("match successfully saved.");
+		} catch (error) {
+			console.error("failed to save match:", error);
 		}
 	}
 	
+	
+	
 
     // Checks for ball collisions
-	private checkCollisions(roomId: string, server: Server) {
+	private async checkCollisions(roomId: string, server: Server) {
 		const gameState = this.gameStates.get(roomId);
 		if (!gameState) return;
 	
@@ -244,15 +302,20 @@ private checkPowerUpCollision(roomId: string, server: Server) {
     }
 
     // Scoring logic
-    if (ball.x <= 0) {
-        gameState.score.player2++;
-        this.checkGameOver(roomId, server);
-        this.resetBall(roomId, server);
-    } else if (ball.x >= 800) {
-        gameState.score.player1++;
-        this.checkGameOver(roomId, server);
-        this.resetBall(roomId, server);
-    }
+	if (ball.x <= 0) {
+		gameState.score.player2++;
+		console.log(`[SCORE] P1: ${gameState.score.player1}, P2: ${gameState.score.player2}`);
+		await this.checkGameOver(roomId, server);
+		if (this.winnerDeclared.get(roomId)) return;
+		this.resetBall(roomId, server);
+	} else if (ball.x >= 800) {
+		gameState.score.player1++;
+		console.log(`[SCORE] P1: ${gameState.score.player1}, P2: ${gameState.score.player2}`);
+		await this.checkGameOver(roomId, server);
+		if (this.winnerDeclared.get(roomId)) return;
+		this.resetBall(roomId, server);	
+	}
+	
 }
 
 
@@ -323,7 +386,7 @@ public applyPowerUpEffect(roomId: string, player: number, server: Server) {
 		});
 	
 		this.playersReady.set(roomId, 0);
-		this.winnerDeclared = false;
+		this.winnerDeclared.set(roomId, false);
 		this.ballMoving.set(roomId, false);
 	
 		server.to(roomId).emit("gameReset");
@@ -369,41 +432,55 @@ public startBall(server: Server, roomId: string) {
   
 
 
-createMatch(dto: { userId: number; roomId: string }, client: Socket): { message: string; room: string } {
+  createMatch(dto: { userId: number; roomId: string }, client: Socket): { message: string; room: string } {
 	const existingRoom = this.rooms.get(dto.roomId);
-  
+
 	if (existingRoom) {
-	  const { player1, player2 } = existingRoom;
-  
-	  if (player1 && player2) {
-		client.emit("roomFull");
-		return { message: "Room is full", room: dto.roomId };
-	  }
-  
-	  if (player1 !== dto.userId && player2 !== dto.userId) {
-		existingRoom.player2 = dto.userId;
-	  }
+		const { player1, player2 } = existingRoom;
+
+		if (player1 && player2) {
+			client.emit("roomFull");
+			return { message: "Room is full", room: dto.roomId };
+		}
+
+		if (player1 !== dto.userId && !player2) {
+			existingRoom.player2 = dto.userId;
+		}
 	} else {
-	  this.rooms.set(dto.roomId, { player1: dto.userId });
+		this.rooms.set(dto.roomId, {
+			player1: dto.userId,
+			player2: null,
+		});
 	}
-  
-	return { message: 'Match created or joined', room: dto.roomId };
-  }
-  
+
+	this.userToRoom.set(dto.userId, dto.roomId);
+	this.userInGame.add(dto.userId);
+
+	const users = this.roomToUsers.get(dto.roomId) || [];
+	if (!users.find(u => u.id === dto.userId)) {
+		users.push({
+			id: dto.userId,
+			username: 'TODO-FILL' // Ideally get from user service or client
+			// socketId: client.id (optional if you're tracking that)
+		});
+		this.roomToUsers.set(dto.roomId, users);
+	}
+
+	return { message: "Match created or joined", room: dto.roomId };
+}
+
 
   
-  getRoomInfo(roomId: string) {
-	return this.rooms.get(roomId) ?? { error: 'Room not found' };
+getRoomByUserId(userId: number) {
+	const roomId = this.userToRoom.get(userId);
+	if (!roomId) return { error: "Not in a room" };
+  
+	const room = this.rooms.get(roomId);
+	if (!room) return { error: "Room not found" };
+  
+	return room;
   }
   
-  getRoomByUserId(userId: number) {
-	for (const [roomId, room] of this.rooms.entries()) {
-	  if (room.player1 === userId || room.player2 === userId) {
-		return { roomId, ...room };
-	  }
-	}
-	return { error: 'User not found in any room' };
-  }
 
   private gameLoops = new Map<string, NodeJS.Timeout>();
 
@@ -415,6 +492,22 @@ stopGameLoop(roomId: string) {
     console.log(`game loop stopped for room ${roomId}`);
   }
 }
+
+
+addPlayersToRoom(roomId: string, player1: { userId: number; username: string }, player2: { userId: number; username: string }) {
+	this.roomToUsers.set(roomId, [
+	  { id: player1.userId, username: player1.username },
+	  { id: player2.userId, username: player2.username },
+	]);
+  
+	this.userToRoom.set(player1.userId, roomId);
+	this.userToRoom.set(player2.userId, roomId);
+  
+	this.userInGame.add(player1.userId);
+	this.userInGame.add(player2.userId);
+  }
+  
+  
 
 cleanupRoom(roomId: string) {
 	// stop active interval
@@ -428,10 +521,26 @@ cleanupRoom(roomId: string) {
 	this.playersReady.delete(roomId);
 	this.ballMoving.delete(roomId);
   
-	this.winnerDeclared = false;
+	this.winnerDeclared.set(roomId, false);
+  
+	const players = this.roomToUsers.get(roomId);
+	if (players) {
+	  for (const user of players) {
+		this.userToRoom.delete(user.id); // or however you're tracking it
+		this.userInGame.delete(user.id); // or set user.inGame = false
+		console.log(`Removed user ${user.username} from room ${roomId}`);
+	  }
+	  this.roomToUsers.delete(roomId);
+	}
   
 	console.log(`cleaned up all data for room ${roomId}`);
   }
-  
 
+  getRoomInfo(roomId: string) {
+	const users = this.roomToUsers.get(roomId);
+	if (!users) return { error: 'Room not found' };
+	return { roomId, players: users };
+  }
+  
+  
 }

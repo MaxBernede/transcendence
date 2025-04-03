@@ -16,12 +16,15 @@ import { useCallback } from "react";
 const socket = io("http://localhost:3000/pong", {withCredentials: true});
 
 interface Player {
-	username: string;
-	playerNumber: number;
+  username: string;
+  playerNumber: number;
+  userId: string;
 }
 
+
+
 const Pong = () => {
-	const [playerNumber, setPlayerNumber] = useState<number>(1);
+  const [playerNumber, setPlayerNumber] = useState<number>(1);
 	const [winner, setWinner] = useState<string | null>(null);
 	const [score1, setScore1] = useState<number>(0);
 	const [score2, setScore2] = useState<number>(0);
@@ -32,7 +35,22 @@ const Pong = () => {
   const [cooldownTime, setCooldownTime] = useState(0);
   const cooldownInterval = useRef<NodeJS.Timeout | null>(null);
   const cooldownRef = useRef<NodeJS.Timeout | null>(null);
-
+  
+  // fetches logged-in user info and updates local state
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/api/users/me", {
+        withCredentials: true,
+      });
+  
+      if (response.data.username) {
+        setLoggedInUser(response.data.username);
+        setUserId(response.data.id.toString());
+      }
+    } catch (err) {
+      console.error("Failed to fetch user data:", err);
+    }
+  };
 	
 	const {
 		gameContainerRef,
@@ -347,22 +365,21 @@ const handleKeyDown = useCallback((event: KeyboardEvent) => {
 ]);
 
 
-  useEffect(() => {
-    socket.on("gameOver", (data) => {
-        console.log(`${data.winner} Wins!`);
-        setWinner(data.winner);
-    });
+socket.on("gameOver", (data) => {
+  console.log(`${data.winner} Wins!`);
+  setWinner(data.winner);
 
-    socket.on("gameReset", () => {
-        console.log("Game reset");
-        setWinner(null); // Hide popup when game restarts
-    });
+  // Optionally update score UI if needed
+  if (data.finalScore) {
+    setScore1(data.finalScore.player1);
+    setScore2(data.finalScore.player2);
+  }
 
-    return () => {
-        socket.off("gameOver");
-        socket.off("gameReset");
-    };
-}, [socket]);
+  // Optionally re-fetch user data (to update wins/losses in UI)
+  fetchUserData();
+});
+
+
 
 
 useEffect(() => {
@@ -606,7 +623,7 @@ useEffect(() => {
 }, []);
 
 
-const currentPlayersRef = useRef<{ username: string; playerNumber: number }[]>([]);
+const currentPlayersRef = useRef<Player[]>([]);
 
 useEffect(() => {
   let disconnectTimeout: NodeJS.Timeout | null = null;

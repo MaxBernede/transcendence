@@ -53,7 +53,7 @@ export class UserController {
 @UseGuards(JwtAuthGuard)
 @Get('me')
 async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-  console.log("Fetching user with ID:", payload.sub);
+  // console.log("Fetching user with ID:", payload.sub);
 
   const existingUser = await this.userRepository.findOne({
     where: { id: payload.sub }, // Use ID instead of email

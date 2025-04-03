@@ -12,6 +12,7 @@ import { PongService } from './pong.service';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from "../user/user.service";
 import { CreatePongDto } from './dto/create_pong.dto';
+import { MatchService } from '../match/match.service';
 
 export const players = new Map<
   string,
@@ -38,6 +39,7 @@ const connectedUsers = new Map<number, Socket>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 
 
+
 @WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
 export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -45,10 +47,15 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private readonly pongService: PongService,
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    private readonly matchService: MatchService
   ) {}
 
   private socketToUser: Map<string, number> = new Map();
+  private userToRoom: Map<number, string> = new Map();
+  private userInGame: Set<number> = new Set();
+  private roomToUsers: Map<string, { id: number; username: string }[]> = new Map();
+
 
 
   afterInit(server: Server) {
@@ -111,6 +118,14 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
       const roomId = `room-${uuidv4()}`;
       activeRooms.set(roomId, { player1, player2 });
+
+      this.pongService.addPlayersToRoom(roomId, player1, player2);
+
+      this.pongService['rooms'].set(roomId, {
+        player1: player1.userId,
+        player2: player2.userId
+      });
+      
   
       await socket1.join(roomId);
       await socket2.join(roomId);
@@ -140,6 +155,8 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
     console.log("current waiting queue:", waitingQueue.map(p => p.username));
   }
+
+
   handleConnection(client: Socket) {
     console.log(`handleConnection: ${client.id}`);
     client.emit("waitingForOpponent", { waitingFor: client.id });
@@ -322,52 +339,61 @@ private cleanupRoomBySocket(client: Socket) {
   
 /** Handles player disconnect */
 private pendingReconnections = new Map<string, NodeJS.Timeout>();
-
 handleDisconnect(client: Socket) {
   const userId = this.socketToUser.get(client.id);
+  if (!userId) return;
+
   const roomEntry = this.findRoomBySocketId(client.id);
 
-  connectedUsers.delete(userId!);
+  // Remove socket from connection maps
+  connectedUsers.delete(userId);
   this.socketToUser.delete(client.id);
+  this.userToRoom.delete(userId);
+  this.userInGame.delete(userId);
 
   if (!roomEntry) return;
 
   const [roomId, room] = roomEntry;
-  const opponent = room.player1.socketId === client.id ? room.player2 : room.player1;
 
-  // emit to opponent socket directly
+  const isPlayer1 = room.player1.socketId === client.id;
+  const opponent = isPlayer1 ? room.player2 : room.player1;
+
   const opponentSocket = connectedUsers.get(opponent.userId);
   if (opponentSocket) {
     opponentSocket.emit("opponentDisconnected");
   }
 
-  // 5s grace period to reconnect
+  // Optional: update `roomToUsers` mapping
+  const users = this.roomToUsers.get(roomId) ?? [];
+  const updatedUsers = users.filter(u => u.id !== userId);
+  if (updatedUsers.length > 0) {
+    this.roomToUsers.set(roomId, updatedUsers);
+  } else {
+    this.roomToUsers.delete(roomId);
+  }
+
+  // Start reconnection timer
   const timeout = setTimeout(() => {
     const stillInRoom = this.findRoomBySocketId(client.id);
     if (!stillInRoom) return;
-  
+
     const [roomId, room] = stillInRoom;
-  
-    const opponent =
-      room.player1.socketId === client.id ? room.player2 : room.player1;
-  
+    const opponent = isPlayer1 ? room.player2 : room.player1;
     const opponentSocket = connectedUsers.get(opponent.userId);
-  
-    // only clean up room if opponent has left as well
+
     if (opponentSocket) {
-      console.log(`player ${client.id} did not reconnect, but opponent still here. Keeping room ${roomId}`);
+      console.log(`Player ${client.id} did not reconnect, opponent still here – keeping room ${roomId}`);
       return;
     }
-  
+
     console.log(`🧹 Cleaning up room ${roomId} due to timeout`);
     this.pongService.cleanupRoom(roomId);
-    this.cleanupRoomBySocket(client);
+    this.cleanupRoomBySocket(client); // Your existing logic
     this.emitPlayerInfoForRoom(roomId);
     this.tryMatchPlayers();
-  
+
     this.pendingReconnections.delete(roomId);
   }, 5000);
-  
 
   this.pendingReconnections.set(roomId, timeout);
 }
@@ -676,3 +702,4 @@ async handleRegisterUser(client: Socket, payload: any) {
   
  
 }
+
