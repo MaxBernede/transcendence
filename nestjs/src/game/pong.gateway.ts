@@ -40,6 +40,7 @@ const disconnectTimers = new Map<string, NodeJS.Timeout>();
 
 
 
+
 @WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
 export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -81,7 +82,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private emitPlayerInfoForRoom(roomId: string) {
 	const room = activeRooms.get(roomId);
 	if (!room) {
-    console.warn(`⚠️ emitPlayerInfoForRoom called for non-existent room ${roomId}`);
+    console.warn(`emitPlayerInfoForRoom called for non-existent room ${roomId}`);
     return;
   }
   
@@ -156,6 +157,8 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log("current waiting queue:", waitingQueue.map(p => p.username));
   }
 
+
+   
 
   handleConnection(client: Socket) {
     console.log(`handleConnection: ${client.id}`);

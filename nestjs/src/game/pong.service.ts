@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { Socket } from 'socket.io';
 import { MatchService } from '../match/match.service'; 
+import { TokenPayload } from '@/auth/dto/token-payload';
+import { createInviteDto, JoinPrivateRoomDto } from './dto/create_pong.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 interface GameState {
 	ball: { x: number; y: number; vx: number; vy: number };
@@ -20,6 +23,17 @@ interface GameState {
 	isActive: boolean;
   }
 
+  class UserInviteMapData
+  {
+	user: string;
+	id: string;
+  }
+
+  class inviteIdUsersMapData
+  {
+	user1: string; user2: string
+  }
+
 @Injectable()
 export class PongService {
 	constructor(private readonly matchService: MatchService) {}
@@ -36,20 +50,29 @@ export class PongService {
 	private userInGame = new Set<number>();
 
 
+	// const inviteData = {
+	// 	user: string, id: string
+	// }
 
-  // Set up per-room game state
-  private createInitialGameState(): GameState {
-    return {
-      ball: { x: 386, y: 294, vx: 0, vy: 0 },
-      paddle1: { y: 250 },
+	private userInviteMap = new Map<string, UserInviteMapData>;
+	private inviteIdUsersMap = new Map<string, inviteIdUsersMapData>;
+
+	
+	
+	
+	// Set up per-room game state
+	private createInitialGameState(): GameState {
+		return {
+			ball: { x: 386, y: 294, vx: 0, vy: 0 },
+			paddle1: { y: 250 },
       paddle2: { y: 250 },
       score: { player1: 0, player2: 0 },
       isActive: false,
     };
-  }
+}
 
-  private createInitialPowerUpState(): PowerUpState {
-    return {
+private createInitialPowerUpState(): PowerUpState {
+	return {
       x: null,
       y: null,
       vx: 0,
@@ -57,7 +80,43 @@ export class PongService {
       type: null,
       isActive: false,
     };
-  }
+}
+
+ createInvite(user: TokenPayload,
+	 data: createInviteDto,) {
+		// check if data.username exists
+		// make sure dont invite yourself
+
+		const roomId = uuidv4();
+
+		const d :UserInviteMapData =
+		{
+			user: data.username,
+			id: roomId
+		}
+
+		this.userInviteMap.set(user.username, d)
+		this.inviteIdUsersMap.set(roomId, {user1: user.username, user2: data.username});
+
+		return roomId;
+	}
+
+	joinPrivateRoom(user: TokenPayload,
+		data: JoinPrivateRoomDto)
+		{
+			if (!this.inviteIdUsersMap.has(data.roomId))
+			{
+				throw new UnauthorizedException("Room does not exist ot you don't have access")
+			}
+
+			const users: inviteIdUsersMapData = this.inviteIdUsersMap.get(data.roomId);
+
+			if (user.username === users.user1 || user.username === users.user2)
+			{
+				return {msg: "You succesfully joined the room"}
+			}
+			throw new UnauthorizedException("???")
+		}
 
     // Returns the current game state
   public getGameState(roomId: string): GameState | undefined {
@@ -220,6 +279,7 @@ private checkPowerUpCollision(roomId: string, server: Server) {
 
 	private async checkGameOver(roomId: string, server: Server) {
 		if (this.winnerDeclared.get(roomId)) return;
+		console.log("gets into checkgameover");
 	
 		const gameState = this.gameStates.get(roomId);
 		if (!gameState) return;

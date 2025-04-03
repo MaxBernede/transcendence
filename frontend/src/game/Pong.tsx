@@ -544,18 +544,18 @@ useEffect(() => {
     };
 }, []);
 
-useEffect(() => {
-  const handleOpponentLeft = () => {
-    alert("Opponent left the game. please refresh to start new game!");
-    window.location.reload(); // or navigate("/lobby") if using react-router
-  };
+// useEffect(() => {
+//   const handleOpponentLeft = () => {
+//     alert("Opponent left the game. please refresh to start new game!");
+//     window.location.reload(); // or navigate("/lobby") if using react-router
+//   };
 
-  socket.on("opponentLeft", handleOpponentLeft);
+//   socket.on("opponentLeft", handleOpponentLeft);
 
-  return () => {
-    socket.off("opponentLeft", handleOpponentLeft);
-  };
-}, []);
+//   return () => {
+//     socket.off("opponentLeft", handleOpponentLeft);
+//   };
+// }, []);
 
 
 const handleDisablePowerUps = () => {

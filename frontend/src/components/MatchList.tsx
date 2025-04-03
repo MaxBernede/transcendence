@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../App';  // Import UserContext if it's in a context
-
+// import { useLocation } from "react-router-dom";
 interface Match {
     id: number;
     winner: { id: number; username: string }; 
@@ -15,7 +15,7 @@ export default function MatchList({ userId }: { userId: string }) {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const { userData } = useContext(UserContext);  // Assuming you're using UserContext to store user data
-
+	// const location = useLocation();
 	useEffect(() => {
 		console.log("Debugging - userId:", userId);
 		console.log("Debugging - userData:", userData);
@@ -50,7 +50,7 @@ export default function MatchList({ userId }: { userId: string }) {
 			.finally(() => setLoading(false));
 
 		return () => controller.abort();
-	}, [userId, userData]);  // Re-run the effect when either userId or userData changes
+	}, [userId, userData]);   // Re-run the effect when either userId or userData changes
 
 	if (loading) return <p>Loading...</p>;
 	if (error) return <p className="text-red-500">{error}</p>;
