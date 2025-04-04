@@ -77,9 +77,9 @@ function App() {
           <Route path="/user/:id" element={<UserPage />} />
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
           <Route path="/2FA" element={<TwoFactorAuth />} />
-		  <Route path="/friends" element={<Friends />} />
+		      <Route path="/friends" element={<Friends />} />
           <Route path="/2FASetup" element={<TwoFASetup/>} />
-		  <Route path="/pong" element={<PongPage />} /> 
+		      <Route path="/pong" element={<PongPage />} /> 
 		          {/* Only wrap /chat route with UserProvider */}
 				  <Route path="/chat/*" element={<UserProviderWrapper />}>
           <Route path=":channelId" element={<ChatPage />} />

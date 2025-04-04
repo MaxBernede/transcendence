@@ -141,11 +141,11 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log("current waiting queue:", waitingQueue.map(p => p.username));
   }
   handleConnection(client: Socket) {
-    console.log(`handleConnection: ${client.id}`);
+    // console.log(`handleConnection: ${client.id}`);
     client.emit("waitingForOpponent", { waitingFor: client.id });
   
     client.on("register", (player: WaitingPlayer & { roomId?: string }) => {
-      console.log(`Registered: ${player.username} (ID: ${player.userId}) ↔ Socket ${client.id}`);
+    // console.log(`Registered: ${player.username} (ID: ${player.userId}) ↔ Socket ${client.id}`);
   
       connectedUsers.set(player.userId, client);
       this.socketToUser.set(client.id, player.userId);
@@ -214,7 +214,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // disconnect logic
     client.on("disconnect", () => {
       const userId = this.socketToUser.get(client.id);
-      console.log(`disconnected: ${client.id} (user ${userId ?? "unknown"})`);
+      // console.log(`disconnected: ${client.id} (user ${userId ?? "unknown"})`);
   
       if (userId) {
         connectedUsers.delete(userId);

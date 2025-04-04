@@ -14,6 +14,21 @@ import MatchList from '../components/MatchList';
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { userData, setUserData, loading, error, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
+	useEffect(() => {
+		if (!id) return;
+
+		const fetchUserData = async () => {
+			try {
+				const res = await fetch(`/api/users/${id}`);
+				const data = await res.json();
+				setUserData(data);
+			} catch (err) {
+				console.error('Error fetching user:', err);
+			}
+		};
+
+		fetchUserData();
+	}, [id]);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
@@ -22,9 +37,7 @@ const UserPage: React.FC = () => {
     <div className="user-page-container">
       <ProfileBanner />
       <div className="content-container">
-        <div className="user-info">
-          <LogoutButton />
-        </div>
+      { id == "me" && <LogoutButton /> }
 
         {/* Stats centered */}
         <div className="stats flex justify-center w-full mb-2 text-xl font-semibold text-white-800">

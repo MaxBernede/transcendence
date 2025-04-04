@@ -64,7 +64,7 @@ export class EventsGateway
       const token = tokenCookie.split('=')[1];
 
       const payload: TokenPayload = this.jwtService.verify(token);
-      console.log(`Client validated: ${payload.username}`);
+      // console.log(`Client validated: ${payload.username}`);
       return payload;
     } catch (error) {
       console.error('Error validating client:', error.message);
@@ -88,16 +88,13 @@ export class EventsGateway
   }
 
   handleDisconnect(client: Socket) {
-    console.log(client.id, 'disconnected from events');
+    // console.log(client.id, 'disconnected from events');
 
     const userId = this.socketUserMap.get(client.id);
     if (userId) {
-      console.log(
-        `User ${userId} disconnected, removing socketId ${client.id}`,
-      );
-
       this.userSocketMap.delete(userId);
       this.socketUserMap.delete(client.id);
+      // console.log(`User ${userId} disconnected, removing socketId ${client.id}`,);
     }
   }
 
@@ -112,7 +109,7 @@ export class EventsGateway
     this.userSocketMap.set(user.sub, client.id);
     this.socketUserMap.set(client.id, user.sub);
 
-    console.log(client.id, 'registered for events');
+    // console.log(client.id, 'registered for events');
 
     this.wss.emit('serverToClientEvents', 'Hello from events');
   }
