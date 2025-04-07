@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
-	ChangePasswordDto,
+  ChangePasswordDto,
   CreateConversationDto,
   JoinConversationDto,
   LeaveConversationDto,
@@ -99,9 +99,16 @@ export class ConversationsService {
     //? if user is the owner and groupsize > 1, return error
 
     const participants = await this.userConversationRepository.find({
-      where: { conversationId, banned: false },
+      where: {
+        // conversationId,
+        conversation: { id: conversationId },
+        banned: false,
+      },
+      relations: ['user'],
     });
-    const me = participants.find((p) => p.userId === user.sub);
+    // const me = participants.find((p) => p.userId === user.sub);
+    // const me = participants.find((p) => p.userId === user.sub);
+    const me = participants.find((p) => p.user.id === user.sub);
     if (!me) {
       throw new BadRequestException('User not part of the conversation');
     }
@@ -110,8 +117,10 @@ export class ConversationsService {
     if (participants.length === 1) {
       //? remove user from userConversations
       await this.userConversationRepository.delete({
-        userId: user.sub,
-        conversationId,
+        // userId: user.sub,
+        user: { id: user.sub },
+        // conversationId,
+        conversation: { id: conversationId },
       });
 
       const data: z.infer<typeof RemoveConversationFromListSchema> = {
@@ -133,8 +142,8 @@ export class ConversationsService {
     }
 
     await this.userConversationRepository.delete({
-      userId: user.sub,
-      conversationId,
+      user: { id: user.sub },
+      conversation: { id: conversationId },
     });
 
     const data: z.infer<typeof RemoveConversationFromListSchema> = {
@@ -147,7 +156,7 @@ export class ConversationsService {
     );
 
     //? send event to all participants to update the chat participants list
-    const userIds = participants.map((p) => p.userId);
+    const userIds = participants.map((p) => p.user.id);
     const eventData: z.infer<typeof RemoveParticipantFromConversationSchema> = {
       conversationId,
       userId: user.sub,
@@ -163,10 +172,13 @@ export class ConversationsService {
     return { message: 'User removed from conversation' };
   }
 
-  async changePassword(user: TokenPayload, changePasswordDto: ChangePasswordDto) {
+  async changePassword(
+    user: TokenPayload,
+    changePasswordDto: ChangePasswordDto,
+  ) {
     const { id, password } = changePasswordDto;
 
-	console.log('changePasswordDto:', changePasswordDto);
+    console.log('changePasswordDto:', changePasswordDto);
 
     const conversation = await this.conversationRepository.findOneBy({
       id,
@@ -180,37 +192,42 @@ export class ConversationsService {
       throw new BadRequestException('This conversation is not a group');
     }
 
-	//? check if user is owner of the conversation
-	const userConversation = await this.userConversationRepository.findOneBy({
-		userId: user.sub,
-		conversationId: id,
-	});
+    //? check if user is owner of the conversation
+    const userConversation = await this.userConversationRepository.findOne({
+      where: {
+        user: { id: user.sub },
+        conversation: { id: id },
+      },
+      relations: ['user', 'conversation'],
+    });
 
-	if (!userConversation) {
-		throw new UnauthorizedException('You are not part of this conversation');
-	}
+    if (!userConversation) {
+      throw new UnauthorizedException('You are not part of this conversation');
+    }
 
-	if (userConversation.role !== 'OWNER') {
-		throw new UnauthorizedException('You are not the owner of this conversation');
-	}
+    if (userConversation.role !== 'OWNER') {
+      throw new UnauthorizedException(
+        'You are not the owner of this conversation',
+      );
+    }
 
-	const hashedPassword = await argon2.hash(password);
-	if (!hashedPassword) {
-		throw new BadRequestException('Error hashing the password');
-	}
+    const hashedPassword = await argon2.hash(password);
+    if (!hashedPassword) {
+      throw new BadRequestException('Error hashing the password');
+    }
 
-	if (password === '') {
-		conversation.password = null;
-		conversation.isPrivate = false;
-		await this.conversationRepository.save(conversation);
-		return { message: 'Password changed successfully' };
-	}
+    if (password === '') {
+      conversation.password = null;
+      conversation.isPrivate = false;
+      await this.conversationRepository.save(conversation);
+      return { message: 'Password changed successfully' };
+    }
 
     conversation.password = hashedPassword;
 
-	await this.conversationRepository.save(conversation);
+    await this.conversationRepository.save(conversation);
 
-	return { message: 'Password changed successfully' };
+    return { message: 'Password changed successfully' };
   }
 
   async joinConversation(
@@ -249,22 +266,24 @@ export class ConversationsService {
     //? check if user is not banned
     const userConversation = await this.userConversationRepository.findOne({
       where: {
-        userId: user.sub,
-        conversationId: conversationId.id,
+        user: { id: user.sub },
+        conversation: { id: conversationId.id },
       },
+      relations: ['user', 'conversation'],
     });
 
     //? user is not part of the conversation, add user to the conversation
     if (!userConversation) {
       const entry = this.userConversationRepository.create({
-        userId: user.sub,
-        conversationId: conversationId.id,
+        user: { id: user.sub },
+        conversation: { id: conversationId.id },
       });
       //? send event to all participants to update the chat participants list
       const users = await this.userConversationRepository.find({
-        where: { conversationId: conversationId.id },
+        where: { conversation: { id: conversationId.id } },
+        relations: ['user'],
       });
-      const userIds = users.map((user) => user.userId);
+      const userIds = users.map((user) => user.user.id);
       console.log('users:', userIds);
 
       if (users.length === 0) {
@@ -373,7 +392,7 @@ export class ConversationsService {
     participants: string[],
     groupName: string,
     password: string | null,
-	isPrivate:boolean
+    isPrivate: boolean,
   ) {
     if (participants.length < 1) {
       throw new BadRequestException(
@@ -423,7 +442,8 @@ export class ConversationsService {
 
     for (const p of participantIds) {
       const enrty = this.userConversationRepository.create({
-        userId: p,
+        // userId: p,
+        user: { id: p },
         conversation: newConversation,
         role: p === senderId ? 'OWNER' : 'MEMBER',
       });
@@ -456,7 +476,7 @@ export class ConversationsService {
   ) {
     const senderConversations = await this.userConversationRepository.find({
       where: {
-        userId: senderId,
+        user: { id: senderId },
         conversation: { type: 'DM' },
       },
       relations: ['conversation', 'conversation.userConversations'],
@@ -464,7 +484,7 @@ export class ConversationsService {
 
     const receiverConversations = await this.userConversationRepository.find({
       where: {
-        userId: receiverId,
+        user: { id: receiverId },
         conversation: { type: 'DM' },
       },
       relations: ['conversation', 'conversation.userConversations'],
@@ -473,7 +493,7 @@ export class ConversationsService {
     // Find the matching conversation between the sender and receiver
     const matchingConversation = senderConversations.find((userConvo) =>
       userConvo.conversation.userConversations.some(
-        (userConv) => userConv.userId === receiverId,
+        (userConv) => userConv.user.id === receiverId,
       ),
     );
     // console.log('senderConversation:', senderConversation);
@@ -494,12 +514,12 @@ export class ConversationsService {
 
     // Step 5: Create the UserConversation entries for both sender and receiver
     const senderConversation = this.userConversationRepository.create({
-      userId: senderId,
+      user: { id: senderId },
       conversation: newConversation,
     });
 
     const receiverConversation = this.userConversationRepository.create({
-      userId: receiverId,
+      user: { id: receiverId },
       conversation: newConversation,
     });
 
@@ -530,7 +550,7 @@ export class ConversationsService {
   async getConversationsForUser(user: TokenPayload) {
     const userId = user.sub;
     const userConversations = await this.userConversationRepository.find({
-      where: { userId },
+      where: { user: { id: userId } },
       relations: ['conversation'],
     });
     return userConversations.map((userConvo) => userConvo.conversation);
@@ -541,7 +561,7 @@ export class ConversationsService {
 
     // Get all the conversations that the user is part of and check their banned status
     const userConversations = await this.userConversationRepository.find({
-      where: { userId },
+      where: { user: { id: userId } },
       relations: ['conversation'],
     });
 
@@ -551,7 +571,7 @@ export class ConversationsService {
     );
 
     const conversationIds = validUserConversations.map(
-      (userConv) => userConv.conversationId,
+      (userConv) => userConv.conversation.id,
     );
 
     // Now, find only the conversations the user is part of and not banned
@@ -646,7 +666,7 @@ export class ConversationsService {
 
     // Fetch user conversations with the users related to each conversation, including the banned status
     const userConversations = await this.userConversationRepository.find({
-      where: { userId },
+      where: { user: { id: userId } },
       relations: [
         'conversation',
         'conversation.userConversations',
@@ -744,7 +764,7 @@ export class ConversationsService {
     // Fetch the conversation by ID, including participants and chats
     const userConversation = await this.userConversationRepository.findOne({
       where: {
-        userId,
+        user: { id: userId },
         conversation: { id: conversationId },
       },
       relations: [
@@ -796,7 +816,7 @@ export class ConversationsService {
     try {
       // Fetch user-conversations along with the related 'conversation' to get the type
       const userConversations = await this.userConversationRepository.find({
-        where: { conversationId },
+        where: { conversation: { id: conversationId } },
         relations: ['user', 'conversation'], // Include 'conversation' to get the type
       });
 
@@ -1020,23 +1040,47 @@ export class ConversationsService {
 
       //TODO: actuall remove the user from the conversation
       const result = await this.userConversationRepository.delete({
-        conversationId,
-        userId: targetUser.id,
+        conversation: { id: conversationId },
+        user: { id: targetUser.id },
       });
       console.log('User removed from conversation:', targetUser.username);
 
-      const d: z.infer<typeof RemoveConversationFromListSchema> = {
-        conversationId: conversationId,
-      };
       //? send event to the removed user to remove the conversation from their list
-      this.eventsGateway.sendEventToUser(
-        EventsType.REMOVE_CONVERSATION_FROM_LIST,
-        [targetUser.id],
-        d,
-      );
+      //   const removeFromListEvent: z.infer<typeof RemoveConversationFromListSchema> = {
+      //     conversationId: conversationId,
+      //   };
+      //   this.eventsGateway.sendEventToUser(
+      //     EventsType.REMOVE_CONVERSATION_FROM_LIST,
+      //     [targetUser.id],
+      //     removeFromListEvent,
+      //   );
+      //? send event to the removed user to remove the conversation from their list
+
+      {
+        const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+          conversationId: conversationId,
+          userId: targetUser.id,
+          action: GroupUserStatusAction.KICK,
+          duration: 0,
+          reason: 'Kicked by: ' + user.username,
+        };
+
+        this.eventsGateway.sendEventToUser(
+          EventsType.GROUP_USER_STATUS_UPDATED,
+          // userIds,
+          [targetUser.id],
+          eventData,
+        );
+        this.conversationsGateway.removeUserFromRoom(
+          targetUser.id,
+          conversationId,
+        );
+      }
 
       //? send event to all participants to update the chat participants list
-      const dd: z.infer<typeof RemoveParticipantFromConversationSchema> = {
+      const removeParticipantEvent: z.infer<
+        typeof RemoveParticipantFromConversationSchema
+      > = {
         conversationId: conversationId,
         userId: targetUser.id,
       };
@@ -1046,12 +1090,7 @@ export class ConversationsService {
       this.eventsGateway.sendEventToUser(
         EventsType.REMOVE_PARTICIPANT_FROM_CONVERSATION,
         remainingParticipants.map((p) => p.id),
-        dd,
-      );
-
-      this.conversationsGateway.removeUserFromRoom(
-        targetUser.id,
-        conversationId,
+        removeParticipantEvent,
       );
 
       return { message: 'User removed from conversation' };
@@ -1067,10 +1106,10 @@ export class ConversationsService {
     //? get role of the current user
     const myRole = await this.userConversationRepository.findOne({
       where: {
-        userId: user.sub,
-        conversationId: updateMember.conversationId,
+        user: { id: user.sub },
+        conversation: { id: updateMember.conversationId },
       },
-      select: ['role'],
+      relations: ['user', 'conversation'],
     });
 
     if (!myRole) {
@@ -1085,8 +1124,8 @@ export class ConversationsService {
 
     const targetUser = await this.userConversationRepository.findOne({
       where: {
-        userId: updateMember.memberId,
-        conversationId: updateMember.conversationId,
+        user: { id: updateMember.memberId },
+        conversation: { id: updateMember.conversationId },
       },
     });
 
@@ -1100,9 +1139,10 @@ export class ConversationsService {
       await this.userConversationRepository.save(targetUser);
       //? send event to all participants to update the chat participants list
       const participants = await this.userConversationRepository.find({
-        where: { conversationId: updateMember.conversationId },
+        where: { conversation: { id: updateMember.conversationId } },
+        relations: ['user'],
       });
-      const userIds = participants.map((p) => p.userId);
+      const userIds = participants.map((p) => p.user.id);
 
       const eventData: z.infer<typeof UpdateMemberRoleSchema> = {
         conversationId: updateMember.conversationId,
@@ -1117,8 +1157,8 @@ export class ConversationsService {
       if (updateMember.role === 'OWNER') {
         await this.userConversationRepository.update(
           {
-            userId: user.sub,
-            conversationId: updateMember.conversationId,
+            user: { id: user.sub },
+            conversation: { id: updateMember.conversationId },
           },
           { role: 'ADMIN' },
         );
@@ -1151,14 +1191,15 @@ export class ConversationsService {
     eventsType: EventsType,
   ) {
     const participants = await this.userConversationRepository.find({
-      where: { conversationId },
+      where: { conversation: { id: conversationId } },
+      relations: ['user', 'conversation'],
     });
     if (!participants) {
       throw new BadRequestException(
         'No participants found in the conversation',
       );
     }
-    const userIds: number[] = participants.map((p) => p.userId);
+    const userIds: number[] = participants.map((p) => p.user.id);
     console.log('userIds:', userIds);
     this.eventsGateway.sendEventToUser(eventsType, userIds, obj);
   }
@@ -1181,17 +1222,18 @@ export class ConversationsService {
     //? check if both users are part of the conversation
     const users = await this.userConversationRepository.find({
       where: {
-        conversationId,
-        userId: In([userId, user.sub]),
+        conversation: { id: conversationId },
+        user: { id: In([userId, user.sub]) },
       },
+      relations: ['user', 'conversation'],
     });
 
     if (users.length !== 2) {
       throw new BadRequestException('Users are not part of the conversation');
     }
 
-    const senderUser = users.find((u) => u.userId === user.sub);
-    const targetUser = users.find((u) => u.userId === userId);
+    const senderUser = users.find((u) => u.user.id === user.sub);
+    const targetUser = users.find((u) => u.user.id === userId);
 
     if (
       senderUser.role === 'OWNER' ||
@@ -1208,7 +1250,7 @@ export class ConversationsService {
       }
       const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
         conversationId: conversationId,
-        userId: targetUser.userId,
+        userId: targetUser.user.id,
         action: GroupUserStatusAction.BAN,
         duration: 0,
         reason: 'Banned by: ' + user.username,
@@ -1259,17 +1301,18 @@ export class ConversationsService {
     //? check if both users are part of the conversation
     const users = await this.userConversationRepository.find({
       where: {
-        conversationId,
-        userId: In([userId, user.sub]),
+        conversation: { id: conversationId },
+        user: { id: In([userId, user.sub]) },
       },
+      relations: ['user', 'conversation'],
     });
 
     if (users.length !== 2) {
       throw new BadRequestException('Users are not part of the conversation');
     }
 
-    const senderUser = users.find((u) => u.userId === user.sub);
-    const targetUser = users.find((u) => u.userId === userId);
+    const senderUser = users.find((u) => u.user.id === user.sub);
+    const targetUser = users.find((u) => u.user.id === userId);
 
     if (senderUser.role === 'OWNER' || senderUser.role === 'ADMIN') {
       targetUser.banned = false;
@@ -1284,7 +1327,7 @@ export class ConversationsService {
       }
       const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
         conversationId: conversationId,
-        userId: targetUser.userId,
+        userId: targetUser.user.id,
         action: GroupUserStatusAction.UNBAN,
         duration: 0,
         reason: 'Unbanned by: ' + user.username,
@@ -1324,17 +1367,18 @@ export class ConversationsService {
     //? 1: check if both users are part of the conversation
     const users: any = await this.userConversationRepository.find({
       where: {
-        conversationId: convId,
-        userId: In([user, target]),
+        conversation: { id: convId },
+        user: { id: In([user, target]) },
       },
+      relations: ['user', 'conversation'],
     });
     // console.log('users:', users.length);
     if (users.length !== 2) {
       return false;
     }
     //? 2: check if user has higher role than target user
-    const senderUser = users.find((u) => u.userId === user);
-    const targetUser = users.find((u) => u.userId === target);
+    const senderUser = users.find((u) => u.user.id === user);
+    const targetUser = users.find((u) => u.user.id === target);
     if (senderUser.role === 'OWNER') {
       return true;
     } else if (senderUser.role === 'ADMIN' && targetUser.role === 'MEMBER') {
@@ -1357,59 +1401,84 @@ export class ConversationsService {
     }
     console.log('valid:', valid);
 
-	const userConv = await this.userConversationRepository.findOne({
-		where: {
-		  userId: data.id,
-		  conversationId: data.conversationId,
-		},
-	  });
-	  if (!userConv) {
-		throw new NotFoundException('User not found in the conversation');
-	  }
+    const userConv = await this.userConversationRepository.findOne({
+      where: {
+        user: { id: data.id },
+        conversation: { id: data.conversationId },
+      },
+      relations: ['user', 'conversation'],
+    });
+    if (!userConv) {
+      throw new NotFoundException('User not found in the conversation');
+    }
 
-	   //? if minutes, hours and days are all 0, then mute indefinitely
-	   if (data.minutes === 0 && data.hours === 0 && data.days === 0) {
-		userConv.banned = true;
-		console.log('userConv:', userConv);
-		await this.userConversationRepository.save(userConv);
-		return { message: 'User banned successfully' };
-	  }
-  
-	  //? if minutes, hours and days are not all 0, calcualte end date
-	  const now = new Date();
-	  const end = new Date();
-  
-	  const msPerMinute = 60 * 1000;
-	  const msPerHour = 60 * msPerMinute;
-	  const msPerDay = 24 * msPerHour;
-  
-	  const totalMs =
-		now.getTime() +
-		data.minutes * msPerMinute +
-		data.hours * msPerHour +
-		data.days * msPerDay;
-  
-	  end.setTime(totalMs);
-	  userConv.banEnd = end;
-	  userConv.banned = true;
-	  await this.userConversationRepository.save(userConv);
+    const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+      conversationId: data.conversationId,
+      userId: data.id,
+      action: GroupUserStatusAction.BAN,
+      duration: 0,
+      reason: 'Banned by: ' + user.username,
+    };
 
-	  const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
-        conversationId: data.conversationId,
-        userId: data.id,
-        action: GroupUserStatusAction.BAN,
-        duration: 0,
-        reason: 'Banned by: ' + user.username,
-      };
-      //   const userIds = users.map((u) => u.userId);
+    //? if minutes, hours and days are all 0, then mute indefinitely
+    if (data.minutes === 0 && data.hours === 0 && data.days === 0) {
+      userConv.banned = true;
+      console.log('userConv:', userConv);
+      await this.userConversationRepository.save(userConv);
       this.sendEventToGroupParticipants(
         data.conversationId,
         eventData,
         EventsType.GROUP_USER_STATUS_UPDATED,
       );
 
-	  return { message: 'User banned successfully' };
-}
+      this.conversationsGateway.removeUserFromRoom(
+        userConv.user.id,
+        userConv.conversation.id,
+      );
+
+      return { message: 'User banned successfully' };
+    }
+
+    //? if minutes, hours and days are not all 0, calcualte end date
+    const now = new Date();
+    const end = new Date();
+
+    const msPerMinute = 60 * 1000;
+    const msPerHour = 60 * msPerMinute;
+    const msPerDay = 24 * msPerHour;
+
+    const totalMs =
+      now.getTime() +
+      data.minutes * msPerMinute +
+      data.hours * msPerHour +
+      data.days * msPerDay;
+
+    end.setTime(totalMs);
+    userConv.banEnd = end;
+    userConv.banned = true;
+    await this.userConversationRepository.save(userConv);
+
+    // const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
+    //   conversationId: data.conversationId,
+    //   userId: data.id,
+    //   action: GroupUserStatusAction.BAN,
+    //   duration: 0,
+    //   reason: 'Banned by: ' + user.username,
+    // };
+    // //   const userIds = users.map((u) => u.userId);
+    this.sendEventToGroupParticipants(
+      data.conversationId,
+      eventData,
+      EventsType.GROUP_USER_STATUS_UPDATED,
+    );
+
+    this.conversationsGateway.removeUserFromRoom(
+      userConv.user.id,
+      userConv.conversation.id,
+    );
+
+    return { message: 'User banned successfully' };
+  }
 
   async muteUser(user: TokenPayload, data: any) {
     console.log('muteUser:', user, data);
@@ -1427,9 +1496,10 @@ export class ConversationsService {
 
     const userConv = await this.userConversationRepository.findOne({
       where: {
-        userId: data.id,
-        conversationId: data.conversationId,
+        user: { id: data.id },
+        conversation: { id: data.conversationId },
       },
+      relations: ['user', 'conversation'],
     });
     if (!userConv) {
       throw new NotFoundException('User not found in the conversation');
@@ -1479,9 +1549,10 @@ export class ConversationsService {
 
     const userConv = await this.userConversationRepository.findOne({
       where: {
-        userId: targetUser,
-        conversationId,
+        user: { id: targetUser },
+        conversation: { id: conversationId },
       },
+      relations: ['user', 'conversation'],
     });
 
     if (!userConv) {
@@ -1496,16 +1567,15 @@ export class ConversationsService {
   }
 
   async isUserBlocked(user: number, target: number) {
-	const existingRelationship = await this.friendsRepository.findOne({
-		where: [
-		  { mainUserId: user, secondUserId: target },
-		  { mainUserId: target, secondUserId: user },
-		],
-	  });
-	  if (existingRelationship) {
-		return existingRelationship.status === 'blocked';
-	  }
-	  return false;
+    const existingRelationship = await this.friendsRepository.findOne({
+      where: [
+        { mainUserId: user, secondUserId: target },
+        { mainUserId: target, secondUserId: user },
+      ],
+    });
+    if (existingRelationship) {
+      return existingRelationship.status === 'blocked';
+    }
+    return false;
   }
 }
-

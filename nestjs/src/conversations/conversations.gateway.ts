@@ -206,19 +206,36 @@ export class ConversationsGateway
     // console.log('User:', client['user']);
 
     //? get all conversations for this user
+    // const conversations = await this.userConversationRepository.find({
+    //   where: {
+    //     userId: payload.sub,
+    //     banned: false,
+    //   },
+    // });
+
     const conversations = await this.userConversationRepository.find({
       where: {
-        userId: payload.sub,
+        user: { id: payload.sub },
         banned: false,
       },
+      relations: ['conversation'],
     });
 
+    // conversations.forEach((conversation) => {
+    //   client.join(conversation.conversationId);
+    //   console.log(
+    //     payload.username,
+    //     'joined room:',
+    //     conversation.conversationId,
+    //   );
+    // });
+
     conversations.forEach((conversation) => {
-      client.join(conversation.conversationId);
+      client.join(conversation.conversation.id);
       console.log(
         payload.username,
         'joined room:',
-        conversation.conversationId,
+        conversation.conversation.id,
       );
     });
 
@@ -233,8 +250,10 @@ export class ConversationsGateway
   ): Promise<boolean> {
     const userConversation = await this.userConversationRepository.findOne({
       where: {
-        userId: userId,
-        conversationId: conversationId,
+        // userId: userId,
+		user: { id: userId },
+        // conversationId: conversationId,
+		conversation: { id: conversationId },
       },
     });
     //? If user isn't in the conversation, consider them banned/unauthorized
@@ -316,34 +335,41 @@ export class ConversationsGateway
       );
     }
 
-	//? if conversation is a dm, check if user is blocked by the other user
-	const conversation = await this.conversationRepository.findOne({
-		where: {
-			id: message.conversationId,
-		},
-	});
+    //? if conversation is a dm, check if user is blocked by the other user
+    const conversation = await this.conversationRepository.findOne({
+      where: {
+        id: message.conversationId,
+      },
+    });
 
-	if (!conversation) {
-		throw new NotFoundException('Conversation not found');
-	}
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
 
-	if (conversation.type === 'DM') {
-		const convUsers = await this.userConversationRepository.find({
-			where: {
-				conversationId: message.conversationId,
-			},
-		});
+    if (conversation.type === 'DM') {
+      const convUsers = await this.userConversationRepository.find({
+        where: {
+        //   conversationId: message.conversationId,
+		  conversation: { id: message.conversationId },
+        },
+        relations: ['user'],
+      });
 
-		const user1 = convUsers[0].userId;
-		const user2 = convUsers[1].userId;
+    //   const user1 = convUsers[0].userId;
+	  const user1 = convUsers[0].user.id;
+    //   const user2 = convUsers[1].userId;
+	  const user2 = convUsers[1].user.id;
 
-		const isBlocked = await this.conversationsService.isUserBlocked(user1, user2);
-		if (isBlocked) {
-			throw new UnauthorizedException('You are blocked or blocked by the other user');
-		}
-	}
-	
-	
+      const isBlocked = await this.conversationsService.isUserBlocked(
+        user1,
+        user2,
+      );
+      if (isBlocked) {
+        throw new UnauthorizedException(
+          'You are blocked or blocked by the other user',
+        );
+      }
+    }
 
     // //? check if user AKA me, has access to the conversationId
     // try {
@@ -395,27 +421,36 @@ export class ConversationsGateway
 
   // New explicit handler for joining a room
   @SubscribeMessage('joinRoom')
-  async handleJoinRoom(client: Socket, data: { conversationId: string }): Promise<void> {
+  async handleJoinRoom(
+    client: Socket,
+    data: { conversationId: string },
+  ): Promise<void> {
     const isValid = await this.validateClient(client);
     if (isValid === false) {
       return;
     }
 
     const user = client['user'];
-    console.log(`User ${user.username} manually joining room ${data.conversationId}`);
+    console.log(
+      `User ${user.username} manually joining room ${data.conversationId}`,
+    );
 
     // Check if user has access to this conversation
     try {
       const userConversation = await this.userConversationRepository.findOne({
         where: {
-          userId: user.sub,
-          conversationId: data.conversationId,
+        //   userId: user.sub,
+		  user: { id: user.sub },
+        //   conversationId: data.conversationId,
+		  conversation: { id: data.conversationId },
           banned: false,
         },
       });
-      
+
       if (!userConversation) {
-        console.log(`User ${user.username} doesn't have access to conversation ${data.conversationId}`);
+        console.log(
+          `User ${user.username} doesn't have access to conversation ${data.conversationId}`,
+        );
         return;
       }
 

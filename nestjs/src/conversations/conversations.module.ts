@@ -14,6 +14,7 @@ import { ConversationsGateway } from './conversations.gateway';
 import { AuthModule } from 'src/auth/auth.module';
 import { EventsGateway } from 'src/events/events.gateway';
 import { FriendsEntity } from '@/friends/entities/friends.entity';
+// import { ChatGameInvite } from './entities/chat-game-invite.entity';
 
 @Module({
   imports: [

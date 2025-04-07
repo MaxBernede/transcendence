@@ -9,7 +9,9 @@ import {
   JoinTable,
   CreateDateColumn,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
+// import { ChatGameInvite } from './chat-game-invite.entity';
 
 @Entity()
 export class Conversation {
@@ -49,6 +51,32 @@ export class Conversation {
   createdAt: Date;
 }
 
+// @Entity()
+// export class Chat {
+//   @PrimaryGeneratedColumn('uuid')
+//   id: string;
+
+//   // Use only the conversationId (id from Conversation entity)
+//   @ManyToOne(() => Conversation, (conversation) => conversation.chats)
+//   @JoinColumn({ name: 'conversationId' })
+//   conversationId: string; // Storing conversationId directly as a UUID
+
+//   // Use only the userId (id from User entity)
+//   @ManyToOne(() => User, (user) => user.id)
+//   @JoinColumn({ name: 'userId' })
+//   userId: string; // Storing userId directly as a UUID
+
+//   @Column('text')
+//   text: string;
+
+//   @Column({ type: 'boolean', default: false })
+//   edited: boolean; // Flag to indicate if the message was edited
+
+//   @CreateDateColumn()
+//   createdAt: Date; // Timestamp of when the message was sent
+// }
+
+
 @Entity()
 export class Chat {
   @PrimaryGeneratedColumn('uuid')
@@ -57,21 +85,25 @@ export class Chat {
   // Use only the conversationId (id from Conversation entity)
   @ManyToOne(() => Conversation, (conversation) => conversation.chats)
   @JoinColumn({ name: 'conversationId' })
-  conversationId: string; // Storing conversationId directly as a UUID
+  conversationId: string;
 
   // Use only the userId (id from User entity)
   @ManyToOne(() => User, (user) => user.id)
   @JoinColumn({ name: 'userId' })
-  userId: string; // Storing userId directly as a UUID
+  userId: string;
 
   @Column('text')
   text: string;
 
+  // Add message type to distinguish regular messages from game invites
+  @Column({ type: 'enum', enum: ['TEXT', 'GAME_INVITE'], default: 'TEXT' })
+  type: 'TEXT' | 'GAME_INVITE';
+
   @Column({ type: 'boolean', default: false })
-  edited: boolean; // Flag to indicate if the message was edited
+  edited: boolean;
 
   @CreateDateColumn()
-  createdAt: Date; // Timestamp of when the message was sent
+  createdAt: Date;
 }
 
 @Entity()
@@ -79,27 +111,20 @@ export class UserConversation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Store only the userId (linking to the User table)
-  @Column('int')
-  userId: number;
+  // The ManyToOne relationship will automatically create the userId column
+  @ManyToOne(() => User)
+  @JoinColumn() // This defines the column name
+  user: User;
 
-  // Store only the conversationId (linking to the Conversation table)
-  @Column('uuid')
-  conversationId: string;
-
-  @ManyToOne(() => User, (user) => user.id)
-  @JoinColumn({ name: 'userId' })
-  user: User; // Optional, if you need to join with the user
-
-  @ManyToOne(() => Conversation, (conversation) => conversation.id)
-  @JoinColumn({ name: 'conversationId' })
-  conversation: Conversation; // Optional, if you need to join with the conversation
+  @ManyToOne(() => Conversation)
+  @JoinColumn()
+  conversation: Conversation;
 
   @Column({ type: 'boolean', default: false })
   banned: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
-  banEnd: Date | null; // for permanent bans set date to +999 years?
+  banEnd: Date | null;
 
   @Column({ type: 'boolean', default: false })
   muted: boolean;
@@ -117,3 +142,47 @@ export class UserConversation {
   @CreateDateColumn()
   joinedAt: Date;
 }
+
+// @Entity()
+// export class UserConversation {
+//   @PrimaryGeneratedColumn('uuid')
+//   id: string;
+
+//   // Store only the userId (linking to the User table)
+//   @Column('int')
+//   userId: number;
+
+//   // Store only the conversationId (linking to the Conversation table)
+//   @Column('uuid')
+//   conversationId: string;
+
+//   @ManyToOne(() => User, (user) => user.id)
+//   @JoinColumn({ name: 'userId' })
+//   user: User; // Optional, if you need to join with the user
+
+//   @ManyToOne(() => Conversation, (conversation) => conversation.id)
+//   @JoinColumn({ name: 'conversationId' })
+//   conversation: Conversation; // Optional, if you need to join with the conversation
+
+//   @Column({ type: 'boolean', default: false })
+//   banned: boolean;
+
+//   @Column({ type: 'timestamp', nullable: true })
+//   banEnd: Date | null; // for permanent bans set date to +999 years?
+
+//   @Column({ type: 'boolean', default: false })
+//   muted: boolean;
+
+//   @Column({ type: 'timestamp', nullable: true })
+//   mutedUntil: Date | null;
+
+//   @Column({
+//     type: 'enum',
+//     enum: ['MEMBER', 'ADMIN', 'OWNER'],
+//     default: 'MEMBER',
+//   })
+//   role: 'MEMBER' | 'ADMIN' | 'OWNER';
+
+//   @CreateDateColumn()
+//   joinedAt: Date;
+// }
