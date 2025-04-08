@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { Socket } from 'socket.io';
 import { MatchService } from '../match/match.service'; 
@@ -23,6 +23,24 @@ interface GameState {
 	isActive: boolean;
   }
 
+  interface PrivateRoom {
+	roomId: string;
+	hostUserId: number;
+	invitedUserId: number;
+	player1: {
+	  userId: number;
+	  username: string;
+	  socketId: string | null;
+	  playerNumber: 1;
+	};
+	player2?: {
+	  userId: number;
+	  username: string;
+	  socketId: string | null;
+	  playerNumber: 2;
+	};
+  }
+  
   class UserInviteMapData
   {
 	user: string;
@@ -56,6 +74,7 @@ export class PongService {
 
 	private userInviteMap = new Map<string, UserInviteMapData>;
 	private inviteIdUsersMap = new Map<string, inviteIdUsersMapData>;
+	private privateRooms = new Map<string, PrivateRoom>();
 
 	
 	
@@ -82,24 +101,28 @@ private createInitialPowerUpState(): PowerUpState {
     };
 }
 
- createInvite(user: TokenPayload,
-	 data: createInviteDto,) {
-		// check if data.username exists
-		// make sure dont invite yourself
-
-		const roomId = uuidv4();
-
-		const d :UserInviteMapData =
-		{
-			user: data.username,
-			id: roomId
+createInvite(user: TokenPayload, data: createInviteDto) {
+	const roomId = uuidv4();
+  
+	const room: PrivateRoom = {
+		roomId,
+		hostUserId: user.sub,
+		invitedUserId: data.userId,
+		player1: {
+		  userId: user.sub,
+		  username: user.username,
+		  socketId: null,
+		  playerNumber: 1,
 		}
-
-		this.userInviteMap.set(user.username, d)
-		this.inviteIdUsersMap.set(roomId, {user1: user.username, user2: data.username});
-
-		return roomId;
-	}
+	  };
+	  
+	  
+  
+	this.privateRooms.set(roomId, room);
+  
+	return roomId;
+  }
+  
 
 	joinPrivateRoom(user: TokenPayload,
 		data: JoinPrivateRoomDto)
@@ -364,13 +387,13 @@ private checkPowerUpCollision(roomId: string, server: Server) {
     // Scoring logic
 	if (ball.x <= 0) {
 		gameState.score.player2++;
-		console.log(`[SCORE] P1: ${gameState.score.player1}, P2: ${gameState.score.player2}`);
+		// console.log(`[SCORE] P1: ${gameState.score.player1}, P2: ${gameState.score.player2}`);
 		await this.checkGameOver(roomId, server);
 		if (this.winnerDeclared.get(roomId)) return;
 		this.resetBall(roomId, server);
 	} else if (ball.x >= 800) {
 		gameState.score.player1++;
-		console.log(`[SCORE] P1: ${gameState.score.player1}, P2: ${gameState.score.player2}`);
+		// console.log(`[SCORE] P1: ${gameState.score.player1}, P2: ${gameState.score.player2}`);
 		await this.checkGameOver(roomId, server);
 		if (this.winnerDeclared.get(roomId)) return;
 		this.resetBall(roomId, server);	
@@ -600,6 +623,26 @@ cleanupRoom(roomId: string) {
 	const users = this.roomToUsers.get(roomId);
 	if (!users) return { error: 'Room not found' };
 	return { roomId, players: users };
+  }
+
+  async joinInviteRoom(user: TokenPayload, roomId: string) {
+	const room = this.privateRooms.get(roomId);
+  
+	if (!room) throw new NotFoundException('Room not found');
+  
+	const isUserInvited = room.invitedUserId === user.sub || room.hostUserId === user.sub;
+	if (!isUserInvited) throw new ForbiddenException('You are not invited to this private match');
+  
+	if (!room.player2 && room.invitedUserId === user.sub) {
+	  room.player2 = {
+		userId: user.sub,
+		username: user.username,
+		socketId: null,
+		playerNumber: 2,
+	  };
+	}
+  
+	return { message: 'Joined private match', roomId };
   }
   
   

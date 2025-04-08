@@ -62,5 +62,27 @@ export class WsJwtGuard implements CanActivate {
     // client['user'] = payload; // Attach the decoded user data to the socket
 
     // return payload; // JWT verification failed
+
+
+    //might need this for validation for ponggame:
+
+      //     const jwt = cookies.split('; ').find((row) => row.startsWith('jwt='));
+      // if (!jwt) {
+      //   throw new UnauthorizedException('No token provided');
+      // }
+
+      // const token = jwt.split('=')[1]; // Extract actual token value
+      // let payload: any;
+      // try {
+      //   payload = this.jwtService.verify(token, {
+      //     secret: this.configService.get<string>('JWT_SECRET'), // from your .env
+      //   });
+      // } catch (err) {
+      //   console.error('JWT verification failed:', err.message);
+      //   throw new UnauthorizedException('Invalid or expired token.');
+      // }
+
+      // client['user'] = payload; // Store decoded user info on the socket
+
   }
 }

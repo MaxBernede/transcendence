@@ -14,6 +14,10 @@ export class createInviteDto {
 	@IsString()
 	@IsNotEmpty()
 	username: string;
+
+	@IsNumber()
+	userId: number;
+
 }
 
 export class JoinPrivateRoomDto {

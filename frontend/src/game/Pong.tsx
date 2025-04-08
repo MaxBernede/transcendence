@@ -8,6 +8,10 @@ import PowerUp from "./PowerUp";
 import { usePongGame } from "./hooks/usePongGame";
 import axios from "axios";
 import { useCallback } from "react";
+import { v4 as uuidv4 } from 'uuid';
+import { useNavigate, useParams } from "react-router-dom";
+
+
 
 
 // this file connects to a Websocket server to sync real time movement
@@ -21,9 +25,12 @@ interface Player {
   userId: string;
 }
 
+interface PongProps {
+  urlRoomId?: string;
+}
 
 
-const Pong = () => {
+const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
   const [playerNumber, setPlayerNumber] = useState<number>(1);
 	const [winner, setWinner] = useState<string | null>(null);
 	const [score1, setScore1] = useState<number>(0);
@@ -83,7 +90,14 @@ const Pong = () => {
 	const [ballPosition, setBallPosition] = useState({ x: 386, y: 294 });
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [cooldownActive, setCooldownActive] = useState(false);
-  const [cooldownDuration, setCooldownDuration] = useState(3000); // ms
+  const [cooldownDuration, setCooldownDuration] = useState(3000);
+  // const { roomId: urlRoomId } = useParams();
+  // console.log("useParams roomId:", urlRoomId);
+  const navigate = useNavigate();
+  const handleCreatePrivateRoom = () => {
+    const newRoomId = `room-${uuidv4()}`;
+    navigate(`/pong/${newRoomId}`);
+  };
 
 
   useEffect(() => {
@@ -124,24 +138,70 @@ const Pong = () => {
       .catch(() => console.error("Failed to fetch user data"));
   }, []);
 
+useEffect(() => {
+  if (urlRoomId) {
+    setRoomId(urlRoomId);
+    localStorage.setItem("roomId", urlRoomId);
+  }
+}, [urlRoomId]);
+
+useEffect(() => {
+  const handleRegistered = () => {
+    console.log("got registered from server");
+    setIsRegistered(true);
+    socket.emit("requestPlayers");
+    socket.emit("playerReady");
+  };
+
+  socket.on("registered", handleRegistered);
+
+  return () => {
+    socket.off("registered", handleRegistered);
+  };
+}, []);
+
 
 // once loggedinuser is set it registers player to server and lists connected players
+// useEffect(() => {
+//   if (loggedInUser && userId) {
+//     console.log("registering with:", {
+//       userId,
+//       username: loggedInUser,
+//       urlRoomId,
+//     });
+
+//     socket.emit("registerUser", {
+//       userId,
+//       username: loggedInUser,
+//       roomId: urlRoomId || null, // public matchmaking if null
+//     });
+
+//     socket.emit("requestPlayers");
+
+//     if (opponentUsername === "WAITING...") {
+//       setScore1(0);
+//       setScore2(0);
+//       setWinner(null);
+//     }
+//   }
+// }, [loggedInUser, userId, urlRoomId]);
+
+
 useEffect(() => {
-  if (loggedInUser) {
+  if (loggedInUser && userId) {
+    console.log("ending registerUser", {
+      userId,
+      username: loggedInUser,
+      roomId: urlRoomId || null,
+    });
+
     socket.emit("registerUser", {
       userId,
       username: loggedInUser,
-      roomId
+      roomId: urlRoomId || null,
     });
-        socket.emit("requestPlayers");
-
-    if (opponentUsername === "WAITING...") {
-      setScore1(0);
-      setScore2(0);
-      setWinner(null);
-    }
   }
-}, [loggedInUser, userId]);
+}, [loggedInUser, userId, urlRoomId]);
 
   
   // Runs once on component mount
@@ -321,6 +381,13 @@ useEffect(() => {
 
 // when user presses W / S / up / down it moves paddles and sends it to server
 const handleKeyDown = useCallback((event: KeyboardEvent) => {
+  console.log("Key pressed:", {
+    isRegistered,
+    roomId,
+    winner,
+    isReconnecting
+  });
+  
   if (!isRegistered || !roomId || winner || isReconnecting) return;
 
   const opponentFound = opponentUsername !== "WAITING...";
@@ -378,8 +445,6 @@ socket.on("gameOver", (data) => {
   // Optionally re-fetch user data (to update wins/losses in UI)
   fetchUserData();
 });
-
-
 
 
 useEffect(() => {
@@ -544,18 +609,19 @@ useEffect(() => {
     };
 }, []);
 
-// useEffect(() => {
-//   const handleOpponentLeft = () => {
-//     alert("Opponent left the game. please refresh to start new game!");
-//     window.location.reload(); // or navigate("/lobby") if using react-router
-//   };
+useEffect(() => {
+  const handleOpponentLeft = () => {
+    console.log("[SOCKET] Received opponentLeft!");
+    alert("Opponent left the game. please refresh to start new game!");
+    window.location.reload(); // or navigate("/lobby") if using react-router
+  };
 
-//   socket.on("opponentLeft", handleOpponentLeft);
+  socket.on("opponentLeft", handleOpponentLeft);
 
-//   return () => {
-//     socket.off("opponentLeft", handleOpponentLeft);
-//   };
-// }, []);
+  return () => {
+    socket.off("opponentLeft", handleOpponentLeft);
+  };
+}, []);
 
 
 const handleDisablePowerUps = () => {
@@ -616,8 +682,8 @@ useEffect(() => {
   window.addEventListener("beforeunload", handleLeave);
 
   return () => {
-    socket.emit("leaveGame");
-    localStorage.removeItem("roomId");
+    // socket.emit("leaveGame");
+    // localStorage.removeItem("roomId");
     window.removeEventListener("beforeunload", handleLeave);
   };
 }, []);

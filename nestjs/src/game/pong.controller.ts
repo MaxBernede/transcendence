@@ -18,7 +18,14 @@ export class PongController {
     return await this.pongService.getRoomInfo(roomId);
   }
 
-//   @Get('join-invite/:roomId')
+  @Get('join-invite/:roomId')
+  async joinInviteRoom(
+    @GetUserPayload() user: TokenPayload,
+    @Param('roomId') roomId: string,
+  ) {
+    return await this.pongService.joinInviteRoom(user, roomId);
+  }
+  
 
   @Get('user/:userId')
   async getUserRoom(@Param('userId') userId: number) {
