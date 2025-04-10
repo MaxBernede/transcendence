@@ -139,7 +139,6 @@ export class UserService {
     //   where: whereClause,
     //   relations: ['friends', 'matchHistory'],
     // });
-
 	const user = await this.userRepository.findOne({
 		where: whereClause,
 		relations: ['friends'],
@@ -200,6 +199,7 @@ export class UserService {
     if (user) {
       // user = { ...user, ...userInfo };
       console.log('user already exist, not overwriting informations');
+	//   return user;
     } else {
       user = this.userRepository.create(userInfo);
     }

@@ -23,6 +23,7 @@ const UserProfile: React.FC = () => {
 		const fetchUserData = async () => {
 			try {
 				const response = await fetch(`/api/users/${id}`);
+				console.log("response:", response);
 				if (!response.ok) throw new Error('User not found');
 
 				const jsonData = await response.json();
