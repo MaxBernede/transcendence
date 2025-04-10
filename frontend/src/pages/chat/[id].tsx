@@ -8,6 +8,7 @@ import EventsHandler from "../../events/EventsHandler";
 import { Socket } from "socket.io-client";
 import { ChatMessageType } from "../../components/chat/types";
 import { RemoveConversationFromListSchema } from "../../common/types/event-type"; // Import the schema
+// import { Message } from "../../common/types/chat-type"; // Import the schema
 
 import { z } from "zod";
 import { UserPayload, useUserContext } from "../../context";
@@ -120,6 +121,9 @@ const ChatPage = () => {
           text: data.message,
           timestamp: data.timestamp,
           senderUser: data.senderUser,
+		//   type: data.type,
+		//   gameInviteData: data.gameInviteData,
+		//   edited: false, // Assuming new messages are not edited
         };
 
         setMessagesByRoom((prev) => {

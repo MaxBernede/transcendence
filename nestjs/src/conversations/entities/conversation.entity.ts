@@ -11,6 +11,9 @@ import {
   JoinColumn,
   OneToOne,
 } from 'typeorm';
+import { UserConversation } from './user-conversation.entity';
+import { Chat } from './chat.entity';
+// import { ChatGameInvite } from './chat-game-invite.entity';
 // import { ChatGameInvite } from './chat-game-invite.entity';
 
 @Entity()
@@ -40,7 +43,7 @@ export class Conversation {
   userConversations: UserConversation[];
 
   // Relationship with the chats in the conversation (one-to-many)
-  @OneToMany(() => Chat, (chat) => chat.conversationId)
+  @OneToMany(() => Chat, (chat) => chat.conversation)
   chats: Chat[];
 
   // Last activity timestamp (defaults to now)
@@ -50,7 +53,6 @@ export class Conversation {
   @CreateDateColumn()
   createdAt: Date;
 }
-
 // @Entity()
 // export class Chat {
 //   @PrimaryGeneratedColumn('uuid')
@@ -58,90 +60,142 @@ export class Conversation {
 
 //   // Use only the conversationId (id from Conversation entity)
 //   @ManyToOne(() => Conversation, (conversation) => conversation.chats)
-//   @JoinColumn({ name: 'conversationId' })
-//   conversationId: string; // Storing conversationId directly as a UUID
+//   @JoinColumn()
+//   conversation: Conversation;
 
 //   // Use only the userId (id from User entity)
-//   @ManyToOne(() => User, (user) => user.id)
-//   @JoinColumn({ name: 'userId' })
-//   userId: string; // Storing userId directly as a UUID
+//   @ManyToOne(() => User)
+//   @JoinColumn()
+//   user: User;
 
 //   @Column('text')
 //   text: string;
 
+//   // Add message type to distinguish regular messages from game invites
+//   @Column({ type: 'enum', enum: ['TEXT', 'GAME_INVITE'], default: 'TEXT' })
+//   type: 'TEXT' | 'GAME_INVITE';
+
 //   @Column({ type: 'boolean', default: false })
-//   edited: boolean; // Flag to indicate if the message was edited
+//   edited: boolean;
 
 //   @CreateDateColumn()
-//   createdAt: Date; // Timestamp of when the message was sent
+//   createdAt: Date;
+
+//   @OneToOne(() => ChatGameInvite, (gameInvite) => gameInvite.chat, {
+//     nullable: true,
+//   })
+//   gameInvite: ChatGameInvite;
+// }
+
+// @Entity()
+// export class ChatGameInvite {
+//   @PrimaryGeneratedColumn('uuid')
+//   id: string;
+
+//   // Who created the game invite
+//   @ManyToOne(() => User)
+//   @JoinColumn()
+//   createdBy: User;
+
+//   @ManyToOne(() => User)
+//   @JoinColumn()
+//   invitedUser: User;
+
+//   // Which conversation this invite belongs to
+//   @ManyToOne(() => Conversation)
+//   @JoinColumn()
+//   conversation: Conversation;
+
+//   // Status of the game invite
+//   @Column({
+//     type: 'enum',
+//     enum: ['PENDING', 'COMPLETED'],
+//     default: 'PENDING',
+//   })
+//   status: 'PENDING' | 'COMPLETED';
+
+//   // Timestamps for tracking the invite lifecycle
+//   @CreateDateColumn()
+//   createdAt: Date;
+
+//   @Column({ type: 'timestamp', nullable: true })
+//   completedAt: Date | null;
+
+//   // Game result (stored as JSON)
+//   @Column('json', { nullable: true })
+//   gameResult: {
+//     score?: { [userId: string]: number };
+//     winnerId?: string;
+//     gameData?: any; // For any additional game-specific data
+//   } | null;
+
+//   // One-to-one relationship with the chat message
+//   @OneToOne(() => Chat, (chat) => chat.gameInvite)
+//   @JoinColumn()
+//   chat: Chat;
 // }
 
 
-@Entity()
-export class Chat {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+// @Entity()
+// export class UserConversation {
+//   @PrimaryGeneratedColumn('uuid')
+//   id: string;
 
-  // Use only the conversationId (id from Conversation entity)
-  @ManyToOne(() => Conversation, (conversation) => conversation.chats)
-  @JoinColumn({ name: 'conversationId' })
-  conversationId: string;
+//   // The ManyToOne relationship will automatically create the userId column
+//   @ManyToOne(() => User)
+//   @JoinColumn() // This defines the column name
+//   user: User;
 
-  // Use only the userId (id from User entity)
-  @ManyToOne(() => User, (user) => user.id)
-  @JoinColumn({ name: 'userId' })
-  userId: string;
+//   @ManyToOne(() => Conversation)
+//   @JoinColumn()
+//   conversation: Conversation;
 
-  @Column('text')
-  text: string;
+//   @Column({ type: 'boolean', default: false })
+//   banned: boolean;
 
-  // Add message type to distinguish regular messages from game invites
-  @Column({ type: 'enum', enum: ['TEXT', 'GAME_INVITE'], default: 'TEXT' })
-  type: 'TEXT' | 'GAME_INVITE';
+//   @Column({ type: 'timestamp', nullable: true })
+//   banEnd: Date | null;
 
-  @Column({ type: 'boolean', default: false })
-  edited: boolean;
+//   @Column({ type: 'boolean', default: false })
+//   muted: boolean;
 
-  @CreateDateColumn()
-  createdAt: Date;
-}
+//   @Column({ type: 'timestamp', nullable: true })
+//   mutedUntil: Date | null;
 
-@Entity()
-export class UserConversation {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+//   @Column({
+//     type: 'enum',
+//     enum: ['MEMBER', 'ADMIN', 'OWNER'],
+//     default: 'MEMBER',
+//   })
+//   role: 'MEMBER' | 'ADMIN' | 'OWNER';
 
-  // The ManyToOne relationship will automatically create the userId column
-  @ManyToOne(() => User)
-  @JoinColumn() // This defines the column name
-  user: User;
+//   @CreateDateColumn()
+//   joinedAt: Date;
+// }
 
-  @ManyToOne(() => Conversation)
-  @JoinColumn()
-  conversation: Conversation;
 
-  @Column({ type: 'boolean', default: false })
-  banned: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
-  banEnd: Date | null;
 
-  @Column({ type: 'boolean', default: false })
-  muted: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
-  mutedUntil: Date | null;
 
-  @Column({
-    type: 'enum',
-    enum: ['MEMBER', 'ADMIN', 'OWNER'],
-    default: 'MEMBER',
-  })
-  role: 'MEMBER' | 'ADMIN' | 'OWNER';
 
-  @CreateDateColumn()
-  joinedAt: Date;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // @Entity()
 // export class UserConversation {
@@ -186,3 +240,4 @@ export class UserConversation {
 //   @CreateDateColumn()
 //   joinedAt: Date;
 // }
+

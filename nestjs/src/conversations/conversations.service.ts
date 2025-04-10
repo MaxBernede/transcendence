@@ -18,11 +18,7 @@ import { TokenPayload } from 'src/auth/dto/token-payload';
 import { UserService } from 'src/user/user.service';
 import { send } from 'process';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Chat,
-  Conversation,
-  UserConversation,
-} from './entities/conversation.entity';
+import { Conversation } from './entities/conversation.entity';
 import { In, QueryFailedError, Repository } from 'typeorm';
 import { ChatDto } from './dto/chat.dto';
 import { plainToInstance } from 'class-transformer';
@@ -56,6 +52,9 @@ import { ucs2 } from 'punycode';
 import { argon2d } from 'argon2';
 import { Console } from 'console';
 import { FriendsEntity } from '@/friends/entities/friends.entity';
+import { UserConversation } from './entities';
+import { Chat } from './entities/chat.entity';
+import { GameInviteData, Message, PublicUserInfoDto } from 'common/types/chat-type';
 
 @Injectable()
 export class ConversationsService {
@@ -556,7 +555,62 @@ export class ConversationsService {
     return userConversations.map((userConvo) => userConvo.conversation);
   }
 
-  async getChatHistory(user: TokenPayload) {
+//   async getChatHistory(user: TokenPayload) {
+//     const userId = user.sub;
+
+//     // Get all the conversations that the user is part of and check their banned status
+//     const userConversations = await this.userConversationRepository.find({
+//       where: { user: { id: userId } },
+//       relations: ['conversation'],
+//     });
+
+//     // Filter out conversations where the user is banned
+//     const validUserConversations = userConversations.filter(
+//       (userConv) => userConv.banned === false,
+//     );
+
+//     const conversationIds = validUserConversations.map(
+//       (userConv) => userConv.conversation.id,
+//     );
+
+//     // Now, find only the conversations the user is part of and not banned
+//     const conversations = await this.conversationRepository.find({
+//       where: { id: In(conversationIds) }, // Filter conversations based on user participation
+//       relations: [
+//         'chats', // Include the chats in the conversation
+//         'chats.user', // Load user details
+//         'chats.conversation',
+//       ],
+//     });
+
+//     // Process the conversations and format the response as needed
+//     const formattedConversations = await Promise.all(
+//       conversations.map(async (conversation) => {
+//         const chatWithUserDetails = await Promise.all(
+//           conversation.chats.map(async (chat: any) => {
+//             return {
+//               text: chat.text,
+//               createdAt: chat.createdAt,
+//               senderUser: {
+//                 userId: chat.user.id, // Now the user is fetched from the database
+//                 username: chat.user.username,
+//                 avatar: chat.user.avatar,
+//               },
+//             };
+//           }),
+//         );
+
+//         return {
+//           conversationId: conversation.id,
+//           chat: chatWithUserDetails,
+//         };
+//       }),
+//     );
+
+//     return formattedConversations;
+//   }
+
+async getChatHistory(user: TokenPayload) {
     const userId = user.sub;
 
     // Get all the conversations that the user is part of and check their banned status
@@ -579,23 +633,104 @@ export class ConversationsService {
       where: { id: In(conversationIds) }, // Filter conversations based on user participation
       relations: [
         'chats', // Include the chats in the conversation
-        'chats.userId', // Load userId (user details)
-        'chats.conversationId',
+        'chats.user', // Load user details
+        'chats.conversation',
+		'chats.gameInvite',
+		'chats.gameInvite.createdUser',
+		'chats.gameInvite.invitedUser',
       ],
     });
+
+	// const conversations = await this.conversationRepository.find({
+	// 	where: { id: In(conversationIds) },
+	// 	relations: {
+	// 	  chats: {
+	// 		user: true,
+	// 		conversation: true,
+	// 		gameInvite: true
+	// 	  }
+	// 	},
+	// 	select: {
+	// 	  id: true,
+	// 	  // Other conversation fields you need
+	// 	  chats: {
+	// 		id: true,
+	// 		text: true,
+	// 		// Other chat fields you need
+	// 		user: {
+	// 		  id: true,
+	// 		  username: true,
+	// 		  avatar: true,
+	// 		  // Only select the user fields you need
+	// 		}
+	// 	  }
+	// 	}
+	//   });
 
     // Process the conversations and format the response as needed
     const formattedConversations = await Promise.all(
       conversations.map(async (conversation) => {
         const chatWithUserDetails = await Promise.all(
           conversation.chats.map(async (chat: any) => {
+
+			const senderUser: PublicUserInfoDto = {
+				userId: chat.user.id,
+				username: chat.user.username,
+				avatar: chat.user.avatar,
+			}
+
+			var gameInvite: GameInviteData | undefined;
+			if (chat.type === 'GAME_INVITE') {
+				gameInvite = {
+					gameId: chat.gameInvite.id,
+					status: chat.gameInvite.status,
+
+					creatorUserId: chat.gameInvite.createdUser.id,
+					creatorUsername: chat.gameInvite.createdUser.username,
+
+					recipientUserId: chat.gameInvite.invitedUser.id,
+					recipientUsername: chat.gameInvite.invitedUser.username,
+
+					creatorScore: chat.gameInvite.creatorScore,
+					recipientScore: chat.gameInvite.recipientScore,
+					winnerUsername: chat.gameInvite.winnerUsername,
+				}
+			}
+
+			// console.log("gameInvite:", gameInvite);
+
+			const message: Message = {
+				id: chat.id,
+				text: chat.text,
+				createdAt: chat.createdAt,
+				type: chat.type,
+				senderUser,
+				edited: chat.edited,
+				gameInviteData: gameInvite,
+			}
+
+			// const message: Message = {
+			// 	id: chat.id,
+			// 	text: chat.text,
+			// 	timestamp: chat.createdAt,
+			// 	type: 'TEXT',
+			// 	senderUser,
+			// }
+
+			console.log("outgoing message:", message);
+
+			return message;
+
+			// console.log("requesting chat history:", chat);
+
+
             return {
               text: chat.text,
               createdAt: chat.createdAt,
               senderUser: {
-                userId: chat.userId.id, // Now the user is fetched from the database
-                username: chat.userId.username,
-                avatar: chat.userId.avatar,
+                userId: chat.user.id, // Now the user is fetched from the database
+                username: chat.user.username,
+                avatar: chat.user.avatar,
               },
             };
           }),
@@ -611,56 +746,6 @@ export class ConversationsService {
     return formattedConversations;
   }
 
-  //   async getChatHistory(user: TokenPayload) {
-  //     const userId = user.sub;
-
-  //     // Get all the conversations that the user is part of
-  //     const userConversations = await this.userConversationRepository.find({
-  //       where: { userId },
-  //       relations: ['conversation'],
-  //     });
-
-  //     const conversationIds = userConversations.map(
-  //       (userConv) => userConv.conversationId,
-  //     );
-
-  //     // Now, find only the conversations the user is part of
-  //     const conversations = await this.conversationRepository.find({
-  //       where: { id: In(conversationIds) }, // Filter conversations based on user participation
-  //       relations: [
-  //         'chats', // include the chats in the conversation
-  //         'chats.userId', // load userId (user details)
-  //         'chats.conversationId',
-  //       ],
-  //     });
-
-  //     // Process the conversations and format the response as needed
-  //     const formattedConversations = await Promise.all(
-  //       conversations.map(async (conversation) => {
-  //         const chatWithUserDetails = await Promise.all(
-  //           conversation.chats.map(async (chat: any) => {
-  //             return {
-  //               text: chat.text,
-  //               createdAt: chat.createdAt,
-  //               senderUser: {
-  //                 userId: chat.userId.id, // Now the user is fetched from the database
-  //                 username: chat.userId.username,
-  //                 avatar: chat.userId.avatar,
-  //               },
-  //             };
-  //           }),
-  //         );
-
-  //         return {
-  //           conversationId: conversation.id,
-  //           chat: chatWithUserDetails,
-  //         };
-  //       }),
-  //     );
-
-  //     return formattedConversations;
-  //   }
-
   async getConversationsWithParticipants(user: TokenPayload) {
     const userId = user.sub;
 
@@ -670,94 +755,58 @@ export class ConversationsService {
       relations: [
         'conversation',
         'conversation.userConversations',
-        'conversation.userConversations.user', // Include the user info
+        'conversation.userConversations.user',
         'conversation.chats',
+        'conversation.chats.user',
       ],
     });
 
     // Map through the userConversations and return only conversationId and participants (user objects)
     return userConversations
       .map((userConvo) => {
+        if (!userConvo?.conversation) return null;
+
         const conversationId = userConvo.conversation.id;
         const type = userConvo.conversation.type;
         const name = userConvo.conversation.name;
 
         // Get participants excluding the current user and those who are banned
-        const participants = userConvo.conversation.userConversations
-          .filter((uc) => uc.user.id !== userId && uc.banned === false) // Exclude the current user and banned users
-          .map((uc) => uc.user); // Extract the user from userConversation
+        const participants =
+          userConvo.conversation.userConversations
+            ?.filter((uc) => uc?.user?.id !== userId && uc?.banned === false)
+            ?.map((uc) => uc?.user)
+            ?.filter(Boolean) || [];
 
         // Check if the current user (me) is banned in the conversation
         const isCurrentUserBanned =
-          userConvo.conversation.userConversations.some(
-            (uc) => uc.user.id === userId && uc.banned === true,
+          userConvo.conversation.userConversations?.some(
+            (uc) => uc?.user?.id === userId && uc?.banned === true,
           );
 
         // If the current user is banned, don't return the conversation
         if (isCurrentUserBanned) {
-          return null; // This will effectively remove the conversation from the final result
+          return null;
         }
 
-        const chats = userConvo.conversation.chats.map((chat) => ({
-          id: chat.id,
-          userId: chat.userId,
-          text: chat.text,
-          edited: chat.edited,
-          createdAt: chat.createdAt,
-        }));
+        const chats =
+          userConvo.conversation.chats?.map((chat) => ({
+            id: chat.id,
+            userId: chat.user?.id,
+            text: chat.text,
+            edited: chat.edited,
+            createdAt: chat.createdAt,
+          })) || [];
 
         return {
           conversationId,
           type,
           name,
-          participants, // Return the filtered user objects (participants)
+          participants,
           lastActivity: userConvo.conversation.lastActivity,
         };
       })
-      .filter((convo) => convo !== null); // Filter out null conversations (where the user was banned)
+      .filter((convo) => convo !== null);
   }
-
-  //   async getConversationsWithParticipants(user: TokenPayload) {
-  //     const userId = user.sub;
-
-  //     // Fetch user conversations with the users related to each conversation, but don't include userConversations in the final result
-  //     const userConversations = await this.userConversationRepository.find({
-  //       where: { userId },
-  //       relations: [
-  //         'conversation',
-  //         'conversation.userConversations',
-  //         'conversation.userConversations.user',
-  //         'conversation.chats',
-  //       ],
-  //     });
-
-  //     // Map through the userConversations and return only conversationId and participants (user objects)
-  //     return userConversations.map((userConvo) => {
-  //       const conversationId = userConvo.conversation.id;
-  //       const type = userConvo.conversation.type;
-  //       const name = userConvo.conversation.name;
-
-  //       const participants = userConvo.conversation.userConversations
-  //         .map((uc) => uc.user) // Extract users
-  //         .filter((participant) => participant.id !== userId); // Exclude the current user
-
-  //       const chats = userConvo.conversation.chats.map((chat) => ({
-  //         id: chat.id,
-  //         userId: chat.userId,
-  //         text: chat.text,
-  //         edited: chat.edited,
-  //         createdAt: chat.createdAt,
-  //       }));
-
-  //       return {
-  //         conversationId, // Only return the conversationId
-  //         type,
-  //         name,
-  //         participants, // Return the filtered user objects (participants)
-  //         lastActivity: userConvo.conversation.lastActivity,
-  //       };
-  //     });
-  //   }
 
   async getConversationById(user: TokenPayload, conversationId: string) {
     const userId = user.sub;
@@ -796,7 +845,7 @@ export class ConversationsService {
 
     const chats = conversation.chats.map((chat) => ({
       id: chat.id,
-      userId: chat.userId,
+      userId: chat.user.id,
       text: chat.text,
       edited: chat.edited,
       createdAt: chat.createdAt,
@@ -859,113 +908,6 @@ export class ConversationsService {
       throw new BadRequestException('Error fetching participants');
     }
   }
-
-  //   async removeUserFromConversation(
-  //     conversationId: string,
-  //     userId: string,
-  //     user: TokenPayload,
-  //   ) {
-  //     try {
-  //       const { participants } = await this.getParticipants(conversationId, user);
-  //       //   console.log('participants:', participants);
-
-  //       const currentUser = participants.find((p) => p.id === user.sub);
-  //       if (!currentUser) {
-  //         throw new UnauthorizedException(
-  //           'You are not a participant in this conversation',
-  //         );
-  //       }
-
-  //       // Check if currentUser has the 'role' property
-  //       if ('group_role' in currentUser) {
-  //         if (currentUser.group_role !== 'OWNER') {
-  //           throw new UnauthorizedException(
-  //             'You are not the owner of the conversation',
-  //           );
-  //         }
-  //       } else {
-  //         throw new UnauthorizedException(
-  //           'User does not have a valid role in this conversation',
-  //         );
-  //       }
-
-  //       const targetUser = participants.find(
-  //         (p) => p.id === parseInt(userId, 10),
-  //       );
-  //       if (!targetUser) {
-  //         throw new BadRequestException('User not found in the conversation');
-  //       }
-
-  //       //   console.log('currentUser:', currentUser.group_role);
-  //       if (currentUser.group_role !== 'OWNER') {
-  //         throw new UnauthorizedException(
-  //           'You are not the owner of the conversation',
-  //         );
-  //       }
-
-  //       if (currentUser.id === targetUser.id) {
-  //         throw new BadRequestException('You cannot remove yourself');
-  //       }
-
-  //       //TODO: actuall remove the user from the conversation
-  //       const result = await this.userConversationRepository.delete({
-  //         conversationId,
-  //         userId: targetUser.id,
-  //       });
-  //       console.log('User removed from conversation:', targetUser.username);
-
-  //       //   const participantIds = participants.map((p) => p.id);
-  //       //   this.eventsGateway.sendEventToUser(
-  //       //     EventsType.USER_REMOVED_FROM_CHAT,
-  //       //     participantIds,
-  //       //     {
-  //       //       message: 'You have been removed from the conversation',
-  //       //       id: conversationId,
-  //       //       userId: targetUser.id,
-  //       //     },
-  //       //   );
-
-  //       //   const d: z.infer<typeof RemoveConversationFromListSchema> = {
-  //       //     data: { conversationId },
-  //       //   };
-
-  //       const d: z.infer<typeof RemoveConversationFromListSchema> = {
-  //         conversationId: conversationId,
-  //       };
-  //       //? send event to the removed user to remove the conversation from their list
-  //       this.eventsGateway.sendEventToUser(
-  //         EventsType.REMOVE_CONVERSATION_FROM_LIST,
-  //         [targetUser.id],
-  //         d,
-  //       );
-
-  //       //? send event to all participants to update the chat participants list
-  //       const dd: z.infer<typeof RemoveParticipantFromConversationSchema> = {
-  //         conversationId: conversationId,
-  //         userId: targetUser.id,
-  //       };
-  //       const remainingParticipants = participants.filter(
-  //         (p) => p.id !== targetUser.id,
-  //       );
-  //       this.eventsGateway.sendEventToUser(
-  //         EventsType.REMOVE_PARTICIPANT_FROM_CONVERSATION,
-  //         remainingParticipants.map((p) => p.id),
-  //         dd,
-  //       );
-
-  //       this.conversationsGateway.removeUserFromRoom(
-  //         targetUser.id,
-  //         conversationId,
-  //       );
-
-  //       return { message: 'User removed from conversation' };
-
-  //       //? Check if the user is the owner of the conversation
-  //     } catch (error) {
-  //       console.log('Error fetching participants:', error);
-  //       throw new BadRequestException('Error fetching participants');
-  //     }
-  //   }
 
   async removeUserFromConversation(
     conversationId: string,

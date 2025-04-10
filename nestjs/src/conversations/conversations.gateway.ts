@@ -21,9 +21,7 @@ import { TokenPayload } from 'src/auth/dto/token-payload';
 
 import { v4 as uuidv4 } from 'uuid'; // Import the uuid library
 import {
-  Chat,
   Conversation,
-  UserConversation,
 } from './entities/conversation.entity';
 import { Repository } from 'typeorm';
 import { ConversationsService } from './conversations.service';
@@ -36,6 +34,8 @@ import { ChatDto } from './dto/chat.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 // import { user } from 'drizzle/schema';
 import { plainToInstance } from 'class-transformer';
+import { Chat } from './entities/chat.entity';
+import { UserConversation } from './entities';
 // import { SocketAuthMiddleware } from 'src/auth/ws.mw';
 
 const PublicUserInfoSchema = z.object({
@@ -58,6 +58,7 @@ export interface serverToClientDto {
   timestamp: string;
   conversationId: string;
   senderUser: PublicUserInfoDto;
+  type: 'TEXT' | 'GAME_INVITE';
 }
 
 // @UseGuards(SocketAuthGuard)
@@ -139,20 +140,29 @@ export class ConversationsGateway
 
   async saveChat(message: ChatDto) {
     try {
-      const chat: Chat = plainToInstance(Chat, message);
-      const savedChat = this.chatRepository.save(chat);
-
-      // Find the associated conversation
+      // First find the conversation
       const conversation = await this.conversationRepository.findOne({
-        where: { id: chat.conversationId },
+        where: { id: message.conversationId }
       });
 
       if (!conversation) {
         throw new BadRequestException('Conversation not found');
       }
 
-      conversation.lastActivity = new Date();
+      // Create the chat with the conversation relation
+      const chat = this.chatRepository.create({
+        id: message.id,
+        text: message.text,
+        edited: message.edited,
+        conversation: conversation,
+        user: { id: message.userId }
+      });
 
+      // Save the chat
+      const savedChat = await this.chatRepository.save(chat);
+
+      // Update conversation's lastActivity
+      conversation.lastActivity = new Date();
       await this.conversationRepository.save(conversation);
 
       return savedChat;
@@ -412,8 +422,9 @@ export class ConversationsGateway
       messageId: savedMessage.id,
       message: savedMessage.text,
       timestamp: savedMessage.createdAt.toISOString(),
-      conversationId: savedMessage.conversationId,
+      conversationId: savedMessage.conversation.id,
       senderUser: dbUser,
+	  type: 'TEXT',
     };
 
     this.wss.to(message.conversationId).emit('chatToClient', res);
