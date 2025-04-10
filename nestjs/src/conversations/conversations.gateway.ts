@@ -20,9 +20,7 @@ import { Server, Socket } from 'socket.io';
 import { TokenPayload } from 'src/auth/dto/token-payload';
 
 import { v4 as uuidv4 } from 'uuid'; // Import the uuid library
-import {
-  Conversation,
-} from './entities/conversation.entity';
+import { Conversation } from './entities/conversation.entity';
 import { Repository } from 'typeorm';
 import { ConversationsService } from './conversations.service';
 import { JwtService } from '@nestjs/jwt';
@@ -36,6 +34,7 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { plainToInstance } from 'class-transformer';
 import { Chat } from './entities/chat.entity';
 import { UserConversation } from './entities';
+import { Message } from 'common/types/chat-type';
 // import { SocketAuthMiddleware } from 'src/auth/ws.mw';
 
 const PublicUserInfoSchema = z.object({
@@ -55,7 +54,7 @@ interface clientToServerDto {
 export interface serverToClientDto {
   messageId: string; // UUID for the message ID
   message: string;
-  timestamp: string;
+  createdAt: string;
   conversationId: string;
   senderUser: PublicUserInfoDto;
   type: 'TEXT' | 'GAME_INVITE';
@@ -142,7 +141,7 @@ export class ConversationsGateway
     try {
       // First find the conversation
       const conversation = await this.conversationRepository.findOne({
-        where: { id: message.conversationId }
+        where: { id: message.conversationId },
       });
 
       if (!conversation) {
@@ -155,7 +154,7 @@ export class ConversationsGateway
         text: message.text,
         edited: message.edited,
         conversation: conversation,
-        user: { id: message.userId }
+        user: { id: message.userId },
       });
 
       // Save the chat
@@ -261,9 +260,9 @@ export class ConversationsGateway
     const userConversation = await this.userConversationRepository.findOne({
       where: {
         // userId: userId,
-		user: { id: userId },
+        user: { id: userId },
         // conversationId: conversationId,
-		conversation: { id: conversationId },
+        conversation: { id: conversationId },
       },
     });
     //? If user isn't in the conversation, consider them banned/unauthorized
@@ -359,16 +358,16 @@ export class ConversationsGateway
     if (conversation.type === 'DM') {
       const convUsers = await this.userConversationRepository.find({
         where: {
-        //   conversationId: message.conversationId,
-		  conversation: { id: message.conversationId },
+          //   conversationId: message.conversationId,
+          conversation: { id: message.conversationId },
         },
         relations: ['user'],
       });
 
-    //   const user1 = convUsers[0].userId;
-	  const user1 = convUsers[0].user.id;
-    //   const user2 = convUsers[1].userId;
-	  const user2 = convUsers[1].user.id;
+      //   const user1 = convUsers[0].userId;
+      const user1 = convUsers[0].user.id;
+      //   const user2 = convUsers[1].userId;
+      const user2 = convUsers[1].user.id;
 
       const isBlocked = await this.conversationsService.isUserBlocked(
         user1,
@@ -380,27 +379,6 @@ export class ConversationsGateway
         );
       }
     }
-
-    // //? check if user AKA me, has access to the conversationId
-    // try {
-    //   const userConversation = await this.userConversationRepository.findOne({
-    //     where: {
-    //       userId: user.sub,
-    //       conversationId: message.conversationId,
-    //       banned: false,
-    //     },
-    //   });
-    //   if (!userConversation) {
-    //     throw new UnauthorizedException(
-    //       'User does not have access to this conversation',
-    //     );
-    //   }
-    // } catch (error) {
-    //   console.log('User does not have access to this conversation');
-    //   throw new UnauthorizedException(
-    //     'User does not have access to this conversation',
-    //   );
-    // }
 
     const newMessage: ChatDto = {
       id: uuidv4(),
@@ -421,13 +399,29 @@ export class ConversationsGateway
     const res: serverToClientDto = {
       messageId: savedMessage.id,
       message: savedMessage.text,
-      timestamp: savedMessage.createdAt.toISOString(),
+      createdAt: savedMessage.createdAt.toString(),
       conversationId: savedMessage.conversation.id,
       senderUser: dbUser,
-	  type: 'TEXT',
+      type: 'TEXT',
     };
 
-    this.wss.to(message.conversationId).emit('chatToClient', res);
+    const mes: Message = {
+      id: savedMessage.id,
+	  conversationId: savedMessage.conversation.id,
+      text: savedMessage.text,
+      createdAt: savedMessage.createdAt.toString(),
+      type: 'TEXT',
+      gameInviteData: undefined,
+      edited: false,
+      senderUser: {
+        userId: dbUser.id,
+        username: dbUser.username,
+        avatar: dbUser.avatar,
+      },
+    };
+
+    // this.wss.to(message.conversationId).emit('chatToClient', res);
+    this.wss.to(message.conversationId).emit('chatToClient', mes);
   }
 
   // New explicit handler for joining a room
@@ -450,10 +444,10 @@ export class ConversationsGateway
     try {
       const userConversation = await this.userConversationRepository.findOne({
         where: {
-        //   userId: user.sub,
-		  user: { id: user.sub },
-        //   conversationId: data.conversationId,
-		  conversation: { id: data.conversationId },
+          //   userId: user.sub,
+          user: { id: user.sub },
+          //   conversationId: data.conversationId,
+          conversation: { id: data.conversationId },
           banned: false,
         },
       });

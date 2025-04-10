@@ -54,7 +54,11 @@ import { Console } from 'console';
 import { FriendsEntity } from '@/friends/entities/friends.entity';
 import { UserConversation } from './entities';
 import { Chat } from './entities/chat.entity';
-import { GameInviteData, Message, PublicUserInfoDto } from 'common/types/chat-type';
+import {
+  GameInviteData,
+  Message,
+  PublicUserInfoDto,
+} from 'common/types/chat-type';
 
 @Injectable()
 export class ConversationsService {
@@ -555,62 +559,62 @@ export class ConversationsService {
     return userConversations.map((userConvo) => userConvo.conversation);
   }
 
-//   async getChatHistory(user: TokenPayload) {
-//     const userId = user.sub;
+  //   async getChatHistory(user: TokenPayload) {
+  //     const userId = user.sub;
 
-//     // Get all the conversations that the user is part of and check their banned status
-//     const userConversations = await this.userConversationRepository.find({
-//       where: { user: { id: userId } },
-//       relations: ['conversation'],
-//     });
+  //     // Get all the conversations that the user is part of and check their banned status
+  //     const userConversations = await this.userConversationRepository.find({
+  //       where: { user: { id: userId } },
+  //       relations: ['conversation'],
+  //     });
 
-//     // Filter out conversations where the user is banned
-//     const validUserConversations = userConversations.filter(
-//       (userConv) => userConv.banned === false,
-//     );
+  //     // Filter out conversations where the user is banned
+  //     const validUserConversations = userConversations.filter(
+  //       (userConv) => userConv.banned === false,
+  //     );
 
-//     const conversationIds = validUserConversations.map(
-//       (userConv) => userConv.conversation.id,
-//     );
+  //     const conversationIds = validUserConversations.map(
+  //       (userConv) => userConv.conversation.id,
+  //     );
 
-//     // Now, find only the conversations the user is part of and not banned
-//     const conversations = await this.conversationRepository.find({
-//       where: { id: In(conversationIds) }, // Filter conversations based on user participation
-//       relations: [
-//         'chats', // Include the chats in the conversation
-//         'chats.user', // Load user details
-//         'chats.conversation',
-//       ],
-//     });
+  //     // Now, find only the conversations the user is part of and not banned
+  //     const conversations = await this.conversationRepository.find({
+  //       where: { id: In(conversationIds) }, // Filter conversations based on user participation
+  //       relations: [
+  //         'chats', // Include the chats in the conversation
+  //         'chats.user', // Load user details
+  //         'chats.conversation',
+  //       ],
+  //     });
 
-//     // Process the conversations and format the response as needed
-//     const formattedConversations = await Promise.all(
-//       conversations.map(async (conversation) => {
-//         const chatWithUserDetails = await Promise.all(
-//           conversation.chats.map(async (chat: any) => {
-//             return {
-//               text: chat.text,
-//               createdAt: chat.createdAt,
-//               senderUser: {
-//                 userId: chat.user.id, // Now the user is fetched from the database
-//                 username: chat.user.username,
-//                 avatar: chat.user.avatar,
-//               },
-//             };
-//           }),
-//         );
+  //     // Process the conversations and format the response as needed
+  //     const formattedConversations = await Promise.all(
+  //       conversations.map(async (conversation) => {
+  //         const chatWithUserDetails = await Promise.all(
+  //           conversation.chats.map(async (chat: any) => {
+  //             return {
+  //               text: chat.text,
+  //               createdAt: chat.createdAt,
+  //               senderUser: {
+  //                 userId: chat.user.id, // Now the user is fetched from the database
+  //                 username: chat.user.username,
+  //                 avatar: chat.user.avatar,
+  //               },
+  //             };
+  //           }),
+  //         );
 
-//         return {
-//           conversationId: conversation.id,
-//           chat: chatWithUserDetails,
-//         };
-//       }),
-//     );
+  //         return {
+  //           conversationId: conversation.id,
+  //           chat: chatWithUserDetails,
+  //         };
+  //       }),
+  //     );
 
-//     return formattedConversations;
-//   }
+  //     return formattedConversations;
+  //   }
 
-async getChatHistory(user: TokenPayload) {
+  async getChatHistory(user: TokenPayload) {
     const userId = user.sub;
 
     // Get all the conversations that the user is part of and check their banned status
@@ -635,104 +639,57 @@ async getChatHistory(user: TokenPayload) {
         'chats', // Include the chats in the conversation
         'chats.user', // Load user details
         'chats.conversation',
-		'chats.gameInvite',
-		'chats.gameInvite.createdUser',
-		'chats.gameInvite.invitedUser',
+        'chats.gameInvite',
+        'chats.gameInvite.createdUser',
+        'chats.gameInvite.invitedUser',
       ],
     });
-
-	// const conversations = await this.conversationRepository.find({
-	// 	where: { id: In(conversationIds) },
-	// 	relations: {
-	// 	  chats: {
-	// 		user: true,
-	// 		conversation: true,
-	// 		gameInvite: true
-	// 	  }
-	// 	},
-	// 	select: {
-	// 	  id: true,
-	// 	  // Other conversation fields you need
-	// 	  chats: {
-	// 		id: true,
-	// 		text: true,
-	// 		// Other chat fields you need
-	// 		user: {
-	// 		  id: true,
-	// 		  username: true,
-	// 		  avatar: true,
-	// 		  // Only select the user fields you need
-	// 		}
-	// 	  }
-	// 	}
-	//   });
 
     // Process the conversations and format the response as needed
     const formattedConversations = await Promise.all(
       conversations.map(async (conversation) => {
         const chatWithUserDetails = await Promise.all(
           conversation.chats.map(async (chat: any) => {
+            const senderUser: PublicUserInfoDto = {
+              userId: chat.user.id,
+              username: chat.user.username,
+              avatar: chat.user.avatar,
+            };
 
-			const senderUser: PublicUserInfoDto = {
-				userId: chat.user.id,
-				username: chat.user.username,
-				avatar: chat.user.avatar,
-			}
+            var gameInvite: GameInviteData | undefined;
+            if (chat.type === 'GAME_INVITE') {
+              gameInvite = {
+                gameId: chat.gameInvite.id,
+                status: chat.gameInvite.status,
 
-			var gameInvite: GameInviteData | undefined;
-			if (chat.type === 'GAME_INVITE') {
-				gameInvite = {
-					gameId: chat.gameInvite.id,
-					status: chat.gameInvite.status,
+                creatorUserId: chat.gameInvite.createdUser.id,
+                creatorUsername: chat.gameInvite.createdUser.username,
 
-					creatorUserId: chat.gameInvite.createdUser.id,
-					creatorUsername: chat.gameInvite.createdUser.username,
+                recipientUserId: chat.gameInvite.invitedUser.id,
+                recipientUsername: chat.gameInvite.invitedUser.username,
 
-					recipientUserId: chat.gameInvite.invitedUser.id,
-					recipientUsername: chat.gameInvite.invitedUser.username,
+                creatorScore: chat.gameInvite.creatorScore,
+                recipientScore: chat.gameInvite.recipientScore,
+                winnerUsername: chat.gameInvite.winnerUsername,
+              };
+            }
 
-					creatorScore: chat.gameInvite.creatorScore,
-					recipientScore: chat.gameInvite.recipientScore,
-					winnerUsername: chat.gameInvite.winnerUsername,
-				}
-			}
+            // console.log("gameInvite:", gameInvite);
 
-			// console.log("gameInvite:", gameInvite);
-
-			const message: Message = {
-				id: chat.id,
-				text: chat.text,
-				createdAt: chat.createdAt,
-				type: chat.type,
-				senderUser,
-				edited: chat.edited,
-				gameInviteData: gameInvite,
-			}
-
-			// const message: Message = {
-			// 	id: chat.id,
-			// 	text: chat.text,
-			// 	timestamp: chat.createdAt,
-			// 	type: 'TEXT',
-			// 	senderUser,
-			// }
-
-			console.log("outgoing message:", message);
-
-			return message;
-
-			// console.log("requesting chat history:", chat);
-
-
-            return {
+            const message: Message = {
+              id: chat.id,
+              conversationId: conversation.id,
               text: chat.text,
               createdAt: chat.createdAt,
-              senderUser: {
-                userId: chat.user.id, // Now the user is fetched from the database
-                username: chat.user.username,
-                avatar: chat.user.avatar,
-              },
+              type: chat.type,
+              senderUser,
+              edited: chat.edited,
+              gameInviteData: gameInvite,
             };
+
+            console.log('outgoing message:', message);
+
+            return message;
           }),
         );
 

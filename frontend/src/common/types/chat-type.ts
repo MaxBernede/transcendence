@@ -50,6 +50,7 @@ export type PublicUserInfoDto = {
   // Message interface containing all message properties
   export interface Message {
 	id: string;
+	conversationId: string;
 	text: string;
 	createdAt: string;
 	type: 'TEXT' | 'GAME_INVITE';
