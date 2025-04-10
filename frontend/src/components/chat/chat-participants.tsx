@@ -156,7 +156,19 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
       }
     };
 
-    const handleEventActionBan = async (
+    const handleEventActionKick = async (
+		data: z.infer<typeof GroupUserStatusUpdateSchema>
+	  ) => {if (data.userId === currentUserId) {
+        //? if the current page is the conversation page, redirect to the home page
+        if (data.conversationId === channelId) {
+          // redirect to /chat
+          //   window.location.href = "/chat";
+          navigate("/chat");
+        }
+      }
+    };
+
+	const handleEventActionBan = async (
       data: z.infer<typeof GroupUserStatusUpdateSchema>
     ) => {
       console.log("BAN action received in conversations-list:", data);
@@ -221,6 +233,9 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
           break;
         case GroupUserStatusAction.UNBAN:
           handleEventActionUnban(data);
+          break;
+        case GroupUserStatusAction.KICK:
+          handleEventActionKick(data);
           break;
       }
     };

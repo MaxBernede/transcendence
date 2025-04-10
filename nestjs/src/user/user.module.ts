@@ -6,7 +6,9 @@ import { User } from './user.entity';
 import { MatchModule } from '../match/match.module';
 import { Match } from '../match/match.entity';
 import { typeOrmConfig } from '../ormconfig';
-import { Chat, Conversation, UserConversation } from 'src/conversations/entities/conversation.entity';
+import { Conversation } from 'src/conversations/entities/conversation.entity';
+import { Chat } from '@/conversations/entities/chat.entity';
+import { UserConversation } from '@/conversations/entities';
 
 @Module({
   imports: [
