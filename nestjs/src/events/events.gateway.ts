@@ -119,6 +119,7 @@ export class EventsGateway
 
   sendEventToUser(type: EventsType, userIds: number[], data: any) {
     userIds.forEach((userId) => {
+		console.log("sending event of type", type, "to user", userId)
       const socketId = this.userSocketMap.get(userId);
       if (socketId) {
         this.wss.to(socketId).emit(type, data);

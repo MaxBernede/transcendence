@@ -11,7 +11,8 @@ import { Match } from '../match/match.entity';
 import { CreateUserDto } from './dto/createUser.dto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { UserConversation } from '@/conversations/entities/conversation.entity';
+import { UserConversation } from '@/conversations/entities';
+// import { UserConversation } from '@/conversations/entities/conversation.entity';
 
 @Injectable()
 export class UserService {

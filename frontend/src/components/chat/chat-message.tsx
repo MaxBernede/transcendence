@@ -21,9 +21,11 @@ import {
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { ChatMessageType } from "./types";
+import { Message } from "@/common/types/chat-type";
 
 interface ChatMessageProps {
-  messageObject: ChatMessageType;
+  messageObject: Message
+//   messageObject: ChatMessageType;
   currentUserId: number;
 }
 
@@ -32,7 +34,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   currentUserId,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const isMyMessage = messageObject.user.id === currentUserId;
+  const isMyMessage = messageObject.senderUser.userId === currentUserId;
 
   // Handlers
   function handleEdit() {
@@ -64,21 +66,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     <ContextMenu>
       <ContextMenuTrigger>
         <Card className="w-full p-3 py-1 rounded-lg border-none bg-transparent shadow-none flex flex-col justify-start hover:bg-gray-900">
-          <div className="flex items-start gap-2 mb-2">
-            <Avatar className="w-12 h-12">
-              <AvatarImage src={messageObject.user.avatar} />
+          <div className="flex items-start gap-2 mb-2 max-w-full overflow-hidden">
+            <Avatar className="w-12 h-12 flex-shrink-0">
+              <AvatarImage src={messageObject.senderUser.avatar} />
             </Avatar>
-            <div className="flex flex-col">
-              <span className="font-semibold">
-                {messageObject.user.username}
+            <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+              <span className="font-semibold truncate">
+                {messageObject.senderUser.username}
                 <span className="ml-2 text-xs text-gray-400">
-                  {new Intl.DateTimeFormat("en-US", {
-                    dateStyle: "short",
-                    timeStyle: "medium",
-                  }).format(new Date(messageObject.timestamp))}
+                  {messageObject.createdAt ? new Date(messageObject.createdAt).toLocaleString() : 'Invalid date'}
                 </span>
               </span>
-              <p className="whitespace-pre-wrap break-words">
+              <p className="break-words whitespace-pre-wrap overflow-hidden">
                 {messageObject.text}
                 {messageObject.edited && (
                   <span className="text-xs text-gray-400 ml-1">(edited)</span>

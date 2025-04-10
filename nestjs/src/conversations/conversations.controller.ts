@@ -201,4 +201,15 @@ export class ConversationsController {
   ) {
     return this.conversationsService.leaveConversation(user, conversationId);
   }
+
+//   @Post('create-game-invite')
+//   async createGameInvite(
+// 	@GetUserPayload() user: TokenPayload,
+// 	@Body() createGameInviteDto: any,
+//   ) {
+// 	return this.conversationsService.createGameInvite(
+// 	  user,
+// 	  createGameInviteDto,
+// 	);
+//   }
 }

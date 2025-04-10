@@ -20,11 +20,7 @@ import { Server, Socket } from 'socket.io';
 import { TokenPayload } from 'src/auth/dto/token-payload';
 
 import { v4 as uuidv4 } from 'uuid'; // Import the uuid library
-import {
-  Chat,
-  Conversation,
-  UserConversation,
-} from './entities/conversation.entity';
+import { Conversation } from './entities/conversation.entity';
 import { Repository } from 'typeorm';
 import { ConversationsService } from './conversations.service';
 import { JwtService } from '@nestjs/jwt';
@@ -36,6 +32,9 @@ import { ChatDto } from './dto/chat.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 // import { user } from 'drizzle/schema';
 import { plainToInstance } from 'class-transformer';
+import { Chat } from './entities/chat.entity';
+import { UserConversation } from './entities';
+import { Message } from 'common/types/chat-type';
 // import { SocketAuthMiddleware } from 'src/auth/ws.mw';
 
 const PublicUserInfoSchema = z.object({
@@ -55,9 +54,10 @@ interface clientToServerDto {
 export interface serverToClientDto {
   messageId: string; // UUID for the message ID
   message: string;
-  timestamp: string;
+  createdAt: string;
   conversationId: string;
   senderUser: PublicUserInfoDto;
+  type: 'TEXT' | 'GAME_INVITE';
 }
 
 // @UseGuards(SocketAuthGuard)
@@ -139,20 +139,29 @@ export class ConversationsGateway
 
   async saveChat(message: ChatDto) {
     try {
-      const chat: Chat = plainToInstance(Chat, message);
-      const savedChat = this.chatRepository.save(chat);
-
-      // Find the associated conversation
+      // First find the conversation
       const conversation = await this.conversationRepository.findOne({
-        where: { id: chat.conversationId },
+        where: { id: message.conversationId },
       });
 
       if (!conversation) {
         throw new BadRequestException('Conversation not found');
       }
 
-      conversation.lastActivity = new Date();
+      // Create the chat with the conversation relation
+      const chat = this.chatRepository.create({
+        id: message.id,
+        text: message.text,
+        edited: message.edited,
+        conversation: conversation,
+        user: { id: message.userId },
+      });
 
+      // Save the chat
+      const savedChat = await this.chatRepository.save(chat);
+
+      // Update conversation's lastActivity
+      conversation.lastActivity = new Date();
       await this.conversationRepository.save(conversation);
 
       return savedChat;
@@ -206,19 +215,36 @@ export class ConversationsGateway
     // console.log('User:', client['user']);
 
     //? get all conversations for this user
+    // const conversations = await this.userConversationRepository.find({
+    //   where: {
+    //     userId: payload.sub,
+    //     banned: false,
+    //   },
+    // });
+
     const conversations = await this.userConversationRepository.find({
       where: {
-        userId: payload.sub,
+        user: { id: payload.sub },
         banned: false,
       },
+      relations: ['conversation'],
     });
 
+    // conversations.forEach((conversation) => {
+    //   client.join(conversation.conversationId);
+    //   console.log(
+    //     payload.username,
+    //     'joined room:',
+    //     conversation.conversationId,
+    //   );
+    // });
+
     conversations.forEach((conversation) => {
-      client.join(conversation.conversationId);
+      client.join(conversation.conversation.id);
       console.log(
         payload.username,
         'joined room:',
-        conversation.conversationId,
+        conversation.conversation.id,
       );
     });
 
@@ -233,8 +259,10 @@ export class ConversationsGateway
   ): Promise<boolean> {
     const userConversation = await this.userConversationRepository.findOne({
       where: {
-        userId: userId,
-        conversationId: conversationId,
+        // userId: userId,
+        user: { id: userId },
+        // conversationId: conversationId,
+        conversation: { id: conversationId },
       },
     });
     //? If user isn't in the conversation, consider them banned/unauthorized
@@ -316,55 +344,41 @@ export class ConversationsGateway
       );
     }
 
-	//? if conversation is a dm, check if user is blocked by the other user
-	const conversation = await this.conversationRepository.findOne({
-		where: {
-			id: message.conversationId,
-		},
-	});
+    //? if conversation is a dm, check if user is blocked by the other user
+    const conversation = await this.conversationRepository.findOne({
+      where: {
+        id: message.conversationId,
+      },
+    });
 
-	if (!conversation) {
-		throw new NotFoundException('Conversation not found');
-	}
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
 
-	if (conversation.type === 'DM') {
-		const convUsers = await this.userConversationRepository.find({
-			where: {
-				conversationId: message.conversationId,
-			},
-		});
+    if (conversation.type === 'DM') {
+      const convUsers = await this.userConversationRepository.find({
+        where: {
+          //   conversationId: message.conversationId,
+          conversation: { id: message.conversationId },
+        },
+        relations: ['user'],
+      });
 
-		const user1 = convUsers[0].userId;
-		const user2 = convUsers[1].userId;
+      //   const user1 = convUsers[0].userId;
+      const user1 = convUsers[0].user.id;
+      //   const user2 = convUsers[1].userId;
+      const user2 = convUsers[1].user.id;
 
-		const isBlocked = await this.conversationsService.isUserBlocked(user1, user2);
-		if (isBlocked) {
-			throw new UnauthorizedException('You are blocked or blocked by the other user');
-		}
-	}
-	
-	
-
-    // //? check if user AKA me, has access to the conversationId
-    // try {
-    //   const userConversation = await this.userConversationRepository.findOne({
-    //     where: {
-    //       userId: user.sub,
-    //       conversationId: message.conversationId,
-    //       banned: false,
-    //     },
-    //   });
-    //   if (!userConversation) {
-    //     throw new UnauthorizedException(
-    //       'User does not have access to this conversation',
-    //     );
-    //   }
-    // } catch (error) {
-    //   console.log('User does not have access to this conversation');
-    //   throw new UnauthorizedException(
-    //     'User does not have access to this conversation',
-    //   );
-    // }
+      const isBlocked = await this.conversationsService.isUserBlocked(
+        user1,
+        user2,
+      );
+      if (isBlocked) {
+        throw new UnauthorizedException(
+          'You are blocked or blocked by the other user',
+        );
+      }
+    }
 
     const newMessage: ChatDto = {
       id: uuidv4(),
@@ -385,37 +399,63 @@ export class ConversationsGateway
     const res: serverToClientDto = {
       messageId: savedMessage.id,
       message: savedMessage.text,
-      timestamp: savedMessage.createdAt.toISOString(),
-      conversationId: savedMessage.conversationId,
+      createdAt: savedMessage.createdAt.toString(),
+      conversationId: savedMessage.conversation.id,
       senderUser: dbUser,
+      type: 'TEXT',
     };
 
-    this.wss.to(message.conversationId).emit('chatToClient', res);
+    const mes: Message = {
+      id: savedMessage.id,
+	  conversationId: savedMessage.conversation.id,
+      text: savedMessage.text,
+      createdAt: savedMessage.createdAt.toString(),
+      type: 'TEXT',
+      gameInviteData: undefined,
+      edited: false,
+      senderUser: {
+        userId: dbUser.id,
+        username: dbUser.username,
+        avatar: dbUser.avatar,
+      },
+    };
+
+    // this.wss.to(message.conversationId).emit('chatToClient', res);
+    this.wss.to(message.conversationId).emit('chatToClient', mes);
   }
 
   // New explicit handler for joining a room
   @SubscribeMessage('joinRoom')
-  async handleJoinRoom(client: Socket, data: { conversationId: string }): Promise<void> {
+  async handleJoinRoom(
+    client: Socket,
+    data: { conversationId: string },
+  ): Promise<void> {
     const isValid = await this.validateClient(client);
     if (isValid === false) {
       return;
     }
 
     const user = client['user'];
-    console.log(`User ${user.username} manually joining room ${data.conversationId}`);
+    console.log(
+      `User ${user.username} manually joining room ${data.conversationId}`,
+    );
 
     // Check if user has access to this conversation
     try {
       const userConversation = await this.userConversationRepository.findOne({
         where: {
-          userId: user.sub,
-          conversationId: data.conversationId,
+          //   userId: user.sub,
+          user: { id: user.sub },
+          //   conversationId: data.conversationId,
+          conversation: { id: data.conversationId },
           banned: false,
         },
       });
-      
+
       if (!userConversation) {
-        console.log(`User ${user.username} doesn't have access to conversation ${data.conversationId}`);
+        console.log(
+          `User ${user.username} doesn't have access to conversation ${data.conversationId}`,
+        );
         return;
       }
 
