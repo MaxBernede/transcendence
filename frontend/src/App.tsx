@@ -13,8 +13,8 @@ import ChatPage from "./pages/chat/[id]";
 import ChatLayout from "./pages/chat/chat-page";
 import { UserProvider } from "./context";
 // import TwoFASetup from './pages/login/2FASetup';
-import Friends from './pages/Friends';
-import UserProfile from './pages/UserProfile';
+import Friends from "./pages/Friends";
+import UserProfile from "./pages/UserProfile";
 import PongPage from "./game/PongPage";
 import LoginPage from "./pages/login/page";
 import { io, Socket } from "socket.io-client";
@@ -23,41 +23,42 @@ import EventsHandler from "./events/EventsHandler";
 import { Toaster } from "./components/ui/sonner";
 import TwoFASetup from "./pages/login/2FASetup";
 
+interface UserContextWrapperProps {
+  children: ReactNode;
+}
+
 export const UserContext = createContext<{
-	userData: UserData | null;
-	setUserData: React.Dispatch<React.SetStateAction<UserData | null>>;
-	loading: boolean;
-	error: string | null;
-	matchHistory: any[];
-	setMatchHistory: React.Dispatch<React.SetStateAction<any[]>>;
-  }>({
-	userData: null,
-	setUserData: () => {},
-	loading: true,
-	error: null,
-	matchHistory: [],
-	setMatchHistory: () => {},
-  });
+  userData: UserData | null;
+  setUserData: React.Dispatch<React.SetStateAction<UserData | null>>;
+  loading: boolean;
+  error: string | null;
+  matchHistory: any[];
+  setMatchHistory: React.Dispatch<React.SetStateAction<any[]>>;
+}>({
+  userData: null,
+  setUserData: () => {},
+  loading: true,
+  error: null,
+  matchHistory: [],
+  setMatchHistory: () => {},
+});
 
 function App() {
-	const [userData, setUserData] = useState<UserData | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [matchHistory, setMatchHistory] = useState<any[]>([]); // Default as empty array  
-	useEffect(() => {
-		// Fetch user data when the component mounts
-		//user, achi, match, error, loading
-		fetchUserData(setUserData, setMatchHistory, setError, setLoading);
-	  },[]);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [matchHistory, setMatchHistory] = useState<any[]>([]); // Default as empty array
+  useEffect(() => {
+    // Fetch user data when the component mounts
+    //user, achi, match, error, loading
+    fetchUserData(setUserData, setMatchHistory, setError, setLoading);
+  }, []);
 
-	  const [socket, setSocket] = useState<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
-	  useEffect(() => {
-
-	
-		const eventsHandler = EventsHandler.getInstance();
-
-	  }, []);
+  useEffect(() => {
+    const eventsHandler = EventsHandler.getInstance();
+  }, []);
   return (
     <UserContext.Provider
       value={{
@@ -68,36 +69,54 @@ function App() {
         matchHistory,
         setMatchHistory,
       }}
-    >  
-	  <BrowserRouter>
-	  <Toaster position="bottom-right" richColors />
+    >
+      <BrowserRouter>
+        <Toaster position="bottom-right" richColors />
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/user/:id" element={<UserPage />} />
           <Route path="/user/ProfileUpdate" element={<ProfileUpdate />} />
           <Route path="/2FA" element={<TwoFactorAuth />} />
-		      <Route path="/friends" element={<Friends />} />
-          <Route path="/2FASetup" element={<TwoFASetup/>} />
-		    {/* Public Pong and Private Pong Room */}
-        <Route path="/pong">
-          <Route index element={<PongPage />} />
-          <Route path="/pong/:roomId" element={<PongPage />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/2FASetup" element={<TwoFASetup />} />
+          {/* Public Pong and Private Pong Room */}
+          {/* <Route path="/pong">
+            <Route index element={<PongPage />} />
+            <Route path="/pong/:roomId" element={<PongPage />} />
+          </Route> */}
+          <Route path="/pong">
+            <Route
+              index
+              element={
+                <UserContextWrapper>
+                  <PongPage />
+                </UserContextWrapper>
+              }
+            />
+            <Route
+              path="/pong/:roomId"
+              element={
+                <UserContextWrapper>
+                  <PongPage />
+                </UserContextWrapper>
+              }
+            />
           </Route>
-		          {/* Only wrap /chat route with UserProvider */}
-				  <Route path="/chat/*" element={<UserProviderWrapper />}>
-          <Route path=":channelId" element={<ChatPage />} />
-        </Route>
-        <Route
-          path="*"
-          element={
-            <p style={{ padding: "20px", color: "red" }}>
-              404 - Page Not Found
-            </p>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+          {/* Only wrap /chat route with UserProvider */}
+          <Route path="/chat/*" element={<UserProviderWrapper />}>
+            <Route path=":channelId" element={<ChatPage />} />
+          </Route>
+          <Route
+            path="*"
+            element={
+              <p style={{ padding: "20px", color: "red" }}>
+                404 - Page Not Found
+              </p>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </UserContext.Provider>
   );
 }
@@ -112,3 +131,11 @@ const UserProviderWrapper = () => {
     </UserProvider>
   );
 };
+
+const UserContextWrapper = ({ children }: UserContextWrapperProps) => {
+	return (
+	  <UserProvider>
+		{children}
+	  </UserProvider>
+	);
+  };

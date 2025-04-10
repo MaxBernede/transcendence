@@ -111,6 +111,8 @@ export class EventsGateway
 
     // console.log(client.id, 'registered for events');
 
+	
+
     this.wss.emit('serverToClientEvents', 'Hello from events');
   }
 
