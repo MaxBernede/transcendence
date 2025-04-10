@@ -79,7 +79,11 @@ function App() {
           <Route path="/2FA" element={<TwoFactorAuth />} />
 		      <Route path="/friends" element={<Friends />} />
           <Route path="/2FASetup" element={<TwoFASetup/>} />
-		      <Route path="/pong" element={<PongPage />} /> 
+		    {/* Public Pong and Private Pong Room */}
+        <Route path="/pong">
+          <Route index element={<PongPage />} />
+          <Route path="/pong/:roomId" element={<PongPage />} />
+          </Route>
 		          {/* Only wrap /chat route with UserProvider */}
 				  <Route path="/chat/*" element={<UserProviderWrapper />}>
           <Route path=":channelId" element={<ChatPage />} />

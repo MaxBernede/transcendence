@@ -138,7 +138,6 @@ export class UserService {
     //   where: whereClause,
     //   relations: ['friends', 'matchHistory'],
     // });
-
 	const user = await this.userRepository.findOne({
 		where: whereClause,
 		relations: ['friends'],

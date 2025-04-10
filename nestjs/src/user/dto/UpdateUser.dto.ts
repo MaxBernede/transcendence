@@ -31,7 +31,7 @@ export class UpdateUserDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  losses?: number;
+  loose?: number;
 
   @IsOptional()
   @IsInt()
