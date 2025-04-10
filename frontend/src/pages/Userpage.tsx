@@ -19,8 +19,9 @@ const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
 	useEffect(() => {
 		if (!id) return;
-
+		
 		const fetchUserData = async () => {
+			await new Promise(resolve => setTimeout(resolve, 1000)); // UNSAFE AS FCK its for the socket to be done changing the user status
 			try {
 				const res = await fetch(`/api/users/${id}`);
 				const data = await res.json();
@@ -74,7 +75,6 @@ const UserPage: React.FC = () => {
       <ProfileBanner />
       <div className="content-container">
       { id == "me" && <LogoutButton /> }
-
         {/* Stats centered */}
         <div className="stats flex justify-center w-full mb-2 text-xl font-semibold text-white-800">
           <div className="wins mx-8">

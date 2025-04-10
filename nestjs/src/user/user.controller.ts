@@ -94,7 +94,7 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     try {
       // Try fetching the user from the database
       user = await this.userService.findOne(isNumericId ? +id : id);
-      console.log('user', user);
+      console.log('User datas', user);
     } catch (error) {
       console.error('Error fetching user:', error.message);
       user = null;

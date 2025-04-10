@@ -36,8 +36,8 @@ export class EventsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   constructor(
-    // @InjectRepository(User)
-    // private readonly userRepository: Repository<User>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
 
 
     private readonly jwtService: JwtService,
@@ -87,14 +87,13 @@ export class EventsGateway
     // console.log('Init socket server');
   }
 
-  handleDisconnect(client: Socket) {
-    // console.log(client.id, 'disconnected from events');
+  async handleDisconnect(client: Socket) {
 
     const userId = this.socketUserMap.get(client.id);
     if (userId) {
       this.userSocketMap.delete(userId);
       this.socketUserMap.delete(client.id);
-      // console.log(`User ${userId} disconnected, removing socketId ${client.id}`,);
+      await this.userRepository.update(userId, { activity_status: false });
     }
   }
 
@@ -108,8 +107,10 @@ export class EventsGateway
     }
     this.userSocketMap.set(user.sub, client.id);
     this.socketUserMap.set(client.id, user.sub);
-
-    // console.log(client.id, 'registered for events');
+    await this.userRepository.update(user.sub, { activity_status: true });
+    const updatedUser = await this.userRepository.findOneBy({ id: user.sub });
+    console.log('User updated', updatedUser);
+    // console.log(client.id, 'registered for events ', user.sub);
 
     this.wss.emit('serverToClientEvents', 'Hello from events');
   }

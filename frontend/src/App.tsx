@@ -56,6 +56,7 @@ function App() {
 
 	
 		const eventsHandler = EventsHandler.getInstance();
+    // setSocket(eventsHandler.getSocket()); // possible to check the double event ?
 
 	  }, []);
   return (

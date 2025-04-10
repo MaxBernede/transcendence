@@ -54,8 +54,8 @@ export class User {
   @Column({ default: true })
   newUser: boolean;
 
-  @Column({ default: null })
-  activity_status: string;
+  @Column({ default: false })
+  activity_status: boolean;
 
   @Column({ type: 'json', nullable: true })
   image: {

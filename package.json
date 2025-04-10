@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "@clevali/trycatch": "^1.0.3"
+    "@clevali/trycatch": "^1.0.3",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0"
   }
 }

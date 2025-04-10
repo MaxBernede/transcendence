@@ -48,10 +48,7 @@ export class TwoFactorAuthController {
 			// If valid, just redirect ? not sure its the right place tho
 			const jwt = user.tempJWT
 			this.twoFactorAuthService.setJwtCookieTwo(res, jwt);
-			return res.status(200).json({message: '2FA validated'});
-			// return res.redirect(`http://localhost:3001/user/${user.intraId}`);
-			// console.log("Valid")
-			
+			return res.redirect(`http://localhost:3001/user/${user.intraId}`);
 		} 
 		catch (error) {
 			console.error('Error updating user data:', error);
