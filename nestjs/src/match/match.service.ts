@@ -1,40 +1,57 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Match } from './match.entity';
-import { User } from '../user/user.entity';
+import { User } from '@/user/user.entity';
 
 @Injectable()
 export class MatchService {
-  constructor(
-    @InjectRepository(Match)
-    private readonly matchRepository: Repository<Match>,
-  ) {}
+	constructor(
+	  @InjectRepository(Match) private readonly matchRepo: Repository<Match>,
+	  @InjectRepository(User) private readonly userRepo: Repository<User>, // Inject the user repository
+	) {}
 
-  // Retrieve match history by user ID
-  async findByUser(userId: number) {
-    return this.matchRepository.find({
-      where: { user: { id: userId } },
-      relations: ['user'],
-    });
-  }
+	async createMatch(winnerId: number, looserId: number, winnerScore: number, looserScore: number) {
+		// Create the match
+		const match = this.matchRepo.create({ 
+			winner: { id: winnerId }, 
+			looser: { id: looserId }, 
+			winnerScore, 
+			looserScore 
+		});
 
-  async updateMatchHistory(
-    userId: number,
-    matchUpdates: Partial<Match>[],
-  ): Promise<Match[]> {
-    console.log('Match updates received:', matchUpdates);
+		// Save the match
+		const savedMatch = await this.matchRepo.save(match);
 
-    const matches = matchUpdates.map((matchData) => {
-      console.log('Creating match:', matchData);
-      return this.matchRepository.create({
-        ...matchData,
-        user: { id: userId } as User, // Link the match to the user
-      });
-    });
+		// Fetch users
+		const winner = await this.userRepo.findOne({ where: { id: winnerId } });
+		const looser = await this.userRepo.findOne({ where: { id: looserId } });
 
-    const savedMatches = await this.matchRepository.save(matches);
-    console.log('Saved matches:', savedMatches);
-    return savedMatches;
-  }
+		if (winner && looser) {
+			// Increment wins and losses
+			winner.wins += 1;
+			looser.loose += 1;
+
+			// Save updated users
+			await this.userRepo.save(winner);
+			await this.userRepo.save(looser);
+		}
+
+		return savedMatch;
+	}
+
+	async getMatchesByUser(userId: number) {
+		return this.matchRepo.find({
+			where: [{ winner: { id: userId } }, { looser: { id: userId } }],
+			relations: ['winner', 'looser'],
+			select: {
+				id: true,
+				winnerScore: true,
+				looserScore: true,
+				date: true,
+				winner: { id: true, username: true },
+				looser: { id: true, username: true }
+			}
+		});
+	}
 }

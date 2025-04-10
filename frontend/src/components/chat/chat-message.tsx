@@ -1,13 +1,13 @@
 // components/ChatMessage.tsx
-import { Card } from "../../components/ui/card";
-import { Avatar, AvatarImage } from "../../components/ui/avatar";
+import { Card } from "../ui/card";
+import { Avatar, AvatarImage } from "../ui/avatar";
 import React, { useState } from "react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "../../components/ui/context-menu";
+} from "../ui/context-menu";
 
 import {
   AlertDialog,
@@ -19,9 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "../../components/ui//alert-dialog";
+} from "../ui/alert-dialog";
 import { ChatMessageType } from "./types";
-
 
 interface ChatMessageProps {
   messageObject: ChatMessageType;

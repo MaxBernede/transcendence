@@ -32,7 +32,6 @@ export const fetchUserData = async (
 		...user,
 		avatar: user.avatar ? buildAvatarUrl(user.avatar) : user.image?.link,
 		losses: user.losses || user.loose || 0,
-		ladderLevel: user.ladderLevel || user.ladder_level || 0,
 	  });
   
 	  setMatchHistory(user.matchHistory || []);

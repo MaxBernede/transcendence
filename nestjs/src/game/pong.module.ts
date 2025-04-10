@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
-import { PongGateway } from './pong.gateway'; 
+import { PongGateway } from './pong.gateway';
 import { PongService } from './pong.service';
-import { DatabasesModule } from '../database/database.module';
+import { UsersModule } from '@/user/user.module';
 
 @Module({
   providers: [PongGateway, PongService],
-  imports: [DatabasesModule], 
-  exports: [PongService],   
+  imports: [UsersModule],
+  exports: [PongService, PongGateway],
 })
 export class PongModule {}
-

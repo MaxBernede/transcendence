@@ -1,337 +1,437 @@
 import { Injectable } from '@nestjs/common';
 import { Server } from 'socket.io';
+import { Socket } from 'socket.io';
+
+interface GameState {
+	ball: { x: number; y: number; vx: number; vy: number };
+	paddle1: { y: number };
+	paddle2: { y: number };
+	score: { player1: number; player2: number };
+	isActive: boolean;
+  }
+  
+  interface PowerUpState {
+	x: number | null;
+	y: number | null;
+	vx: number;
+	vy: number;
+	type: 'shrinkOpponent' | 'speedBoost' | 'enlargePaddle' | null;
+	isActive: boolean;
+  }
 
 @Injectable()
 export class PongService {
-    private gameState = {
-        ball: { x: 390, y: 294, vx: 0, vy: 0 },
-        paddle1: { y: 250 },
-        paddle2: { y: 250 },
-        score: { player1: 0, player2: 0 },
-		isActive: false,
-    };
-
-	private powerUpState = {
-		x: null as number | null,
-		y: null as number | null,
-		vx: 0,
-		vy: 0,
-		type: null as "shrinkOpponent" | "speedBoost" | "enlargePaddle" | null,
-		isActive: false,
-	};
 	
-
-    private playersReady: number = 0;
-    private ballMoving: boolean = false;
-    private gameLoopInterval: NodeJS.Timeout | null = null;
+	private gameStates = new Map<string, GameState>();
+	private powerUpStates = new Map<string, PowerUpState>();
+	private playersReady = new Map<string, number>();
+	private ballMoving = new Map<string, boolean>();
+	private gameLoopIntervals = new Map<string, NodeJS.Timeout>();	
 	private winnerDeclared: boolean = false;
+	private rooms = new Map<string, { player1: number; player2?: number }>();
 
-    constructor() {}
+
+  // Set up per-room game state
+  private createInitialGameState(): GameState {
+    return {
+      ball: { x: 386, y: 294, vx: 0, vy: 0 },
+      paddle1: { y: 250 },
+      paddle2: { y: 250 },
+      score: { player1: 0, player2: 0 },
+      isActive: false,
+    };
+  }
+
+  private createInitialPowerUpState(): PowerUpState {
+    return {
+      x: null,
+      y: null,
+      vx: 0,
+      vy: 0,
+      type: null,
+      isActive: false,
+    };
+  }
 
     // Returns the current game state
-    public getGameState() {
-        return this.gameState;
-    }
+  public getGameState(roomId: string): GameState | undefined {
+    return this.gameStates.get(roomId);
+  }
 
 	// Checks if the ball is currently moving
-	public isBallMoving(): boolean {
-		return this.ballMoving;
-	}
+	public isBallMoving(roomId: string): boolean {
+		return this.ballMoving.get(roomId) ?? false;
+	  }
 
     // Increments the number of players ready
-    public incrementReadyPlayers() {
-        this.playersReady++;
-    }
-
-    // Checks if both players are ready
-    public areBothPlayersReady(): boolean {
-        return this.playersReady >= 2;
-    }
+	public incrementReadyPlayers(roomId: string) {
+		const count = this.playersReady.get(roomId) || 0;
+		this.playersReady.set(roomId, count + 1);
+	  }
+	  
+	  public areBothPlayersReady(roomId: string): boolean {
+		return (this.playersReady.get(roomId) || 0) >= 2;
+	  }	  
 	
 
     // Updates paddle position
-	public updatePaddlePosition(playerNumber: number, y: number, server: Server): boolean {
-		if (playerNumber === 1) {
-			this.gameState.paddle1.y = y;
-		} else if (playerNumber === 2) {
-			this.gameState.paddle2.y = y;
-		} else {
-			return false;
+	public updatePaddlePosition(roomId: string, playerNumber: number, y: number, server: Server): boolean {
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) return false;
+	  
+		if (playerNumber === 1) gameState.paddle1.y = y;
+		else if (playerNumber === 2) gameState.paddle2.y = y;
+		else return false;
+	  
+		if (!this.ballMoving.get(roomId)) {
+		  console.log("First paddle move detected, starting ball movement...");
+		  gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
+		  gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+		  this.ballMoving.set(roomId, true);
+		  this.startGameLoop(roomId, server);
 		}
-	
-		// Don't move the ball until the game is active!
-		// if (!this.isGameActive()) {
-		// 	console.warn("Game is not active, ignoring paddle move.");
-		// 	return false;
-		// }
-	
-		// Start the ball movement only on the first paddle move
-		if (!this.ballMoving) {
-			console.log("First paddle move detected, starting ball movement...");
-			this.ballMoving = true;
-			this.gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
-			this.gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
-			this.startGameLoop(server);
-		}
-	
 		return true;
-	}
+	  }
+	  
 	
 
     // Starts the game loop
-	public startGameLoop(server: Server) {
-		if (this.gameLoopInterval) return;
-	
-		console.log("Starting game loop...");
-		this.gameLoopInterval = setInterval(() => {
-			server.emit("gameState", this.gameState);
-	
-			if (!this.ballMoving && !this.powerUpState.isActive) {
-				return; // Skip update if ball is not moving and no power-up is active
-			}
-	
-			if (this.ballMoving) {
-				this.updateGameState(server);
-			}
-	
-			if (this.powerUpState.isActive) {
-				this.updatePowerUpState(server); // Update power-up movement
-				this.checkPowerUpCollision(server); // Check for power-up collection
+	// Starts the game loop for a specific room
+public startGameLoop(roomId: string, server: Server) {
+	if (this.gameLoopIntervals.has(roomId)) return;
 
-			}
+	console.log(`🎮 Starting game loop for room ${roomId}...`);
+	const interval = setInterval(() => {
+		const gameState = this.gameStates.get(roomId);
+		const powerUpState = this.powerUpStates.get(roomId);
+
+		if (!gameState || !powerUpState) return;
+
+		// Emit current game state to the room
+		server.to(roomId).emit("gameState", gameState);
+
+		if (!this.ballMoving.get(roomId) && !powerUpState.isActive) return;
+
+		if (this.ballMoving.get(roomId)) {
+			this.updateGameState(roomId, server);
+		}
+
+		if (powerUpState.isActive) {
+			this.updatePowerUpState(roomId, server);
+			this.checkPowerUpCollision(roomId, server);
+		}
+
+		if (Math.random() < 0.05 && !powerUpState.isActive) {
+			this.spawnPowerUp(roomId, server);
+		}
+	}, 1000 / 60);
+
+	this.gameLoopIntervals.set(roomId, interval);
+}
+
 	
-			// Spawn power-up randomly (5% chance per frame)
-			if (Math.random() < 0.05 && !this.powerUpState.isActive) {
-				this.spawnPowerUp(server);
-			}
-		}, 1000 / 60);
+private checkPowerUpCollision(roomId: string, server: Server) {
+	const gameState = this.gameStates.get(roomId);
+	const powerUp = this.powerUpStates.get(roomId);
+	if (!gameState || !powerUp?.isActive) return;
+  
+	const { x, y, type } = powerUp;
+	const paddle1 = gameState.paddle1;
+	const paddle2 = gameState.paddle2;
+  
+	if (x! <= 30 && y! >= paddle1.y && y! <= paddle1.y + 100) {
+	  this.applyPowerUpEffect(roomId, 1, server);
+	  return;
 	}
-	
-	private checkPowerUpCollision(server: Server) {
-		if (!this.powerUpState.isActive) return;
-	
-		const { x, y, type } = this.powerUpState;
-		const paddle1 = this.gameState.paddle1;
-		const paddle2 = this.gameState.paddle2;
-	
-		// Check if Player 1 collects the power-up
-		if (x <= 30 && y >= paddle1.y && y <= paddle1.y + 100) {
-			console.log('Player 1 collected power-up: ${type}');
-			this.applyPowerUpEffect(1, server);
-			server.emit("powerUpCollected", { player: 1, type });
-			return;
-		}
-	
-		// Check if Player 2 collects the power-up
-		if (x >= 770 && y >= paddle2.y && y <= paddle2.y + 100) {
-			console.log('Player 2 collected power-up: ${type}');
-			this.applyPowerUpEffect(2, server);
-			server.emit("powerUpCollected", { player: 2, type });
-			return;
-		}
+  
+	if (x! >= 770 && y! >= paddle2.y && y! <= paddle2.y + 100) {
+	  this.applyPowerUpEffect(roomId, 2, server);
+	  return;
 	}
+  }
+  
 	
 
-	private updatePowerUpState(server: Server) {
-		if (!this.powerUpState.isActive) return; // Do nothing if no active power-up
-
-		if (this.powerUpState.vx === 0) this.powerUpState.vx = Math.random() > 0.5 ? 3 : -3;
-    	if (this.powerUpState.vy === 0) this.powerUpState.vy = Math.random() > 0.5 ? 2 : -2;
-
-		// Update position
-		this.powerUpState.x += this.powerUpState.vx;
-		this.powerUpState.y += this.powerUpState.vy;
-	
-		// Bounce power-ups off the walls
-		if (this.powerUpState.x <= 0 || this.powerUpState.x >= 770) {
-			console.log(" Power-Up bounced off X wall!");
-			this.powerUpState.vx *= -1; 
-		}
-		if (this.powerUpState.y <= 0 || this.powerUpState.y >= 600) {
-			console.log(" Power-Up bounced off Y wall!");
-			this.powerUpState.vy *= -1;
-		}
-
-		this.checkPowerUpCollision(server);
-
-	
-		// Send updated position to clients
-		server.emit("updatePowerUp", this.powerUpState);
-	}	
+	private updatePowerUpState(roomId: string, server: Server) {
+		const powerUp = this.powerUpStates.get(roomId);
+		if (!powerUp || !powerUp.isActive) return;
+	  
+		if (powerUp.vx === 0) powerUp.vx = Math.random() > 0.5 ? 3 : -3;
+		if (powerUp.vy === 0) powerUp.vy = Math.random() > 0.5 ? 2 : -2;
+	  
+		powerUp.x! += powerUp.vx;
+		powerUp.y! += powerUp.vy;
+	  
+		if (powerUp.x! <= 0 || powerUp.x! >= 770) powerUp.vx *= -1;
+		if (powerUp.y! <= 0 || powerUp.y! >= 550) powerUp.vy *= -1;
+	  
+		this.checkPowerUpCollision(roomId, server);
+		server.to(roomId).emit("updatePowerUp", powerUp);
+	  }
+	  
 	
 	
 
     // Updates game state every frame 
-    private updateGameState(server: Server) {
-        if (!this.ballMoving) return;
+	private updateGameState(roomId: string, server: Server) {
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) return;
+	  
+		const ball = gameState.ball;
+		ball.x += ball.vx;
+		ball.y += ball.vy;
+	  
+		if (ball.y <= 0 || ball.y >= 570) ball.vy *= -1;
+	  
+		this.checkCollisions(roomId, server);
+		server.to(roomId).emit("gameState", gameState);
+	  }
+	  
 
-        const ball = this.gameState.ball;
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-
-        // Ball bounces off top/bottom walls
-        if (ball.y <= 0 || ball.y >= 600) ball.vy *= -1;
-
-        // Check collisions and score updates
-        this.checkCollisions(server);
-        server.emit("gameState", this.gameState);
-    }
-
-	public stopGame(server: Server) {
+	public stopGame(roomId: string, server: Server) {
 		console.log("Stopping game - Winner declared!");
 	
-		this.ballMoving = false;
-		if (this.gameLoopInterval) {
-			clearInterval(this.gameLoopInterval);
-			this.gameLoopInterval = null;
+		this.ballMoving.set(roomId, false);
+		const loop = this.gameLoopIntervals.get(roomId);
+		if (loop) {
+		  clearInterval(loop);
+		  this.gameLoopIntervals.delete(roomId);
 		}
+		
 	
-		// Ensure ball stops in place
-		this.gameState.ball.vx = 0;
-		this.gameState.ball.vy = 0;
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) return;
 	
-		server.emit("gameState", this.gameState); // Send final state to clients
+		gameState.ball.vx = 0;
+		gameState.ball.vy = 0;
+	
+		server.emit("gameState", gameState);
 	}
 	
 
-	private checkGameOver(server: Server) {
-		if (this.gameState.score.player1 >= 3) {
+	private checkGameOver(roomId: string, server: Server) {
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) return;
+
+		if (gameState.score.player1 >= 3) {
 			console.log("Player 1 Wins!");
 			this.winnerDeclared = true;
-			this.stopGame(server); // Freeze game state!
+			this.stopGame(roomId, server); // Freeze game state!
 			server.emit("gameOver", { winner: "Player 1" });
-		} else if (this.gameState.score.player2 >= 3) {
+		} else if (gameState.score.player2 >= 3) {
 			console.log("Player 2 Wins!");
 			this.winnerDeclared = true;
-			this.stopGame(server); // Freeze game state!
+			this.stopGame(roomId, server); // Freeze game state!
 			server.emit("gameOver", { winner: "Player 2" });
 		}
 	}
 	
 
     // Checks for ball collisions
-	private checkCollisions(server: Server) {
-    const ball = this.gameState.ball;
-    const paddle1 = this.gameState.paddle1;
-    const paddle2 = this.gameState.paddle2;
+	private checkCollisions(roomId: string, server: Server) {
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) return;
+	
+		const ball = gameState.ball;
+		const paddle1 = gameState.paddle1;
+		const paddle2 = gameState.paddle2;
 
     // Paddle collision logic
-    if (ball.x <= 30 && ball.y >= paddle1.y && ball.y <= paddle1.y + 100) {
+    if (ball.x <= 20 && ball.y >= paddle1.y && ball.y <= paddle1.y + 100) {
         ball.vx = Math.abs(ball.vx);
-    } else if (ball.x >= 770 && ball.y >= paddle2.y && ball.y <= paddle2.y + 100) {
+    } else if (ball.x >= 750 && ball.y >= paddle2.y && ball.y <= paddle2.y + 100) {
         ball.vx = -Math.abs(ball.vx);
     }
 
     // Scoring logic
     if (ball.x <= 0) {
-        this.gameState.score.player2++;
-        this.checkGameOver(server);
-        this.resetBall(server);
+        gameState.score.player2++;
+        this.checkGameOver(roomId, server);
+        this.resetBall(roomId, server);
     } else if (ball.x >= 800) {
-        this.gameState.score.player1++;
-        this.checkGameOver(server);
-        this.resetBall(server);
+        gameState.score.player1++;
+        this.checkGameOver(roomId, server);
+        this.resetBall(roomId, server);
     }
 }
 
 
 	// Applies power-up effect to the given player
-	public applyPowerUpEffect(player: number, server: Server) {
-		if (!this.powerUpState.isActive) return;
-	
-		console.log('Applying power-up: ${this.powerUpState.type} to Player ${player}');
-	
-		if (this.powerUpState.type === "shrinkOpponent") {
-			const opponent = player === 1 ? 2 : 1;
-			// console.log('Shrinking Player' ${opponent}'s paddle!');
-			server.emit("shrinkPaddle", { player: opponent });
-		} 
-		else if (this.powerUpState.type === "speedBoost") {
-			console.log("Speed Boost! Increasing ball speed.");
-			this.gameState.ball.vx *= 1.5;
-			this.gameState.ball.vy *= 1.5;
-			server.emit("increaseBallSpeed", this.gameState.ball);
-		} 
-		else if (this.powerUpState.type === "enlargePaddle") {
-			// console.log('Enlarging Player ${player}'s paddle!'');
-			server.emit("enlargePaddle", { player });
-		}
-	
-		// Clear power-up state
-		this.powerUpState = { x: null, y: null, vx: 0, vy: 0, type: null, isActive: false };
-		server.emit("powerUpCleared");
+public applyPowerUpEffect(roomId: string, player: number, server: Server) {
+	const powerUp = this.powerUpStates.get(roomId);
+	const gameState = this.gameStates.get(roomId);
+	if (!powerUp || !powerUp.isActive || !gameState) return;
+
+	console.log(`Applying power-up: ${powerUp.type} to Player ${player}`);
+
+	if (powerUp.type === "shrinkOpponent") {
+	const opponent = player === 1 ? 2 : 1;
+	server.emit("shrinkPaddle", { player: opponent });
+	} else if (powerUp.type === "speedBoost") {
+	console.log("Speed Boost! Increasing ball speed.");
+	gameState.ball.vx *= 1.5;
+	gameState.ball.vy *= 1.5;
+	server.emit("increaseBallSpeed", gameState.ball);
+	} else if (powerUp.type === "enlargePaddle") {
+	server.emit("enlargePaddle", { player });
+	}
+
+	this.powerUpStates.set(roomId, {
+	x: null, y: null, vx: 0, vy: 0, type: null, isActive: false,
+	});
+	server.emit("powerUpCleared");
 	}
 	
 
 	// Resets the ball and paddles after a goal but does NOT start the ball automatically
-private resetBall(server: Server) {
-    console.log("Resetting ball and paddles after goal...");
+	private resetBall(roomId: string, server: Server) {
+		console.log("Resetting ball and paddles after goal...");
+	
+		this.ballMoving.set(roomId, false);
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) return;
+	
+		gameState.ball = { x: 386, y: 294, vx: 0, vy: 0 };
+		gameState.paddle1.y = 250;
+		gameState.paddle2.y = 250;
+	
+		server.emit("gameState", gameState);
+	}
+	
 
-    this.ballMoving = false; // Stop ball movement
 
-    // Reset ball position
-    this.gameState.ball = { x: 390, y: 294, vx: 0, vy: 0 };
+	public resetGame(server: Server, roomId: string) {
+		console.log(`Resetting game for room: ${roomId}`);
+	
+		this.cleanupRoom(roomId);
+	
+		this.gameStates.set(roomId, {
+			ball: { x: 386, y: 294, vx: 0, vy: 0 },
+			paddle1: { y: 250 },
+			paddle2: { y: 250 },
+			score: { player1: 0, player2: 0 },
+			isActive: false
+		});
+	
+		this.powerUpStates.set(roomId, {
+			x: null,
+			y: null,
+			vx: 0,
+			vy: 0,
+			type: null,
+			isActive: false
+		});
+	
+		this.playersReady.set(roomId, 0);
+		this.winnerDeclared = false;
+		this.ballMoving.set(roomId, false);
+	
+		server.to(roomId).emit("gameReset");
+		server.to(roomId).emit("gameState", this.gameStates.get(roomId));
+	}
+	
 
-    // Reset paddles to middle
-    this.gameState.paddle1.y = 250;
-    this.gameState.paddle2.y = 250;
+public startBall(server: Server, roomId: string) {
+    if (this.ballMoving.get(roomId)) return;
 
-    server.emit("gameState", this.gameState); // Send updated state to clients
+    const gameState = this.gameStates.get(roomId);
+    if (!gameState) return;
+
+    gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
+    gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+    this.ballMoving.set(roomId, true);
+
+	this.startGameLoop(roomId, server);
 }
 
 
-// Resets the entire game
-public resetGame(server: Server) {
-    console.log("Resetting game...");
+  private spawnPowerUp(roomId: string, server: Server) {
+	const existing = this.powerUpStates.get(roomId);
+	if (existing?.isActive) return;
+  
+	const randomX = Math.floor(Math.random() * 570) + 100;
+	const randomY = Math.floor(Math.random() * 300) + 50;
+	const types = ["shrinkOpponent", "speedBoost", "enlargePaddle"] as const;
+	const randomType = types[Math.floor(Math.random() * types.length)];
+  
+	const newPowerUp: PowerUpState = {
+	  x: randomX,
+	  y: randomY,
+	  vx: Math.random() > 0.5 ? 3 : -3,
+	  vy: Math.random() > 0.5 ? 2 : -2,
+	  type: randomType,
+	  isActive: true,
+	};
+  
+	this.powerUpStates.set(roomId, newPowerUp);
+	server.to(roomId).emit("powerUpSpawned", newPowerUp);
+  }
+  
 
-    this.playersReady = 0;
-    this.winnerDeclared = false;
-    this.ballMoving = false;
 
-    if (this.gameLoopInterval) {
-        clearInterval(this.gameLoopInterval);
-        this.gameLoopInterval = null;
-    }
+createMatch(dto: { userId: number; roomId: string }, client: Socket): { message: string; room: string } {
+	const existingRoom = this.rooms.get(dto.roomId);
+  
+	if (existingRoom) {
+	  const { player1, player2 } = existingRoom;
+  
+	  if (player1 && player2) {
+		client.emit("roomFull");
+		return { message: "Room is full", room: dto.roomId };
+	  }
+  
+	  if (player1 !== dto.userId && player2 !== dto.userId) {
+		existingRoom.player2 = dto.userId;
+	  }
+	} else {
+	  this.rooms.set(dto.roomId, { player1: dto.userId });
+	}
+  
+	return { message: 'Match created or joined', room: dto.roomId };
+  }
+  
 
-    //  Make sure game is inactive and doesn't start automatically!
-    this.gameState = {
-        ball: { x: 390, y: 294, vx: 0, vy: 0 },
-        paddle1: { y: 250 },
-        paddle2: { y: 250 },
-        score: { player1: 0, player2: 0 },
-        isActive: false,  // Prevents auto-start
-    };
+  
+  getRoomInfo(roomId: string) {
+	return this.rooms.get(roomId) ?? { error: 'Room not found' };
+  }
+  
+  getRoomByUserId(userId: number) {
+	for (const [roomId, room] of this.rooms.entries()) {
+	  if (room.player1 === userId || room.player2 === userId) {
+		return { roomId, ...room };
+	  }
+	}
+	return { error: 'User not found in any room' };
+  }
 
-    this.powerUpState = { x: null, y: null, vx: 0, vy: 0, type: null, isActive: false };
+  private gameLoops = new Map<string, NodeJS.Timeout>();
 
-    server.emit("gameReset");  // Notify frontend to close popup
-    server.emit("gameState", this.gameState);
+stopGameLoop(roomId: string) {
+  const loop = this.gameLoops.get(roomId);
+  if (loop) {
+    clearInterval(loop);
+    this.gameLoops.delete(roomId);
+    console.log(`game loop stopped for room ${roomId}`);
+  }
 }
 
-
-spawnPowerUp(server: Server) { 
-    if (this.powerUpState.isActive) return;
-
-    console.log("⚡ Spawning power-up...");
-
-    const randomX = Math.floor(Math.random() * 600) + 100;
-    const randomY = Math.floor(Math.random() * 300) + 50;
-    const powerUpTypes: Array<"shrinkOpponent" | "speedBoost" | "enlargePaddle"> = [
-        "shrinkOpponent", "speedBoost", "enlargePaddle"
-    ];
-    const randomType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
-
-    this.powerUpState = { 
-        x: randomX, 
-        y: randomY, 
-        vx: Math.random() > 0.5 ? 3 : -3,
-        vy: Math.random() > 0.5 ? 2 : -2,
-        type: randomType, 
-        isActive: true 
-    };
-
-    console.log("Emitting power-up:", this.powerUpState);
-    server.emit("powerUpSpawned", this.powerUpState);
-}
+cleanupRoom(roomId: string) {
+	// stop active interval
+	const interval = this.gameLoopIntervals.get(roomId);
+	if (interval) clearInterval(interval);
+	this.gameLoopIntervals.delete(roomId);
+  
+	// clear game state
+	this.gameStates.delete(roomId);
+	this.powerUpStates.delete(roomId);
+	this.playersReady.delete(roomId);
+	this.ballMoving.delete(roomId);
+  
+	this.winnerDeclared = false;
+  
+	console.log(`cleaned up all data for room ${roomId}`);
+  }
+  
 
 }

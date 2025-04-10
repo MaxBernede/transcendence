@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -19,6 +20,24 @@ export class CreateConversationDto {
   @IsString()
   @IsOptional()
   name: string;
+
+  @ApiProperty({
+    description:
+      'password',
+    required: false, // Optional field, only needed for GROUP type
+  })
+  @IsString()
+  @IsOptional()
+  password: string;
+
+  @ApiProperty({
+    description: 'Whether the conversation is private.',
+    example: false,
+    required: false, // Optional field, only needed for GROUP type
+  })
+  @IsBoolean()
+  @IsOptional()
+  isPrivate: boolean;
 
   @ApiProperty({
     description:
@@ -50,6 +69,35 @@ export class CreateConversationDmDto {
   receiverId: string; // ID of the receiver for the DM conversation
 }
 
+export class UpdateMemberRoleDto {
+  @IsUUID() // Ensures that the conversationId is a valid UUID
+  @IsNotEmpty()
+  conversationId: string; // ID of the conversation to update
+
+  @IsNotEmpty()
+  memberId: number; // ID of the member to update
+
+  @IsEnum(['OWNER', 'ADMIN', 'MEMBER'])
+  @IsNotEmpty()
+  role: 'OWNER' | 'ADMIN' | 'MEMBER'; // Role to assign to the member
+}
+
+export class JoinConversationDto {
+  @IsUUID() // Ensures that the receiverId is a valid UUID
+  @IsNotEmpty()
+  id: string; // ID of the receiver for the DM conversation
+
+  @IsString()
+  @IsOptional()
+  password: string;
+}
+
+export class LeaveConversationDto {
+  @IsUUID() // Ensures that the conversationId is a valid UUID
+  @IsNotEmpty()
+  id: string; // ID of the conversation to leave
+}
+
 export class CreateConversationGroupDto {
   @IsString()
   @IsOptional()
@@ -59,4 +107,13 @@ export class CreateConversationGroupDto {
   @ArrayNotEmpty()
   @IsUUID('all', { each: true }) // Ensures that all items in the array are valid UUIDs
   participants: string[]; // List of participant IDs
+}
+
+export class ChangePasswordDto {
+  @IsUUID() // Ensures that the conversationId is a valid UUID
+  @IsNotEmpty()
+  id: string; // ID of the conversation to change the password
+
+  @IsString()
+  password: string; // New password for the conversation
 }

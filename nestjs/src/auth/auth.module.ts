@@ -9,14 +9,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from 'src/ormconfig';
 import { User } from 'src/user/user.entity';
-import { DatabasesModule } from 'src/database/database.module';
 import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
 
 @Module({
   imports: [
 	TypeOrmModule.forRoot(typeOrmConfig),
 	TypeOrmModule.forFeature([User]),
-	DatabasesModule,
 	UsersModule,
 	AuthModule,
 	TwoFactorAuthModule,
@@ -27,16 +25,14 @@ import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'fallbackSecret',
+        secret: configService.getOrThrow<string>('JWT_SECRET') || 'fallbackSecret',
         signOptions: { expiresIn: '24h' },
       }),
     }),
-    DatabasesModule,
     TypeOrmModule.forRoot(typeOrmConfig),
     TypeOrmModule.forFeature([User]),
   ],
   providers: [AuthService, JwtStrategy],
-  //   providers: [AuthService, JwtStrategy, SocketAuthGuard],
   controllers: [AuthController],
   exports: [AuthService, JwtModule, PassportModule],
 })

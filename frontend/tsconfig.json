@@ -17,7 +17,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".", // Add this to resolve paths correctly
     "paths": {
-      "@/*": ["src/*"] // This resolves @ to src/ (used in your imports)
+      "@/*": ["src/*"], // This resolves @ to src/ (used in your imports)
+    //   "@ui/*": ["src/components/ui/*"] // This resolves @ui to src/components/ui/ (used in your imports)
     }
   },
   "include": ["src", "src/components", "src/App.tsx", "src/index.tsx"],

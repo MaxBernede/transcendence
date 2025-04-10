@@ -1,7 +1,6 @@
-import { pgTable, serial, bigint, varchar, integer, unique, timestamp, json, foreignKey, uuid, text, boolean, index, primaryKey, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, serial, bigint, varchar, integer, unique, timestamp, foreignKey, index, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
-export const conversationTypeEnum = pgEnum("conversation_type_enum", ['DM', 'GROUP'])
 
 
 export const migrations = pgTable("migrations", {
@@ -19,23 +18,18 @@ export const userAchievementEntity = pgTable("user_achievement_entity", {
 
 export const user = pgTable("user", {
 	id: serial().primaryKey().notNull(),
-	intraId: integer(),
-	username: varchar(),
-	firstName: varchar().default(''),
-	lastName: varchar().default(''),
+	username: varchar().notNull(),
 	email: varchar(),
 	avatar: varchar(),
 	password: varchar(),
-	tempJwt: varchar(),
-	secret2Fa: varchar("secret_2fa"),
+	hashKey: varchar("hash_key"),
+	phoneNumber2Fa: integer("phone_number_2fa"),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	wins: integer().default(0).notNull(),
 	loose: integer().default(0).notNull(),
 	ladderLevel: integer("ladder_level").default(0).notNull(),
 	activityStatus: varchar("activity_status"),
-	image: json(),
 }, (table) => [
-	unique("UQ_bb21f7478f422418fbd53620078").on(table.intraId),
 	unique("UQ_78a916df40e02a9deb1c4b75edb").on(table.username),
 ]);
 
@@ -53,49 +47,6 @@ export const matchHistory = pgTable("match_history", {
 			foreignColumns: [user.id],
 			name: "FK_fab180b043d043cd669ea0fcf02"
 		}).onDelete("cascade"),
-]);
-
-export const conversation = pgTable("conversation", {
-	id: uuid().default(sql`uuid_generate_v4()`).primaryKey().notNull(),
-	type: conversationTypeEnum().default('DM').notNull(),
-	name: text().default('Untitled Group'),
-});
-
-export const chat = pgTable("chat", {
-	id: uuid().default(sql`uuid_generate_v4()`).primaryKey().notNull(),
-	text: text().notNull(),
-	edited: boolean().default(false).notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	conversationId: uuid(),
-	userId: integer(),
-}, (table) => [
-	foreignKey({
-			columns: [table.conversationId],
-			foreignColumns: [conversation.id],
-			name: "FK_a19eb5a72b6d73ac18ccc84c64e"
-		}),
-	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "FK_52af74c7484586ef4bdfd8e4dbb"
-		}),
-]);
-
-export const userConversation = pgTable("user_conversation", {
-	id: uuid().default(sql`uuid_generate_v4()`).primaryKey().notNull(),
-	userId: integer().notNull(),
-	conversationId: uuid().notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "FK_610e529db4ea61302bb83bf8d81"
-		}),
-	foreignKey({
-			columns: [table.conversationId],
-			foreignColumns: [conversation.id],
-			name: "FK_a3e5e26b62e895c0478fb104bec"
-		}),
 ]);
 
 export const achievement = pgTable("achievement", {

@@ -7,10 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Match } from '../match/match.entity';
-import {
-  Chat,
-  UserConversation,
-} from 'src/conversations/entities/conversation.entity';
+import { UserConversation } from 'src/conversations/entities/conversation.entity';
 
 @Entity('user')
 export class User {
@@ -37,9 +34,6 @@ export class User {
   @Column({ nullable: true, default: null })
   avatar: string;
 
-  @Column({ nullable: true })
-  password: string;
-
   // to store the jwt in case of a 2FA, then switch it back to null when logged in
   @Column({ nullable: true, default: null })
   tempJWT: string;
@@ -59,9 +53,6 @@ export class User {
   @Column({ default: true })
   newUser: boolean;
 
-  @Column({ default: 0 })
-  ladder_level: number;
-
   @Column({ default: null })
   activity_status: string;
 
@@ -80,15 +71,18 @@ export class User {
   @JoinTable()
   friends: User[];
 
-  @OneToMany(() => Match, (match) => match.user)
-  matchHistory: Match[];
-
   @OneToMany(
     () => UserConversation,
     (userConversation) => userConversation.user,
   )
-  @Column({ nullable: true })
-  socketId: string;
-  
   userConversations: UserConversation[];
+  
+  @Column({ nullable: true })
+  socketId: string;  
+
+	@OneToMany(() => Match, (match) => match.winner)
+	wonMatches: Match[];
+
+	@OneToMany(() => Match, (match) => match.looser)
+	lostMatches: Match[];
 }

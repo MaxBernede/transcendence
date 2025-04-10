@@ -76,31 +76,11 @@
           "primaryKey": true,
           "notNull": true
         },
-        "intraId": {
-          "name": "intraId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "username": {
           "name": "username",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
-        },
-        "firstName": {
-          "name": "firstName",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "''"
-        },
-        "lastName": {
-          "name": "lastName",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "''"
+          "notNull": true
         },
         "email": {
           "name": "email",
@@ -165,25 +145,12 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
-        },
-        "image": {
-          "name": "image",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "UQ_bb21f7478f422418fbd53620078": {
-          "columns": [
-            "intraId"
-          ],
-          "nullsNotDistinct": false,
-          "name": "UQ_bb21f7478f422418fbd53620078"
-        },
         "UQ_78a916df40e02a9deb1c4b75edb": {
           "columns": [
             "username"
@@ -308,169 +275,6 @@
           "name": "UQ_fb1bf9570b9dd4146acf300edf2"
         }
       },
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
-    "public.conversation": {
-      "name": "conversation",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuid_generate_v4()"
-        },
-        "type": {
-          "name": "type",
-          "type": "conversation_type_enum",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'DM'"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
-    "public.chat": {
-      "name": "chat",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuid_generate_v4()"
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "conversationId": {
-          "name": "conversationId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "userId": {
-          "name": "userId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "FK_a19eb5a72b6d73ac18ccc84c64e": {
-          "name": "FK_a19eb5a72b6d73ac18ccc84c64e",
-          "tableFrom": "chat",
-          "tableTo": "conversation",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "conversationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "FK_52af74c7484586ef4bdfd8e4dbb": {
-          "name": "FK_52af74c7484586ef4bdfd8e4dbb",
-          "tableFrom": "chat",
-          "tableTo": "user",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
-    "public.user_conversation": {
-      "name": "user_conversation",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuid_generate_v4()"
-        },
-        "userId": {
-          "name": "userId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "conversationId": {
-          "name": "conversationId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "FK_610e529db4ea61302bb83bf8d81": {
-          "name": "FK_610e529db4ea61302bb83bf8d81",
-          "tableFrom": "user_conversation",
-          "tableTo": "user",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "FK_a3e5e26b62e895c0478fb104bec": {
-          "name": "FK_a3e5e26b62e895c0478fb104bec",
-          "tableFrom": "user_conversation",
-          "tableTo": "conversation",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "conversationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "checkConstraints": {},
       "policies": {},
       "isRLSEnabled": false
@@ -664,113 +468,9 @@
       "checkConstraints": {},
       "policies": {},
       "isRLSEnabled": false
-    },
-    "public.conversation_participants_user": {
-      "name": "conversation_participants_user",
-      "schema": "",
-      "columns": {
-        "conversationId": {
-          "name": "conversationId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "userId": {
-          "name": "userId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "IDX_4928ef292e3fb48783034b82f7": {
-          "name": "IDX_4928ef292e3fb48783034b82f7",
-          "columns": [
-            {
-              "expression": "conversationId",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "IDX_5d93fb1843f96fbdefea37dae8": {
-          "name": "IDX_5d93fb1843f96fbdefea37dae8",
-          "columns": [
-            {
-              "expression": "userId",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "int4_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "FK_4928ef292e3fb48783034b82f7a": {
-          "name": "FK_4928ef292e3fb48783034b82f7a",
-          "tableFrom": "conversation_participants_user",
-          "tableTo": "conversation",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "conversationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "FK_5d93fb1843f96fbdefea37dae86": {
-          "name": "FK_5d93fb1843f96fbdefea37dae86",
-          "tableFrom": "conversation_participants_user",
-          "tableTo": "user",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "PK_25e9241137cdb0f2336d267cc99": {
-          "name": "PK_25e9241137cdb0f2336d267cc99",
-          "columns": [
-            "conversationId",
-            "userId"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
     }
   },
-  "enums": {
-    "public.conversation_type_enum": {
-      "name": "conversation_type_enum",
-      "values": [
-        "DM",
-        "GROUP"
-      ],
-      "schema": "public"
-    }
-  },
+  "enums": {},
   "schemas": {},
   "sequences": {},
   "roles": {},

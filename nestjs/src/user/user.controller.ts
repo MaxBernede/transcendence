@@ -18,19 +18,15 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { extname } from 'path';
 import { UserService } from './user.service';
 import { MatchService } from '../match/match.service';
-import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { CreateUserDto } from './dto/createUser.dto';
 import { Match } from '../match/match.entity';
-import { Public } from 'src/decorators/public.decorator';
-// import { AuthGuard } from 'src/auth/auth.guard';
 import axios from 'axios';
 import { Response } from 'express';
 import * as fs from 'fs';
 import * as cookie from 'cookie';
-// import { JwtAuthGuard } from 'src/temp-jwt.guard';
 import { GetUserPayload } from 'src/test.decorator';
 import { TokenPayload } from 'src/auth/dto/token-payload';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -47,7 +43,6 @@ export class UserController {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-
   ) {}
 
   @Post()
@@ -55,22 +50,10 @@ export class UserController {
     return this.userService.createUser(createUserDto);
   }
 
-//   @UseGuards(JwtAuthGuard)
-//   @Get('me')
-//   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-//     // console.log(request);
-//     // console.log('cookies', request.headers['cookie']);
-//     // console.log('user');
-//     const existingUser = await this.userRepository.findOne({
-//       where: { email: payload.email },
-//     });
-//     return existingUser;
-//   }
-
 @UseGuards(JwtAuthGuard)
 @Get('me')
 async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-  console.log("Fetching user with ID:", payload.sub);
+  // console.log("Fetching user with ID:", payload.sub);
 
   const existingUser = await this.userRepository.findOne({
     where: { id: payload.sub }, // Use ID instead of email
@@ -111,6 +94,7 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     try {
       // Try fetching the user from the database
       user = await this.userService.findOne(isNumericId ? +id : id);
+      console.log('user', user);
     } catch (error) {
       console.error('Error fetching user:', error.message);
       user = null;
@@ -136,17 +120,17 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
   //     }
   //     return this.userService.findOneById(userId);
   //   }
-//   @UseGuards(JwtAuthGuard)
-//   @Get('me')
-//   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-//     console.log(request);
-//     // console.log('cookies', request.headers['cookie']);
-//     // console.log('user');
-//     const existingUser = await this.userRepository.findOne({
-//       where: { email: payload.email },
-//     });
-//     return existingUser;
-//   }
+  //   @UseGuards(JwtAuthGuard)
+  //   @Get('me')
+  //   async test(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
+  //     console.log(request);
+  //     // console.log('cookies', request.headers['cookie']);
+  //     // console.log('user');
+  //     const existingUser = await this.userRepository.findOne({
+  //       where: { email: payload.email },
+  //     });
+  //     return existingUser;
+  //   }
 
   //Last part of the login after the 2FA
   async endLogin(@Req() request: any, @Res() res: Response) {
@@ -229,7 +213,8 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
       }
     }
     const avatarUrl = `http://localhost:3000/uploads/avatars/${file.filename}`;
-    console.log('New avatar URL:', avatarUrl);
+    // console.log('New avatar URL:', avatarUrl);
+    // console.log('userId:', userId);
     await this.userService.updateAvatar(userId, avatarUrl);
     return { avatar: avatarUrl };
   }
@@ -265,33 +250,6 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
       console.error(`Error fetching avatar for ${username}:`, error.message);
       res.status(404).send('Image not found');
     }
-  }
-
-  @Get('user/:id/match-history')
-  async getMatchHistory(@Param('id', ParseIntPipe) id: number) {
-    const matchHistory = await this.matchService.findByUser(id);
-
-    if (!matchHistory || matchHistory.length === 0) {
-      return []; // Ensure an empty array is returned if no matches exist
-    }
-
-    // commented because match database changed
-    return [];
-    // id: match.id,
-    // type: match.type,
-    // opponent: match.opponent,
-    // result: match.result,
-    // score: match.score,
-    // description: `${match.type} vs ${match.opponent} - ${match.result} (${match.score})`,
-    // date: new Date(match.date).toLocaleDateString('en-GB'),
-  }
-
-  @Put(':id/match-history')
-  async updateMatchHistory(
-    @Param('id', ParseIntPipe) userId: number,
-    @Body() matchUpdates: Match[],
-  ) {
-    return this.matchService.updateMatchHistory(userId, matchUpdates);
   }
 
 }

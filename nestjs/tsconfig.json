@@ -9,7 +9,10 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"], // This resolves @ to src/ (used in your imports)
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,

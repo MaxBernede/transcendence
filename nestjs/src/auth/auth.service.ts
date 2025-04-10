@@ -67,6 +67,7 @@ export class AuthService {
       firstName: userInfo.first_name,
       lastName: userInfo.last_name,
       username: userInfo.login,
+	  avatar: userInfo.image.link,
       image: userInfo.image,
     });
     return user
@@ -100,12 +101,6 @@ export class AuthService {
       sameSite: 'strict', // SameSite attribute should match as well
     });
   }
-
-  // async handleSuccessful2FA(res: Response, user: User, jwt: string) {
-
-  //   this.setJwtCookie(res, jwt);
-  //   return res.redirect(`http://localhost:3001/user/${this.getUserIdFromJwt(jwt)}`);
-  // }
 
 	getUserIdFromJwt(jwt: string): string {
 		const decoded = this.jwtService.decode(jwt) as TokenPayload;

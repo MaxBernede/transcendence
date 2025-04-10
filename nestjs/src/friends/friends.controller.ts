@@ -1,6 +1,5 @@
 import { Controller, Delete, Get, Post, Body, Param} from '@nestjs/common';
 import { FriendsService } from './friends.service';
-import { FriendsEntity } from './entities/friends.entity';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 

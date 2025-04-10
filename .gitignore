@@ -1,6 +1,8 @@
 .env
 #.env to be added but not at the moment
 
+nestjs/uploads
+
 # Ignore node_modules folder (backend and frontend)
 node_modules/
 
@@ -9,3 +11,5 @@ dist/
 
 # Ignore system files
 .DS_Store
+
+nestjs/drizzle
