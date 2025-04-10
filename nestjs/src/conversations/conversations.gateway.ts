@@ -119,7 +119,7 @@ export class ConversationsGateway
       const payload: TokenPayload = this.jwtService.verify(token);
       client['user'] = payload;
 
-      console.log(`Client validated: ${payload.username}`);
+      // console.log(`Client validated: ${payload.username}`);
       return true;
     } catch (error) {
       console.error('Error validating client:', error.message);
@@ -186,7 +186,7 @@ export class ConversationsGateway
   }
 
   handleDisconnect(client: Socket) {
-    console.log('Client disconnected:', client.id);
+    // console.log('Client disconnected:', client.id);
     // userSocketMap.delete(client.id);
     // this.socketIdUserMap.delete(client.id);
     const userId = this.socketIdUserMap.get(client.id);
