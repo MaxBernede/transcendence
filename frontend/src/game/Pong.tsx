@@ -98,7 +98,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
     navigate(`/pong/${newRoomId}`);
   };
 
-    const me: UserPayload = useUserContext();
+  const me: UserPayload = useUserContext();
 
   useEffect(() => {
     const storedRoomId = localStorage.getItem("roomId");
@@ -798,6 +798,17 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
       socket.off("powerUpsCooldown");
     };
   }, []);
+
+  useEffect(() => {
+    socket.on("accessDenied", () => {
+      console.log("Access denied to room, redirecting to home...");
+      navigate("/");
+    });
+
+    return () => {
+      socket.off("accessDenied");
+    };
+  }, [navigate]);
 
   return (
     <div

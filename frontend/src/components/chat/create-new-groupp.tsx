@@ -160,7 +160,10 @@ export const CreateNewGroup = () => {
       }
     }}>
       <AlertDialogTrigger asChild>
-        <Button className="bg-cyan-700" onClick={handleOpenDialog}>
+        <Button 
+          className="flex-1 bg-blue-900/30 backdrop-blur-sm rounded-lg shadow-lg hover:bg-blue-800/40 transition-colors border-0"
+          onClick={handleOpenDialog}
+        >
           Create New Group
         </Button>
       </AlertDialogTrigger>

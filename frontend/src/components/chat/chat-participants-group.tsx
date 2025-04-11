@@ -218,6 +218,27 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
     }
   };
 
+  const handleInviteToPong = async (participant: PublicUserInfo) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/pong/createInvite",
+        {
+          username: participant.username,
+          userId: participant.id,
+          conversationId: conversationId,
+        },
+        { withCredentials: true }
+      );
+      console.log("Invite created:", response.data);
+    } catch (error) {
+      console.error("Failed to create invite:", error);
+    }
+  };
+
+  const handleViewProfile = (username: string) => {
+    navigate(`/user/${username}`);
+  };
+
   return (
     <div className="space-y-2 text-left min-w-[300px]">
       <h2 className="text-lg font-bold text-gray-300 flex justify-between items-center">
@@ -283,7 +304,10 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
           </ContextMenuTrigger>
 
           <ContextMenuContent className="bg-slate-900 border-none">
-            <ContextMenuItem className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md">
+            <ContextMenuItem 
+              onClick={() => handleViewProfile(participant.username)}
+              className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md"
+            >
               Profile
             </ContextMenuItem>
             {/* <ContextMenuItem
@@ -294,12 +318,20 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
             </ContextMenuItem> */}
 
             {user.id !== participant.id && (
-              <ContextMenuItem
-                onClick={() => NavigateToDM(participant.username)}
-                className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md"
-              >
-                Message
-              </ContextMenuItem>
+              <>
+                <ContextMenuItem
+                  onClick={() => NavigateToDM(participant.username)}
+                  className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md"
+                >
+                  Message
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => handleInviteToPong(participant)}
+                  className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md"
+                >
+                  Invite to Pong
+                </ContextMenuItem>
+              </>
             )}
 
             {/* Role-based options */}
@@ -433,7 +465,10 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
               </ContextMenuTrigger>
 
               <ContextMenuContent className="bg-slate-900 border-none">
-                <ContextMenuItem className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md">
+                <ContextMenuItem 
+                  onClick={() => handleViewProfile(participant.username)}
+                  className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md"
+                >
                   Profile
                 </ContextMenuItem>
                 {user.id !== participant.id && (

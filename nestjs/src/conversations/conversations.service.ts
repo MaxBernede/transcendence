@@ -482,7 +482,7 @@ export class ConversationsService {
         user: { id: senderId },
         conversation: { type: 'DM' },
       },
-      relations: ['conversation', 'conversation.userConversations'],
+      relations: ['conversation', 'conversation.userConversations', 'conversation.userConversations.user'],
     });
 
     const receiverConversations = await this.userConversationRepository.find({
@@ -490,24 +490,21 @@ export class ConversationsService {
         user: { id: receiverId },
         conversation: { type: 'DM' },
       },
-      relations: ['conversation', 'conversation.userConversations'],
+      relations: ['conversation', 'conversation.userConversations', 'conversation.userConversations.user'],
     });
 
     // Find the matching conversation between the sender and receiver
-    const matchingConversation = senderConversations.find((userConvo) =>
-      userConvo.conversation.userConversations.some(
-        (userConv) => userConv.user.id === receiverId,
-      ),
-    );
-    // console.log('senderConversation:', senderConversation);
-    // console.log('receiverConversation:', receiverConversation);
-    console.log('matchingConversation:', matchingConversation);
+    const matchingConversation = senderConversations.find((userConvo) => {
+      if (!userConvo?.conversation?.userConversations) return false;
+      return userConvo.conversation.userConversations.some(
+        (userConv) => userConv?.user?.id === receiverId,
+      );
+    });
+
     if (matchingConversation) {
-      //   throw new BadRequestException('This conversation already exists');
       return matchingConversation.conversation;
     }
-    // return {};
-    console.log('No matching conversation found, creating a new one');
+
     const newConversation = this.conversationRepository.create({
       type: 'DM',
     });
@@ -515,7 +512,7 @@ export class ConversationsService {
     // Save the new conversation
     await this.conversationRepository.save(newConversation);
 
-    // Step 5: Create the UserConversation entries for both sender and receiver
+    // Create the UserConversation entries for both sender and receiver
     const senderConversation = this.userConversationRepository.create({
       user: { id: senderId },
       conversation: newConversation,
@@ -546,7 +543,6 @@ export class ConversationsService {
       eventData,
     );
 
-    console.log('The conversation has been successfully created.');
     return newConversation;
   }
 

@@ -8,6 +8,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "../ui/context-menu";
+import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -22,6 +23,8 @@ import {
 } from "../ui/alert-dialog";
 import { ChatMessageType } from "./types";
 import { Message } from "@/common/types/chat-type";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 interface ChatMessageProps {
   messageObject: Message
@@ -35,6 +38,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const isMyMessage = messageObject.senderUser.userId === currentUserId;
+  const navigate = useNavigate();
 
   // Handlers
   function handleEdit() {
@@ -46,11 +50,48 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   }
 
   function handleCopy() {
-    console.log("Copy message");
+    navigator.clipboard.writeText(messageObject.text)
+      .then(() => {
+        toast.success('Message copied to clipboard');
+      })
+      .catch((err) => {
+        console.error('Failed to copy message:', err);
+        toast.error('Failed to copy message');
+      });
   }
 
   function handleCopyMessageId() {
-    console.log("Copy message ID");
+    navigator.clipboard.writeText(messageObject.id.toString())
+      .then(() => {
+        toast.success(`Message ID ${messageObject.id} copied to clipboard`);
+      })
+      .catch((err) => {
+        console.error('Failed to copy message ID:', err);
+        toast.error('Failed to copy message ID');
+      });
+  }
+
+  function handleViewProfile() {
+    navigate(`/user/${messageObject.senderUser.username}`);
+  }
+
+  async function handleInviteToPong() {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/pong/createInvite",
+        {
+          username: messageObject.senderUser.username,
+          userId: messageObject.senderUser.userId,
+          conversationId: messageObject.conversationId,
+        },
+        { withCredentials: true }
+      );
+      console.log("Invite created:", response.data);
+      // Navigate to the pong game page with the room ID
+    //   navigate(`/pong/${response.data.roomId}`);
+    } catch (error) {
+      console.error("Failed to create invite:", error);
+    }
   }
 
   function closeDialog() {
@@ -90,6 +131,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
       <ContextMenuContent className="bg-slate-900 border-none">
         <ContextMenuItem
+          onClick={handleViewProfile}
+          className="hover:bg-blue-500 hover:text-white px-4 py-2"
+        >
+          Profile
+        </ContextMenuItem>
+        <ContextMenuItem
           onClick={() => handleCopy()}
           className="hover:bg-blue-500 hover:text-white px-4 py-2"
         >
@@ -101,7 +148,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         >
           Copy Message ID
         </ContextMenuItem>
-        {isMyMessage && (
+        {!isMyMessage && (
+          <ContextMenuItem
+            onClick={handleInviteToPong}
+            className="hover:bg-green-500 hover:text-white px-4 py-2"
+          >
+            Invite to Pong
+          </ContextMenuItem>
+        )}
+        {/* {isMyMessage && (
           <>
             <ContextMenuItem
               onClick={() => handleEdit()}
@@ -116,7 +171,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               Delete Message
             </ContextMenuItem>
           </>
-        )}
+        )} */}
       </ContextMenuContent>
 
       <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

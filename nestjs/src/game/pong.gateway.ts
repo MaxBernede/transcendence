@@ -46,6 +46,8 @@ const connectedUsers = new Map<number, Socket>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 // const privateRooms = new Map<string, WaitingPlayer[]>(); // roomId → players[]
 const privateRooms = new Map<string, number[]>(); // roomId , allowedUserIds
+// Add a new map to track user roles in games
+const roomUserRoles = new Map<string, { creator: number; invited: number }>();
 
 @WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
 export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -359,6 +361,8 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         this.emitPlayerInfoForRoom(roomId);
         activeRooms.delete(roomId);
+        // Also clean up the user roles mapping
+        roomUserRoles.delete(roomId);
         console.log(
           `cleaned up room ${roomId} due to disconnect of ${client.id}`,
         );
@@ -443,6 +447,45 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     player1: WaitingPlayer,
     player2: WaitingPlayer,
   ) {
+    // Set up the rooms Map in PongService
+    this.pongService['rooms'].set(roomId, {
+      player1: player1.userId,
+      player2: player2.userId,
+    });
+
+    // activeRooms.set(roomId, { player1, player2 });
+    // await Promise.all([
+    //   connectedUsers.get(player1.userId)?.join(roomId),
+    //   connectedUsers.get(player2.userId)?.join(roomId),
+    // ]);
+    // players.set(player1.socketId, {
+    //   username: player1.username,
+    //   playerNumber: 1,
+    // });
+    // players.set(player2.socketId, {
+    //   username: player2.username,
+    //   playerNumber: 2,
+    // });
+    // const playerInfo = [
+    //   { username: player1.username, playerNumber: 1 },
+    //   { username: player2.username, playerNumber: 2 },
+    // ];
+    // const roomPayload = {
+    //   roomId,
+    //   players: [
+    //     { userId: player1.userId, username: player1.username },
+    //     { userId: player2.userId, username: player2.username },
+    //   ],
+    // };
+    // connectedUsers.get(player1.userId)?.emit('playerInfo', playerInfo);
+    // connectedUsers.get(player2.userId)?.emit('playerInfo', playerInfo);
+    // connectedUsers.get(player1.userId)?.emit('gameRoomUpdate', roomPayload);
+    // connectedUsers.get(player2.userId)?.emit('gameRoomUpdate', roomPayload);
+    // console.log(
+    //   `Private room ${roomId} created for ${player1.username} and ${player2.username}`,
+    // );
+    // this.pongService.resetGame(this.server, roomId);
+
     activeRooms.set(roomId, { player1, player2 });
 
     await Promise.all([
@@ -482,85 +525,28 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       `Private room ${roomId} created for ${player1.username} and ${player2.username}`,
     );
 
+    // Store the user roles to track who is creator and who is invited
+    const gameInvite = this.chatGameInviteRepository
+      .findOne({
+        where: { id: roomId },
+        relations: ['invitedUser', 'createdUser'],
+      })
+      .then((invite) => {
+        if (invite) {
+          roomUserRoles.set(roomId, {
+            creator: invite.createdUser.id,
+            invited: invite.invitedUser.id,
+          });
+          console.log(
+            `Room ${roomId}: mapped creator=${invite.createdUser.id}, invited=${invite.invitedUser.id}`,
+          );
+        }
+      });
+
     this.pongService.resetGame(this.server, roomId);
   }
 
   /** Handles player registration */
-  //   @SubscribeMessage("registerUser")
-  // async handleRegisterUser(client: Socket, payload: any) {
-  //   const { username } = typeof payload === "string" ? { username: payload } : payload;
-  //   console.log("Looking for user:", username);
-
-  //   const user = await this.userService.findByUsername(username);
-  //   if (!user) {
-  //     console.error("User not found for registration:", username);
-  //     return;
-  //   }
-
-  //   // Clean up stale rooms on reconnect
-  //   for (const [roomId, room] of activeRooms.entries()) {
-  //     const isPlayer =
-  //       room.player1.userId === user.id || room.player2.userId === user.id;
-
-  //     const stillConnected =
-  //       connectedUsers.has(room.player1.userId) &&
-  //       connectedUsers.has(room.player2.userId);
-
-  //     if (isPlayer && !stillConnected) {
-  //       console.log(`removing stale room ${roomId} on reconnect`);
-  //       activeRooms.delete(roomId);
-  //       this.pongService.cleanupRoom(roomId);
-  //     }
-  //   }
-
-  //   // If user is already in an active game room, reject registration
-  //   const existingRoom = this.pongService.getRoomByUserId(user.id);
-  //   if (!("error" in existingRoom)) {
-  //     console.warn(`User ${username} is already in a game. Skipping registration.`);
-  //     client.emit("alreadyInGame");
-  //     return;
-  //   }
-
-  //   // Prevent stale queue: remove if already queued
-  //   const existingIndex = waitingQueue.findIndex(p => p.userId === user.id);
-  //   if (existingIndex !== -1) {
-  //     waitingQueue.splice(existingIndex, 1);
-  //     console.log(`Removed duplicate entry of ${username} from waiting queue.`);
-  //   }
-
-  //   // Prevent duplicate socket registration
-  //   if (connectedUsers.has(user.id)) {
-  //     const oldSocket = connectedUsers.get(user.id);
-  //     if (oldSocket && oldSocket.id !== client.id) {
-  //       oldSocket.disconnect(true);
-  //     }
-  //   }
-
-  //   // Track socket connection and user mapping
-  //   connectedUsers.set(user.id, client);
-  //   this.socketToUser.set(client.id, user.id);
-
-  //   const playerNumber = waitingQueue.length === 0 ? 1 : 2;
-  //   players.set(client.id, { username, playerNumber });
-
-  //   console.log(`Registering player: ${username} (UUID: ${user.id}) with socket ${client.id}`);
-  //   client.emit("registered");
-
-  //   // Add to queue
-  //   const player = {
-  //     userId: user.id,
-  //     username,
-  //     socketId: client.id,
-  //     playerNumber,
-  //   };
-  //   waitingQueue.push(player);
-
-  //   console.log("current waiting queue:", waitingQueue.map(p => p.username));
-
-  //   // Attempt to match now
-  //   this.tryMatchPlayers();
-  // }
-
   @SubscribeMessage('registerUser')
   async handleRegisterUser(client: Socket, payload: any) {
     const { username, userId, roomId } = payload;
@@ -642,25 +628,34 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // Get all connected allowed users in the room
-      const playersInRoom: WaitingPlayer[] = allowedUsers
-        .map((id) => connectedUsers.get(id))
-        .filter((skt): skt is Socket => !!skt)
-        .map((skt, i) => ({
-          userId: this.socketToUser.get(skt.id)!,
-          username: players.get(skt.id)?.username ?? 'unknown',
-          socketId: skt.id,
-          playerNumber: i + 1,
-        }));
+      const playersInRoom: WaitingPlayer[] = [];
 
-      // Add current player to room list
-      if (!playersInRoom.find((p) => p.userId === user.id)) {
-        playersInRoom.push({
-          userId: user.id,
-          username,
-          socketId: client.id,
-          playerNumber: playersInRoom.length + 1,
-        });
+      // First add existing players
+      for (const id of allowedUsers) {
+        const socket = connectedUsers.get(id);
+        if (socket && socket.id !== client.id) {
+          const existingPlayer = players.get(socket.id);
+          if (existingPlayer) {
+            playersInRoom.push({
+              userId: this.socketToUser.get(socket.id)!,
+              username: existingPlayer.username,
+              socketId: socket.id,
+              playerNumber: existingPlayer.playerNumber,
+            });
+          }
+        }
       }
+
+      // Add current player
+      playersInRoom.push({
+        userId: user.id,
+        username,
+        socketId: client.id,
+        playerNumber: playersInRoom.length + 1,
+      });
+
+      // Set player info in the players Map
+      players.set(client.id, { username, playerNumber: playersInRoom.length });
 
       client.emit('registered');
 
@@ -778,6 +773,17 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.socketToUser.set(client.id, data.userId);
     this.userToRoom.set(data.userId, data.roomId);
 
+    // Store user roles mapping for this room if not already stored
+    if (!roomUserRoles.has(data.roomId)) {
+      roomUserRoles.set(data.roomId, {
+        creator: gameInvite.createdUser.id,
+        invited: gameInvite.invitedUser.id,
+      });
+      console.log(
+        `Room ${data.roomId}: mapped creator=${gameInvite.createdUser.id}, invited=${gameInvite.invitedUser.id}`,
+      );
+    }
+
     const inviterId = this.socketToUser.get(client.id);
 
     if (!inviterId) {
@@ -795,6 +801,50 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.pongService.resetGame(this.server, data.roomId);
     this.server.to(data.roomId).emit('bothplayersready');
+  }
+
+  /**
+   * Gets the correct user ID by player number and room ID
+   * This helps ensure the right player gets credit for wins/losses
+   */
+  getUserByPlayerNumber(
+    roomId: string,
+    playerNumber: number,
+  ): number | undefined {
+    const roles = roomUserRoles.get(roomId);
+    if (!roles) return undefined;
+
+    // Find the room to check which player joined in which position
+    const room = activeRooms.get(roomId);
+    if (!room) return undefined;
+
+    // If player1's userId matches the creator, return accordingly
+    if (playerNumber === 1) {
+      return room.player1.userId === roles.creator
+        ? roles.creator
+        : roles.invited;
+    } else if (playerNumber === 2) {
+      return room.player2.userId === roles.creator
+        ? roles.creator
+        : roles.invited;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Gets the user role (creator or invited) for a given user ID in a room
+   */
+  getUserRoleInRoom(
+    roomId: string,
+    userId: number,
+  ): 'creator' | 'invited' | undefined {
+    const roles = roomUserRoles.get(roomId);
+    if (!roles) return undefined;
+
+    if (roles.creator === userId) return 'creator';
+    if (roles.invited === userId) return 'invited';
+    return undefined;
   }
 
   @SubscribeMessage('playerReady')

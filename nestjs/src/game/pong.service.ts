@@ -17,6 +17,8 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PongGateway } from './pong.gateway';
 import { ConversationsGateway } from '@/conversations/conversations.gateway';
+import { Message } from 'common/types/chat-type';
+import { UserService } from 'src/user/user.service';
 
 interface GameState {
   ball: { x: number; y: number; vx: number; vy: number };
@@ -74,6 +76,11 @@ export class PongService {
 
     @Inject(forwardRef(() => PongGateway))
     private readonly pongGateway: PongGateway,
+
+    @Inject(forwardRef(() => ConversationsGateway))
+    private readonly conversationGatewat: ConversationsGateway,
+
+    private readonly userService: UserService,
   ) {}
 
   private gameStates = new Map<string, GameState>();
@@ -285,6 +292,85 @@ export class PongService {
     server.emit('gameState', gameState);
   }
 
+  private async updateGameInviteChat(
+    roomId: string,
+    winnerId: number,
+    winnerScore: number,
+    loserScore: number,
+  ) {
+    const gameInvite = await this.chatGameInviteRepository.findOne({
+      where: { id: roomId },
+      relations: ['chat', 'createdUser', 'invitedUser'],
+    });
+
+    if (!gameInvite) {
+      throw new NotFoundException('Game invite not found');
+    }
+
+    const chat = await this.chatRepository.findOne({
+      where: { id: gameInvite.chat.id },
+	  relations: ['user', 'conversation']
+    });
+	if (!chat) {
+	  throw new NotFoundException('Chat not found');
+	}
+    console.log('gameInvite:', gameInvite);
+	console.log('chat:', chat);
+
+    const winnerUser = await this.userService.findOneById(winnerId);
+
+    gameInvite.winnerUsername = winnerUser.username;
+    gameInvite.creatorScore = winnerScore;
+    gameInvite.recipientScore = loserScore;
+    gameInvite.status = 'COMPLETED';
+    await this.chatGameInviteRepository.save(gameInvite);
+
+    const inviterUser = await this.userService.findOneById(
+      gameInvite.createdUser.id,
+    );
+    if (!inviterUser) {
+      throw new NotFoundException('Inviter user not found');
+    }
+
+    console.log('gameInvite:', gameInvite);
+    const message: Message = {
+      id: gameInvite.chat.id,
+      conversationId: chat.conversation.id,
+      type: 'GAME_INVITE',
+      text: null,
+      edited: false,
+      createdAt: gameInvite.chat.createdAt.toString(),
+      senderUser: {
+        userId: inviterUser.id,
+        username: inviterUser.username,
+        avatar: inviterUser.avatar,
+      },
+      gameInviteData: {
+        gameId: roomId,
+        status: 'COMPLETED',
+        creatorUsername: inviterUser.username,
+        creatorUserId: gameInvite.createdUser.id,
+        recipientUserId: gameInvite.invitedUser.id,
+        recipientUsername: winnerUser.username,
+        creatorScore: winnerScore,
+        recipientScore: loserScore,
+        winnerUsername: winnerUser.username,
+      },
+    };
+
+    this.conversationGatewat.SendChatToConversation(message);
+
+    // const chat = this.chatRepository.findOne(gameInvite.chat);
+
+    // const chat = gameInvite.chat;
+    // if (!chat) {
+    //   throw new NotFoundException('Chat not found');
+    // }
+
+    // chat.gameInviteData.status = 'COMPLETED';
+    // await this.chatGameInviteRepository.save(gameInvite);
+  }
+
   private async checkGameOver(roomId: string, server: Server) {
     if (this.winnerDeclared.get(roomId)) return;
     console.log('gets into checkgameover');
@@ -311,6 +397,7 @@ export class PongService {
       winnerId = room.player1;
       looserId = room.player2;
       looserScore = gameState.score.player2;
+      const winnerScore = gameState.score.player1;
 
       server.to(roomId).emit('gameOver', {
         winner: 'Player 1',
@@ -320,6 +407,7 @@ export class PongService {
         },
       });
 
+      this.updateGameInviteChat(roomId, winnerId, winnerScore, looserScore);
       this.stopGame(roomId, server);
     } else if (gameState.score.player2 >= 3) {
       this.winnerDeclared.set(roomId, true);
@@ -328,6 +416,7 @@ export class PongService {
       winnerId = room.player2;
       looserId = room.player1;
       looserScore = gameState.score.player1;
+      const winnerScore = gameState.score.player2;
 
       server.to(roomId).emit('gameOver', {
         winner: 'Player 2',
@@ -337,6 +426,7 @@ export class PongService {
         },
       });
 
+      this.updateGameInviteChat(roomId, winnerId, winnerScore, looserScore);
       this.stopGame(roomId, server);
     } else {
       return;
@@ -638,6 +728,7 @@ export class PongService {
   }
 
   async createInvite(user: TokenPayload, data: createInviteDto) {
+    console.log('createInvite', user, data);
     const gameInvite = this.chatGameInviteRepository.create({
       createdUser: { id: user.sub },
       invitedUser: { id: data.userId },
@@ -654,9 +745,13 @@ export class PongService {
 
     gameInvite.chat = chat;
 
-    await this.chatGameInviteRepository.save(gameInvite);
-    await this.chatRepository.save(chat);
-
+    try {
+      await this.chatRepository.save(chat);
+      await this.chatGameInviteRepository.save(gameInvite);
+    } catch (error) {
+      console.error('Error saving game invite:', error);
+      throw new NotFoundException('Error saving game invite');
+    }
     // const roomId = uuidv4();
     const roomId = gameInvite.id;
 
@@ -672,8 +767,38 @@ export class PongService {
       },
     };
 
-    this.privateRooms.set(roomId, room);
+    const dbUser = await this.userService.findOneById(user.sub);
+    if (!dbUser) {
+      throw new NotFoundException('User not found');
+    }
 
+    const mes: Message = {
+      id: chat.id,
+      conversationId: data.conversationId,
+      type: 'GAME_INVITE',
+      createdAt: chat.createdAt.toString(),
+      edited: false,
+      text: null,
+      gameInviteData: {
+        gameId: roomId,
+        status: 'PENDING',
+        creatorUsername: user.username,
+        creatorUserId: user.sub,
+        recipientUserId: data.userId,
+        recipientUsername: data.username,
+        creatorScore: 0,
+        recipientScore: 0,
+        winnerUsername: null,
+      },
+      senderUser: {
+        userId: user.sub,
+        username: user.username,
+        avatar: dbUser.avatar,
+      },
+    };
+
+    this.conversationGatewat.SendChatToConversation(mes);
+    this.privateRooms.set(roomId, room);
     return roomId;
   }
 }

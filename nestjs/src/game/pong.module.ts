@@ -8,6 +8,9 @@ import { typeOrmConfig } from '@/ormconfig';
 import { Chat, ChatGameInvite, Conversation } from '@/conversations/entities';
 import { User } from '@/user/user.entity';
 import { AuthModule } from '@/auth/auth.module';
+import { ConversationsGateway } from '@/conversations/conversations.gateway';
+import { ConversationsModule } from '@/conversations/conversations.module';
+import { PongController } from './pong.controller';
 
 @Module({
   providers: [PongGateway, PongService],
@@ -23,7 +26,9 @@ imports: [
 	UsersModule,
 	AuthModule,
 	MatchModule,
+	ConversationsModule,
   ],
+  controllers: [PongController],
   exports: [PongService, PongGateway],
 })
 export class PongModule {}
