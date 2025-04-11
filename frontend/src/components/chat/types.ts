@@ -49,6 +49,7 @@ export const PublicUserInfoSchema = z.object({
   createdAt: z.string(),
   wins: z.number(),
   losses: z.number(),
+  activity_status: z.boolean(), // online activity
 
   groupRole: z.string(),
   banned: z.boolean(),
