@@ -32,6 +32,10 @@ class EventsHandler {
     return EventsHandler.instance;
   }
 
+	public isReady(): boolean {
+		return this.socket?.connected ?? false;
+	}
+
   public getSocket(): Socket | null {
     return this.socket;
   }

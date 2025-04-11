@@ -9,6 +9,7 @@ export type UserData = {
 	wins: number;
 	losses: number;
 	ladderLevel: number;
+	activity_status: boolean;
 	matchHistory: any[]; // Add matchHistory here
 	[key: string]: any; // Optional if there are other dynamic fields
   };

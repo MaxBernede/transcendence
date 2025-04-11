@@ -11,28 +11,40 @@ import { UserContext } from '../App';
 import ProfileBanner from '../components/ProfileBanner';
 import MatchList from '../components/MatchList';
 import { useLocation } from 'react-router-dom';
-
-
+import EventsHandler from '../events/EventsHandler';
+import OnlineStatus from '../components/OnlineStatus';
 
 const UserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { userData, setUserData, loading, error, matchHistory, setMatchHistory } = useContext(UserContext); // Use context
-	useEffect(() => {
-		if (!id) return;
-		
-		const fetchUserData = async () => {
-			await new Promise(resolve => setTimeout(resolve, 1000)); // UNSAFE AS FCK its for the socket to be done changing the user status
-			try {
-				const res = await fetch(`/api/users/${id}`);
-				const data = await res.json();
-				setUserData(data);
-			} catch (err) {
-				console.error('Error fetching user:', err);
-			}
-		};
+  useEffect(() => {
+	if (!id) return;
 
-		fetchUserData();
-	}, [id]);
+	const fetchUserData = async () => {
+		try {
+			const res = await fetch(`/api/users/${id}`);
+			const data = await res.json();
+			console.log("DATA: ", data)
+			setUserData(data);
+		} catch (err) {
+			console.error('Error fetching user:', err);
+		}
+	};
+
+	const waitForSocket = () => {
+		const handler = EventsHandler.getInstance();
+		if (handler.isReady()) {
+			fetchUserData();
+		} else {
+			const socket = handler.getSocket();
+			socket?.once("connect", fetchUserData);
+			// fallback timeout au cas où "connect" ne vient jamais
+			setTimeout(fetchUserData, 2000);
+		}
+	};
+
+	waitForSocket();
+}, [id]);
 
   const location = useLocation();
 
@@ -75,6 +87,7 @@ const UserPage: React.FC = () => {
       <ProfileBanner />
       <div className="content-container">
       { id == "me" && <LogoutButton /> }
+	  <OnlineStatus isOnline={userData?.activity_status === true} />
         {/* Stats centered */}
         <div className="stats flex justify-center w-full mb-2 text-xl font-semibold text-white-800">
           <div className="wins mx-8">
