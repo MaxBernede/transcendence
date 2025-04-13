@@ -499,8 +499,11 @@ export class PongService {
       looserScore = gameState.score.player2;
       const winnerScore = gameState.score.player1;
 
+      const winnerUser = await this.userService.findOneById(winnerId);
+      const winnerUsername = winnerUser?.username || `Player ${winnerId}`;
+
       server.to(roomId).emit('gameOver', {
-        winner: 'Player 1',
+        winner: winnerUsername,
         finalScore: {
           player1: gameState.score.player1,
           player2: gameState.score.player2,
@@ -518,8 +521,11 @@ export class PongService {
       looserScore = gameState.score.player1;
       const winnerScore = gameState.score.player2;
 
+      const winnerUser = await this.userService.findOneById(winnerId);
+      const winnerUsername = winnerUser?.username || `Player ${winnerId}`;
+
       server.to(roomId).emit('gameOver', {
-        winner: 'Player 2',
+        winner: winnerUsername,
         finalScore: {
           player1: gameState.score.player1,
           player2: gameState.score.player2,
