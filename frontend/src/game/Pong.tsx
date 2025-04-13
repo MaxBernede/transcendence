@@ -152,18 +152,21 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
       socket.emit("requestPlayers");
       socket.emit("playerReady");
     };
-
+  
     socket.on("registered", handleRegistered);
-
-    socket.emit("joinPrivateRoom", {
-      roomId: urlRoomId,
-      userId: me.id,
-    });
-
+  
+    if (urlRoomId) {
+      socket.emit("joinPrivateRoom", {
+        roomId: urlRoomId,
+        userId: me.id,
+      });
+    }
+  
     return () => {
       socket.off("registered", handleRegistered);
     };
-  }, []);
+  }, [urlRoomId, me.id]);
+  
 
   // once loggedinuser is set it registers player to server and lists connected players
   // useEffect(() => {

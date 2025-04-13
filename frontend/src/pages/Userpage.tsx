@@ -36,35 +36,70 @@ const UserPage: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-	// Force re-fetch when navigating back to this page
-	const fetchLatestUserData = async () => {
+	const fetchUserAndMatches = async () => {
 	  try {
-		const res = await fetch(`/api/users/${id}`);
-		if (!res.ok) throw new Error('User not found');
-		const data = await res.json();
-		setUserData(data);
-	  } catch (err) {
-		console.error('Error fetching updated user:', err);
-	  }
-	};
+		// Step 1: always fetch the user
+		const resUser = await fetch(`/api/users/${id}`);
+		if (!resUser.ok) throw new Error('User not found');
+		const user = await resUser.json();
+		setUserData(user);
   
-	const fetchLatestMatches = async () => {
-	  try {
-		const res = await fetch(`/matches/${id}`);
-		if (!res.ok) throw new Error('Matches not found');
-		const data = await res.json();
-		setMatchHistory(data);
+		// Step 2: get numeric ID if "me"
+		const actualId = id === 'me' ? user.id : id;
+  
+		// Step 3: fetch matches using real ID
+		const resMatches = await fetch(`/matches/${actualId}`);
+		if (!resMatches.ok) throw new Error('Matches not found');
+		const matchData = await resMatches.json();
+		setMatchHistory(matchData);
 	  } catch (err) {
-		console.error('Error fetching updated matches:', err);
+		console.error('Error fetching user or matches:', err);
 	  }
 	};
   
 	if (id) {
-	  fetchLatestUserData();
-	  fetchLatestMatches();
+	  fetchUserAndMatches();
 	}
+  }, [id]);
   
-  }, [location.pathname]);
+  
+  
+// 	const fetchLatestMatches = async () => {
+// 	  try {
+// 		const res = await fetch(`/matches/${id}`);
+// 		if (!res.ok) throw new Error('Matches not found');
+// 		const data = await res.json();
+// 		setMatchHistory(data);
+// 	  } catch (err) {
+// 		console.error('Error fetching updated matches:', err);
+// 	  }
+// 	};
+  
+// 	if (id) {
+// 	  fetchLatestUserData();
+// 	  fetchLatestMatches();
+// 	}
+  
+//   }, [location.pathname]);
+
+// useEffect(() => {
+// 	const fetchLatestMatches = async () => {
+// 	  try {
+// 		const res = await fetch(`/matches/${id}`);
+// 		if (!res.ok) throw new Error('Matches not found');
+// 		const data = await res.json();
+// 		setMatchHistory(data);
+// 	  } catch (err) {
+// 		console.error('Error fetching updated matches:', err);
+// 	  }
+// 	};
+  
+// 	if (id) {
+// 	  fetchLatestUserData();  // Assuming this gets user info
+// 	  fetchLatestMatches();
+// 	}
+//   }, [id]);
+  
   
 
   if (loading) return <p>Loading...</p>;

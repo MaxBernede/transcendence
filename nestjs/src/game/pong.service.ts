@@ -292,84 +292,184 @@ export class PongService {
     server.emit('gameState', gameState);
   }
 
+  // private async updateGameInviteChat(
+  //   roomId: string,
+  //   winnerId: number,
+  //   winnerScore: number,
+  //   loserScore: number,
+  // ) {
+  //   // const gameInvite = await this.chatGameInviteRepository.findOne({
+  //   //   where: { id: roomId },
+  //   //   relations: ['chat', 'createdUser', 'invitedUser'],
+  //   // });
+
+  //   const rawRoomId = roomId.replace(/^room-/, '');
+
+  //   const gameInvite = await this.chatGameInviteRepository.findOne({
+  //     where: { id: rawRoomId },
+  //     relations: ['chat', 'createdUser', 'invitedUser'],
+  //   });
+    
+  //   if (!gameInvite) {
+  //     throw new NotFoundException('Game invite not found');
+  //   }
+    
+  //   if (!gameInvite.chat || !gameInvite.chat.id) {
+  //     throw new NotFoundException('Associated chat not found');
+  //   }
+    
+  //   const chat = await this.chatRepository.findOne({
+  //     where: { id: gameInvite.chat.id },
+  //     relations: ['user', 'conversation']
+  //   });
+    
+	// if (!chat) {
+	//   throw new NotFoundException('Chat not found');
+	// }
+  //   console.log('gameInvite:', gameInvite);
+	// console.log('chat:', chat);
+
+  //   const winnerUser = await this.userService.findOneById(winnerId);
+
+  //   gameInvite.winnerUsername = winnerUser.username;
+  //   gameInvite.creatorScore = winnerScore;
+  //   gameInvite.recipientScore = loserScore;
+  //   gameInvite.status = 'COMPLETED';
+  //   await this.chatGameInviteRepository.save(gameInvite);
+
+  //   const inviterUser = await this.userService.findOneById(
+  //     gameInvite.createdUser.id,
+  //   );
+  //   if (!inviterUser) {
+  //     throw new NotFoundException('Inviter user not found');
+  //   }
+
+  //   console.log('gameInvite:', gameInvite);
+  //   const message: Message = {
+  //     id: gameInvite.chat.id,
+  //     conversationId: chat.conversation.id,
+  //     type: 'GAME_INVITE',
+  //     text: null,
+  //     edited: false,
+  //     createdAt: gameInvite.chat.createdAt.toString(),
+  //     senderUser: {
+  //       userId: inviterUser.id,
+  //       username: inviterUser.username,
+  //       avatar: inviterUser.avatar,
+  //     },
+  //     gameInviteData: {
+  //       // gameId: roomId,
+  //       gameId: rawRoomId,
+  //       status: 'COMPLETED',
+  //       creatorUsername: inviterUser.username,
+  //       creatorUserId: gameInvite.createdUser.id,
+  //       recipientUserId: gameInvite.invitedUser.id,
+  //       recipientUsername: winnerUser.username,
+  //       creatorScore: winnerScore,
+  //       recipientScore: loserScore,
+  //       winnerUsername: winnerUser.username,
+  //     },
+  //   };
+
+  //   this.conversationGatewat.SendChatToConversation(message);
+
+  //   // const chat = this.chatRepository.findOne(gameInvite.chat);
+
+  //   // const chat = gameInvite.chat;
+  //   // if (!chat) {
+  //   //   throw new NotFoundException('Chat not found');
+  //   // }
+
+  //   // chat.gameInviteData.status = 'COMPLETED';
+  //   // await this.chatGameInviteRepository.save(gameInvite);
+  // }
+
   private async updateGameInviteChat(
     roomId: string,
     winnerId: number,
     winnerScore: number,
     loserScore: number,
   ) {
-    const gameInvite = await this.chatGameInviteRepository.findOne({
-      where: { id: roomId },
-      relations: ['chat', 'createdUser', 'invitedUser'],
-    });
-
-    if (!gameInvite) {
-      throw new NotFoundException('Game invite not found');
+    try {
+      const rawRoomId = roomId.replace(/^room-/, '');
+  
+      const gameInvite = await this.chatGameInviteRepository.findOne({
+        where: { id: rawRoomId },
+        relations: ['chat', 'createdUser', 'invitedUser'],
+      });
+  
+      if (!gameInvite) {
+        console.warn(`[updateGameInviteChat] No game invite found for ID: ${rawRoomId}`);
+        return;
+      }
+  
+      if (!gameInvite.chat || !gameInvite.chat.id) {
+        console.warn(`[updateGameInviteChat] Game invite has no chat attached: ID ${rawRoomId}`);
+        return;
+      }
+  
+      const chat = await this.chatRepository.findOne({
+        where: { id: gameInvite.chat.id },
+        relations: ['user', 'conversation'],
+      });
+  
+      if (!chat) {
+        console.warn(`[updateGameInviteChat] Chat not found for chat ID: ${gameInvite.chat.id}`);
+        return;
+      }
+  
+      const winnerUser = await this.userService.findOneById(winnerId);
+      if (!winnerUser) {
+        console.warn(`[updateGameInviteChat] Winner user not found: ${winnerId}`);
+        return;
+      }
+  
+      const inviterUser = await this.userService.findOneById(gameInvite.createdUser.id);
+      if (!inviterUser) {
+        console.warn(`[updateGameInviteChat] Inviter user not found: ${gameInvite.createdUser.id}`);
+        return;
+      }
+  
+      // Update game invite
+      gameInvite.winnerUsername = winnerUser.username;
+      gameInvite.creatorScore = winnerScore;
+      gameInvite.recipientScore = loserScore;
+      gameInvite.status = 'COMPLETED';
+      await this.chatGameInviteRepository.save(gameInvite);
+  
+      // Compose and send message
+      const message: Message = {
+        id: gameInvite.chat.id,
+        conversationId: chat.conversation.id,
+        type: 'GAME_INVITE',
+        text: null,
+        edited: false,
+        createdAt: gameInvite.chat.createdAt.toString(),
+        senderUser: {
+          userId: inviterUser.id,
+          username: inviterUser.username,
+          avatar: inviterUser.avatar,
+        },
+        gameInviteData: {
+          gameId: rawRoomId,
+          status: 'COMPLETED',
+          creatorUsername: inviterUser.username,
+          creatorUserId: gameInvite.createdUser.id,
+          recipientUserId: gameInvite.invitedUser.id,
+          recipientUsername: winnerUser.username,
+          creatorScore: winnerScore,
+          recipientScore: loserScore,
+          winnerUsername: winnerUser.username,
+        },
+      };
+  
+      this.conversationGatewat.SendChatToConversation(message);
+    } catch (error) {
+      console.error(`[updateGameInviteChat] Error updating game invite for room ${roomId}:`, error);
+      // don't throw here — we don't want to crash the whole server
     }
-
-    const chat = await this.chatRepository.findOne({
-      where: { id: gameInvite.chat.id },
-	  relations: ['user', 'conversation']
-    });
-	if (!chat) {
-	  throw new NotFoundException('Chat not found');
-	}
-    console.log('gameInvite:', gameInvite);
-	console.log('chat:', chat);
-
-    const winnerUser = await this.userService.findOneById(winnerId);
-
-    gameInvite.winnerUsername = winnerUser.username;
-    gameInvite.creatorScore = winnerScore;
-    gameInvite.recipientScore = loserScore;
-    gameInvite.status = 'COMPLETED';
-    await this.chatGameInviteRepository.save(gameInvite);
-
-    const inviterUser = await this.userService.findOneById(
-      gameInvite.createdUser.id,
-    );
-    if (!inviterUser) {
-      throw new NotFoundException('Inviter user not found');
-    }
-
-    console.log('gameInvite:', gameInvite);
-    const message: Message = {
-      id: gameInvite.chat.id,
-      conversationId: chat.conversation.id,
-      type: 'GAME_INVITE',
-      text: null,
-      edited: false,
-      createdAt: gameInvite.chat.createdAt.toString(),
-      senderUser: {
-        userId: inviterUser.id,
-        username: inviterUser.username,
-        avatar: inviterUser.avatar,
-      },
-      gameInviteData: {
-        gameId: roomId,
-        status: 'COMPLETED',
-        creatorUsername: inviterUser.username,
-        creatorUserId: gameInvite.createdUser.id,
-        recipientUserId: gameInvite.invitedUser.id,
-        recipientUsername: winnerUser.username,
-        creatorScore: winnerScore,
-        recipientScore: loserScore,
-        winnerUsername: winnerUser.username,
-      },
-    };
-
-    this.conversationGatewat.SendChatToConversation(message);
-
-    // const chat = this.chatRepository.findOne(gameInvite.chat);
-
-    // const chat = gameInvite.chat;
-    // if (!chat) {
-    //   throw new NotFoundException('Chat not found');
-    // }
-
-    // chat.gameInviteData.status = 'COMPLETED';
-    // await this.chatGameInviteRepository.save(gameInvite);
   }
+  
 
   private async checkGameOver(roomId: string, server: Server) {
     if (this.winnerDeclared.get(roomId)) return;
@@ -729,32 +829,38 @@ export class PongService {
 
   async createInvite(user: TokenPayload, data: createInviteDto) {
     console.log('createInvite', user, data);
+  
+    // Create gameInvite first (without ID yet)
     const gameInvite = this.chatGameInviteRepository.create({
       createdUser: { id: user.sub },
       invitedUser: { id: data.userId },
       conversation: { id: data.conversationId },
       status: 'PENDING',
     });
-
+  
+    // Create the chat linked to the invite
     const chat = this.chatRepository.create({
       conversation: { id: data.conversationId },
       user: { id: user.sub },
       type: 'GAME_INVITE',
       gameInvite: gameInvite,
     });
-
+  
     gameInvite.chat = chat;
-
+  
+    // Save both in correct order and capture the real saved invite
+    let savedInvite: ChatGameInvite;
     try {
       await this.chatRepository.save(chat);
-      await this.chatGameInviteRepository.save(gameInvite);
+      savedInvite = await this.chatGameInviteRepository.save(gameInvite);
     } catch (error) {
       console.error('Error saving game invite:', error);
       throw new NotFoundException('Error saving game invite');
     }
-    // const roomId = uuidv4();
-    const roomId = gameInvite.id;
-
+  
+    // Now use the actual generated ID from the DB
+    const roomId = `room-${savedInvite.id}`;
+  
     const room: PrivateRoom = {
       roomId,
       hostUserId: user.sub,
@@ -766,12 +872,12 @@ export class PongService {
         playerNumber: 1,
       },
     };
-
+  
     const dbUser = await this.userService.findOneById(user.sub);
     if (!dbUser) {
       throw new NotFoundException('User not found');
     }
-
+  
     const mes: Message = {
       id: chat.id,
       conversationId: data.conversationId,
@@ -780,7 +886,7 @@ export class PongService {
       edited: false,
       text: null,
       gameInviteData: {
-        gameId: roomId,
+        gameId: savedInvite.id,
         status: 'PENDING',
         creatorUsername: user.username,
         creatorUserId: user.sub,
@@ -796,9 +902,11 @@ export class PongService {
         avatar: dbUser.avatar,
       },
     };
-
+  
     this.conversationGatewat.SendChatToConversation(mes);
     this.privateRooms.set(roomId, room);
+  
     return roomId;
   }
+  
 }

@@ -9,7 +9,7 @@ import { Avatar, AvatarImage } from "../ui/avatar";
 import { Card, CardContent, CardTitle } from "../ui/card";
 import { toast } from "sonner";
 
-import { tryCatch } from "@clevali/trycatch";
+// import { tryCatch } from "@clevali/trycatch";
 
 import {
   ContextMenu,

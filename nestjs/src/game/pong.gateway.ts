@@ -135,7 +135,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const roomId = `room-${uuidv4()}`;
       activeRooms.set(roomId, { player1, player2 });
-
+     
       this.pongService.addPlayersToRoom(roomId, player1, player2);
 
       this.pongService['rooms'].set(roomId, {
@@ -742,12 +742,12 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     //? check if user has acces to the room
 
     console.log('Inviting user to room', data.roomId);
+    const rawRoomId = data.roomId.replace(/^room-/, '');
     const gameInvite = await this.chatGameInviteRepository.findOne({
-      where: {
-        id: data.roomId,
-      },
+      where: { id: rawRoomId },
       relations: ['invitedUser', 'createdUser'],
     });
+    
 
     // console.log("Game invite:", gameInvite);
 
