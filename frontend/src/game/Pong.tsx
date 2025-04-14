@@ -42,20 +42,41 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
   const cooldownRef = useRef<NodeJS.Timeout | null>(null);
 
   // fetches logged-in user info and updates local state
-  const fetchUserData = async () => {
-    try {
-      const response = await axios.get("http://localhost:3000/api/users/me", {
-        withCredentials: true,
-      });
+  // const fetchUserData = async () => {
+  //   try {
+  //     const response = await axios.get("http://localhost:3000/api/users/me", {
+  //       withCredentials: true,
+  //     });
 
-      if (response.data.username) {
-        setLoggedInUser(response.data.username);
-        setUserId(response.data.id.toString());
-      }
-    } catch (err) {
-      console.error("Failed to fetch user data:", err);
+  //     if (response.data.username) {
+  //       setLoggedInUser(response.data.username);
+  //       setUserId(response.data.id.toString());
+  //     }
+  //   } catch (err) {
+  //     console.error("Failed to fetch user data:", err);
+  //   }
+  // };
+
+  const hasFetchedUserRef = useRef(false);
+
+const fetchUserData = async () => {
+  if (hasFetchedUserRef.current) return;
+  hasFetchedUserRef.current = true;
+
+  try {
+    const response = await axios.get("http://localhost:3000/api/users/me", {
+      withCredentials: true,
+    });
+
+    if (response.data.username) {
+      setLoggedInUser(response.data.username);
+      setUserId(response.data.id.toString());
     }
-  };
+  } catch (err) {
+    console.error("Failed to fetch user data:", err);
+  }
+};
+
 
   const {
     gameContainerRef,

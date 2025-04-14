@@ -28,9 +28,30 @@ const GameInviteMessage: React.FC<GameInviteMessageProps> = ({
 
   const isGameCompleted: boolean = gameInvite.status === "COMPLETED";
   const isGamePending: boolean = gameInvite.status === "PENDING";
-  const isCreatorWinner: boolean =
-    gameInvite.creatorScore > gameInvite.recipientScore;
+  // const isCreatorWinner: boolean =
+  //   gameInvite.creatorScore > gameInvite.recipientScore;
 
+  const { creatorUsername, recipientUsername, creatorUserId, recipientUserId } = gameInvite;
+
+  const leftUserId = currentUserId;
+  const rightUserId = currentUserId === creatorUserId ? recipientUserId : creatorUserId;
+  
+  const leftUsername = currentUserId === creatorUserId ? creatorUsername : recipientUsername;
+  const rightUsername = currentUserId === creatorUserId ? recipientUsername : creatorUsername;
+  
+  const leftIsWinner = gameInvite.winnerUsername === leftUsername;
+  const rightIsWinner = gameInvite.winnerUsername === rightUsername;
+  
+  const leftIsCurrentUser = true;
+  const rightIsCurrentUser = false;
+  
+  // Fix the scores regardless of who created the invite
+  const winnerScore = Math.max(gameInvite.creatorScore, gameInvite.recipientScore);
+  const loserScore = Math.min(gameInvite.creatorScore, gameInvite.recipientScore);
+  
+  const leftScore = leftIsWinner ? winnerScore : loserScore;
+  const rightScore = rightIsWinner ? winnerScore : loserScore;
+  
 
   const handleJoinGame = () => {
     console.log("Join game with ID:", gameInvite.gameId);
@@ -58,15 +79,18 @@ const GameInviteMessage: React.FC<GameInviteMessageProps> = ({
             <div
               className={`flex items-center justify-end flex-1 max-w-[45%] pr-5 ${
                 isGameCompleted
-                  ? isCreatorWinner
+                  ? leftIsWinner
                     ? "text-green-500"
                     : "text-red-500"
-                  : "text-blue-400"
-              }`}
+                  : "text-blue-400"}
+                `}
             >
-              {isCreator ? "You" : gameInvite.creatorUsername}
+              {/* {leftUsername === gameInvite.creatorUsername && isCreator
+                ? "You"
+                : leftUsername} */}
+              {leftIsCurrentUser ? "You" : leftUsername}
               {isGameCompleted &&
-                (isCreatorWinner ? (
+                (leftIsWinner ? (
                   <Crown className="w-4 h-4 ml-1 text-yellow-400" />
                 ) : (
                   <Skull className="w-4 h-4 ml-1" />
@@ -77,15 +101,15 @@ const GameInviteMessage: React.FC<GameInviteMessageProps> = ({
             <div
               className={`flex items-center justify-start flex-1 max-w-[45%] pl-5 ${
                 isGameCompleted
-                  ? !isCreatorWinner
+                  ? rightIsWinner
                     ? "text-green-500"
                     : "text-red-500"
-                  : "text-blue-400"
-              }`}
+                  : "text-blue-400"}
+                `}
             >
-              {isRecipient ? "You" : gameInvite.recipientUsername}
+              {rightIsCurrentUser ? "You" : rightUsername}
               {isGameCompleted &&
-                (!isCreatorWinner ? (
+                (rightIsWinner ? (
                   <Crown className="w-4 h-4 ml-1 text-yellow-400" />
                 ) : (
                   <Skull className="w-4 h-4 ml-1" />
@@ -95,7 +119,7 @@ const GameInviteMessage: React.FC<GameInviteMessageProps> = ({
         </div>
 
         {/* Game Status */}
-        {isGameCompleted && (
+        {/* {isGameCompleted && (
           <div>
             <div className="flex justify-center items-center gap-2 mb-1">
               <span
@@ -111,7 +135,23 @@ const GameInviteMessage: React.FC<GameInviteMessageProps> = ({
               </span>
             </div>
           </div>
+        )} */}
+
+
+        {isGameCompleted && (
+          <div>
+            <div className="flex justify-center items-center gap-2 mb-1">
+              <span className={leftIsWinner ? "text-green-500" : "text-red-500"}>
+                {leftScore}
+              </span>
+              <span className="text-gray-500">-</span>
+              <span className={rightIsWinner ? "text-green-500" : "text-red-500"}>
+                {rightScore}
+              </span>
+            </div>
+          </div>
         )}
+
 
         {isGamePending && isParticipant && (
           <div className="mt-2">

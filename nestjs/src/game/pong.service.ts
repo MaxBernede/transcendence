@@ -196,6 +196,11 @@ export class PongService {
 
       if (!gameState || !powerUpState) return;
 
+      if (this.winnerDeclared.get(roomId)) {
+        console.log(`[GameLoop] Winner already declared for ${roomId}, skipping updates.`);
+        return;
+      }
+
       // Emit current game state to the room
       server.to(roomId).emit('gameState', gameState);
 
@@ -744,13 +749,13 @@ export class PongService {
     return room;
   }
 
-  private gameLoops = new Map<string, NodeJS.Timeout>();
+  // private gameLoops = new Map<string, NodeJS.Timeout>();
 
   stopGameLoop(roomId: string) {
-    const loop = this.gameLoops.get(roomId);
+    const loop = this.gameLoopIntervals.get(roomId);
     if (loop) {
       clearInterval(loop);
-      this.gameLoops.delete(roomId);
+      this.gameLoopIntervals.delete(roomId);
       console.log(`game loop stopped for room ${roomId}`);
     }
   }
