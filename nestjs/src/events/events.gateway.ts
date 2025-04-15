@@ -112,6 +112,8 @@ export class EventsGateway
     console.log('User updated', updatedUser);
     // console.log(client.id, 'registered for events ', user.sub);
 
+	
+
     this.wss.emit('serverToClientEvents', 'Hello from events');
   }
 

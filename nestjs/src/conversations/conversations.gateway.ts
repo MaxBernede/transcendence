@@ -307,6 +307,10 @@ export class ConversationsGateway
     return false;
   }
 
+  SendChatToConversation(message: Message) {
+    this.wss.to(message.conversationId).emit('chatToClient', message);
+  }
+
   // @UseGuards(SocketAuthGuard)
   @SubscribeMessage('chatToServer')
   async handleMessage(
@@ -407,7 +411,7 @@ export class ConversationsGateway
 
     const mes: Message = {
       id: savedMessage.id,
-	  conversationId: savedMessage.conversation.id,
+      conversationId: savedMessage.conversation.id,
       text: savedMessage.text,
       createdAt: savedMessage.createdAt.toString(),
       type: 'TEXT',
@@ -421,7 +425,8 @@ export class ConversationsGateway
     };
 
     // this.wss.to(message.conversationId).emit('chatToClient', res);
-    this.wss.to(message.conversationId).emit('chatToClient', mes);
+    // this.wss.to(message.conversationId).emit('chatToClient', mes);
+    this.SendChatToConversation(mes);
   }
 
   // New explicit handler for joining a room

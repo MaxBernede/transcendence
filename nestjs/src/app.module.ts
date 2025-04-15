@@ -27,8 +27,9 @@ import { MatchModule } from './match/match.module';
     TwoFactorAuthModule,
     ConversationsModule,
     PongModule,
-	  FriendsModule,
+    FriendsModule,
     MatchModule,
+	PongModule
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway],

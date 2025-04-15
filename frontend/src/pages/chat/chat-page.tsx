@@ -81,10 +81,14 @@ const ChatPage = () => {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="w-1/4 bg-gray-800 p-4 overflow-y-auto">
-          <CreateNewDm />
-          <CreateNewGroup />
-          <JoinGroup />
-          <ConversationList />
+          <div className="flex flex-wrap gap-2 mb-4">
+            <CreateNewDm />
+            <CreateNewGroup />
+            <JoinGroup />
+          </div>
+          <div>
+            <ConversationList />
+          </div>
         </div>
 
         <div className="flex-1 bg-gray-900 p-4 overflow-y-auto">

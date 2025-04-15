@@ -53,7 +53,8 @@ async function bootstrap() {
       res.cookie('jwt', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-        sameSite: 'Strict', // Or 'None' if cross-origin is required
+        // sameSite: 'Strict', // Or 'None' if cross-origin is required
+        sameSite: 'Lax', // Or 'None' if cross-origin is required
         maxAge: 24 * 60 * 60 * 1000, // 1 day
       });
     }

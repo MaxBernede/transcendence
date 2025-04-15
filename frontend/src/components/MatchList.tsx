@@ -56,7 +56,7 @@ export default function MatchList({ userId }: { userId: string }) {
 	if (error) return <p className="text-red-500">{error}</p>;
 
 	return (
-		<div className="p-4 w-full mx-auto bg-black text-white rounded-lg px-80">
+		<div className="p-4 w-full mx-auto bg-black text-white rounded-lg px-85">
   <h2 className="text-xl font-semibold mb-4 text-center">⁺‧₊˚ ཐི⋆ Match History ⋆ཋྀ ˚₊‧⁺</h2>
   {matches.length === 0 ? (
     <p>No matches found.</p>

@@ -13,6 +13,13 @@ import { z } from "zod";
 import { UserPayload, useUserContext } from "../../context";
 import ChatMessage from "../../components/chat/chat-message";
 import GameInviteMessage from "../../components/chat/chat-game-invite";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "../../components/ui/context-menu";
+import { toast } from "sonner";
 
 // Define types and schemas
 // type PublicUserInfoDto = { id: number; username: string; avatar: string };
@@ -30,14 +37,84 @@ const ChatPage = () => {
     new Map<string, Message[]>()
   );
   const [newMessage, setNewMessage] = useState("");
-  //   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  //   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
-  const { socket }: { socket: Socket | null } = useOutletContext(); // Access the socket from Outlet context
-
+  const { socket }: { socket: Socket | null } = useOutletContext();
   const user: UserPayload = useUserContext();
+
+  const chatMessages = messagesByRoom.get(channelId || "") || [];
+  const sortedMessages = [...chatMessages].sort((a, b) => 
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const checkIfAtBottom = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const isBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
+    setIsAtBottom(isBottom);
+  };
+
+  // Always scroll to bottom on mount
+  useEffect(() => {
+    scrollToBottom();
+  }, []);
+
+  // Handle scroll events
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkIfAtBottom);
+      return () => container.removeEventListener('scroll', checkIfAtBottom);
+    }
+  }, []);
+
+  useEffect(() => {
+    const setupSocketListeners = () => {
+      if (!socket) return;
+
+      socket.off("chatToClient");
+
+      socket.on("chatToClient", (data: Message) => {
+        console.log("Received message:", data);
+        setMessagesByRoom((prev) => {
+          const updated = new Map(prev);
+          const roomMessages = updated.get(data.conversationId) || [];
+          const existingIndex = roomMessages.findIndex(msg => msg.id === data.id);
+          if (existingIndex !== -1) {
+            roomMessages[existingIndex] = data;
+          } else {
+            roomMessages.push(data);
+          }
+          updated.set(data.conversationId, roomMessages);
+          return updated;
+        });
+        // Only scroll to bottom if we're already at the bottom
+        if (isAtBottom) {
+          setTimeout(scrollToBottom, 100);
+        }
+      });
+    };
+
+    setupSocketListeners();
+
+    if (socket && channelId) {
+      console.log("Joining room:", channelId);
+      socket.emit("joinRoom", { conversationId: channelId });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("chatToClient");
+      }
+    };
+  }, [channelId, navigate, socket, isAtBottom]);
 
   useEffect(() => {
     const eventsHandler = EventsHandler.getInstance();
@@ -88,6 +165,8 @@ const ChatPage = () => {
           navigate("/chat");
         } else {
           setMessagesByRoom(messageMap);
+          // Scroll to bottom after messages are loaded
+          setTimeout(() => scrollToBottom(), 0);
         }
       } catch (error) {
         console.error("Failed to fetch conversations:", error);
@@ -96,41 +175,7 @@ const ChatPage = () => {
     };
 
     fetchConversations();
-
-    // Set up socket listeners - this needs to happen even if no history yet
-    const setupSocketListeners = () => {
-      if (!socket) return;
-
-      // First remove any existing listeners to prevent duplicates
-      socket.off("chatToClient");
-
-      socket.on("chatToClient", (data: Message) => {
-        console.log("Received message:", data);
-        setMessagesByRoom((prev) => {
-          const updated = new Map(prev);
-          const roomMessages = updated.get(data.conversationId) || [];
-          updated.set(data.conversationId, [...roomMessages, data]);
-          return updated;
-        });
-      });
-    };
-
-    setupSocketListeners();
-
-    // Join the conversation room explicitly when entering the chat
-    if (socket && channelId) {
-      console.log("Joining room:", channelId);
-      socket.emit("joinRoom", { conversationId: channelId });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off("chatToClient");
-      }
-    };
-  }, [channelId, navigate, socket]);
-
-  const chatMessages = messagesByRoom.get(channelId || "") || [];
+  }, [channelId, navigate]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !socket || !channelId) return;
@@ -144,13 +189,47 @@ const ChatPage = () => {
     setNewMessage("");
   };
 
+  const handleCopyChannelId = () => {
+    if (channelId) {
+      navigator.clipboard.writeText(channelId)
+        .then(() => {
+          toast.success('Channel ID copied to clipboard');
+        })
+        .catch((err) => {
+          console.error('Failed to copy channel ID:', err);
+          toast.error('Failed to copy channel ID');
+        });
+    }
+  };
+
   return (
     <div className="flex h-full">
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <h2 className="text-2xl font-bold mb-4 py-3">Chat #{channelId}</h2>
-        <div className="flex-1 overflow-y-auto bg-gray-800 p-4 rounded-lg min-w-0">
-          {chatMessages.map((msg) => {
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-800/50 backdrop-blur-sm rounded-lg m-2 shadow-lg border border-gray-700/50">
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-400 text-lg">#</span>
+                <h2 className="text-xl font-semibold text-white">{channelId}</h2>
+              </div>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent className="bg-slate-900 border-none">
+            <ContextMenuItem
+              onClick={handleCopyChannelId}
+              className="hover:bg-blue-500 hover:text-white px-4 py-2"
+            >
+              Copy Channel ID
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+        <div 
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto bg-gray-800 p-4 rounded-lg min-w-0 mx-2"
+          onScroll={checkIfAtBottom}
+        >
+          {sortedMessages.map((msg) => {
             console.log("Message:", msg);
             if (msg.type === "TEXT") {
               console.log("Text message:");
@@ -194,3 +273,4 @@ const ChatPage = () => {
 };
 
 export default ChatPage;
+

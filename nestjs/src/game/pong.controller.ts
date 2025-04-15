@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { PongService } from './pong.service';
 import { createInviteDto, CreatePongDto, JoinPrivateRoomDto } from './dto/create_pong.dto';
 import { TokenPayload } from '@/auth/dto/token-payload';
 import { GetUserPayload } from '@/test.decorator';
+import { JwtAuthGuard } from '@/auth/jwt.guard';
 
 @Controller('pong')
+@UseGuards(JwtAuthGuard)
 export class PongController {
   constructor(private readonly pongService: PongService) {}
 

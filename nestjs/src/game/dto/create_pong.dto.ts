@@ -18,6 +18,8 @@ export class createInviteDto {
 	@IsNumber()
 	userId: number;
 
+	@IsUUID()
+	conversationId: string;
 }
 
 export class JoinPrivateRoomDto {
