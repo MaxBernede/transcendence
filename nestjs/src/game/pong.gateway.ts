@@ -988,6 +988,10 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const roomEntry = this.findRoomBySocketId(client.id);
     if (!roomEntry) {
+		const index = waitingQueue.findIndex((player) => player.socketId === client.id);
+        if (index !== -1) {
+            waitingQueue.splice(index, 1);
+        }
       console.log('No active room found for socket', client.id);
       return;
     }
