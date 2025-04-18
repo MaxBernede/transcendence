@@ -40,6 +40,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
   const [cooldownTime, setCooldownTime] = useState(0);
   const cooldownInterval = useRef<NodeJS.Timeout | null>(null);
   const cooldownRef = useRef<NodeJS.Timeout | null>(null);
+  const keysPressedRef = useRef<{ [key: string]: boolean }>({});
 
   // fetches logged-in user info and updates local state
   // const fetchUserData = async () => {
@@ -121,13 +122,13 @@ const fetchUserData = async () => {
 
   const me: UserPayload = useUserContext();
 
-  useEffect(() => {
-    const storedRoomId = localStorage.getItem("roomId");
-    if (storedRoomId) {
-      console.log("Restored roomId from localStorage:", storedRoomId);
-      setRoomId(storedRoomId);
-    }
-  }, []);
+//   useEffect(() => {
+//     const storedRoomId = localStorage.getItem("roomId");
+//     if (storedRoomId) {
+//       console.log("Restored roomId from localStorage:", storedRoomId);
+//       setRoomId(storedRoomId);
+//     }
+//   }, []);
 
   // Reset game state when the page refreshes
   useEffect(() => {
@@ -160,11 +161,17 @@ const fetchUserData = async () => {
   }, []);
 
   useEffect(() => {
-    if (urlRoomId) {
-      setRoomId(urlRoomId);
-      localStorage.setItem("roomId", urlRoomId);
-    }
+	if (urlRoomId) {
+	  setRoomId(urlRoomId);
+	  localStorage.setItem("roomId", urlRoomId);
+	} else {
+	  const storedRoomId = localStorage.getItem("roomId");
+	  if (storedRoomId) {
+		setRoomId(storedRoomId);
+	  }
+	}
   }, [urlRoomId]);
+  
 
   useEffect(() => {
     const handleRegistered = () => {
@@ -317,7 +324,7 @@ const fetchUserData = async () => {
   // listens to playerinfo updates from Websocket server
   useEffect(() => {
     const handlePlayerInfo = (players: Player[]) => {
-      console.log("👥 Live players in room:", players);
+      console.log("live players in room:", players);
 
       currentPlayersRef.current = players;
 
@@ -406,73 +413,175 @@ const fetchUserData = async () => {
   const ballStartedRef = useRef(false);
 
   // when user presses W / S / up / down it moves paddles and sends it to server
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      console.log("Key pressed:", {
-        isRegistered,
-        roomId,
-        winner,
-        isReconnecting,
-      });
+//   const handleKeyDown = useCallback(
+//     (event: KeyboardEvent) => {
+//       console.log("Key pressed:", {
+//         isRegistered,
+//         roomId,
+//         winner,
+//         isReconnecting,
+//       });
 
-      if (!isRegistered || !roomId || winner || isReconnecting) return;
+//       if (!isRegistered || !roomId || winner || isReconnecting) return;
 
-      const opponentFound = opponentUsername !== "WAITING...";
-      let newY = 0;
+//       const opponentFound = opponentUsername !== "WAITING...";
+//       let newY = 0;
 
-      if (playerNumber === 1) {
-        if (event.key === "w" || event.key === "ArrowUp") {
-          newY = Math.max(paddle1Y - 20, 0);
-          setPaddle1Y(newY);
-          socket.emit("playerMove", { player: 1, y: newY, roomId });
-        } else if (event.key === "s" || event.key === "ArrowDown") {
-          newY = Math.min(paddle1Y + 20, 500);
-          setPaddle1Y(newY);
-          socket.emit("playerMove", { player: 1, y: newY, roomId });
-        }
-      } else if (playerNumber === 2) {
-        if (event.key === "w" || event.key === "ArrowUp") {
-          newY = Math.max(paddle2Y - 20, 0);
-          setPaddle2Y(newY);
-          socket.emit("playerMove", { player: 2, y: newY, roomId });
-        } else if (event.key === "s" || event.key === "ArrowDown") {
-          newY = Math.min(paddle2Y + 20, 500);
-          setPaddle2Y(newY);
-          socket.emit("playerMove", { player: 2, y: newY, roomId });
-        }
-      }
+//       if (playerNumber === 1) {
+//         if (event.key === "w" || event.key === "ArrowUp") {
+//           newY = Math.max(paddle1Y - 20, 0);
+//           setPaddle1Y(newY);
+//           socket.emit("playerMove", { player: 1, y: newY, roomId });
+//         } else if (event.key === "s" || event.key === "ArrowDown") {
+//           newY = Math.min(paddle1Y + 20, 500);
+//           setPaddle1Y(newY);
+//           socket.emit("playerMove", { player: 1, y: newY, roomId });
+//         }
+//       } else if (playerNumber === 2) {
+//         if (event.key === "w" || event.key === "ArrowUp") {
+//           newY = Math.max(paddle2Y - 20, 0);
+//           setPaddle2Y(newY);
+//           socket.emit("playerMove", { player: 2, y: newY, roomId });
+//         } else if (event.key === "s" || event.key === "ArrowDown") {
+//           newY = Math.min(paddle2Y + 20, 500);
+//           setPaddle2Y(newY);
+//           socket.emit("playerMove", { player: 2, y: newY, roomId });
+//         }
+//       }
 
-      if (!ballStartedRef.current && opponentFound && !winner) {
-        setBallStarted(true);
-        ballStartedRef.current = true;
-        socket.emit("startBall");
-      }
-    },
-    [
-      isRegistered,
-      roomId,
-      winner,
-      isReconnecting,
-      opponentUsername,
-      playerNumber,
-      paddle1Y,
-      paddle2Y,
-    ]
-  );
+//       if (!ballStartedRef.current && opponentFound && !winner) {
+//         setBallStarted(true);
+//         ballStartedRef.current = true;
+//         socket.emit("startBall");
+//       }
+//     },
+//     [
+//       isRegistered,
+//       roomId,
+//       winner,
+//       isReconnecting,
+//       opponentUsername,
+//       playerNumber,
+//       paddle1Y,
+//       paddle2Y,
+//     ]
+//   );
 
-  socket.on("gameOver", (data) => {
-    console.log(`${data.winner} Wins!`);
-    setWinner(data.winner);
+//   socket.on("gameOver", (data) => {
+//     console.log(`${data.winner} Wins!`);
+//     setWinner(data.winner);
 
-    // Optionally update score UI if needed
-    if (data.finalScore) {
-      setScore1(data.finalScore.player1);
-      setScore2(data.finalScore.player2);
-    }
+//     // Optionally update score UI if needed
+//     if (data.finalScore) {
+//       setScore1(data.finalScore.player1);
+//       setScore2(data.finalScore.player2);
+//     }
 
-    // Optionally re-fetch user data (to update wins/losses in UI)
-    fetchUserData();
-  });
+//     // Optionally re-fetch user data (to update wins/losses in UI)
+//     fetchUserData();
+//   });
+
+useEffect(() => {
+	socket.on("gameOver", (data) => {
+	  console.log(`${data.winner} Wins!`);
+	  setWinner(data.winner);
+  
+	  if (data.finalScore) {
+		setScore1(data.finalScore.player1);
+		setScore2(data.finalScore.player2);
+	  }
+  
+	  fetchUserData();
+	});
+  
+	return () => {
+	  socket.off("gameOver");
+	};
+  }, []);
+  
+
+const handleKeyDown = useCallback((event: KeyboardEvent) => {
+  keysPressedRef.current[event.key.toLowerCase()] = true;
+}, []);
+
+const handleKeyUp = useCallback((event: KeyboardEvent) => {
+  keysPressedRef.current[event.key.toLowerCase()] = false;
+}, []);
+
+useEffect(() => {
+	window.addEventListener("keydown", handleKeyDown);
+	window.addEventListener("keyup", handleKeyUp);
+  
+	return () => {
+	  window.removeEventListener("keydown", handleKeyDown);
+	  window.removeEventListener("keyup", handleKeyUp);
+	};
+  }, [handleKeyDown, handleKeyUp]);
+
+
+  useEffect(() => {
+	let animationFrameId: number;
+  
+	const move = () => {
+	  if (!isRegistered || !roomId || winner || isReconnecting) {
+		animationFrameId = requestAnimationFrame(move);
+		return;
+	  }
+  
+	  const speed = 6;
+  
+	  if (playerNumber === 1) {
+		if (keysPressedRef.current["w"] || keysPressedRef.current["arrowup"]) {
+		  const newY = Math.max(paddle1Y - speed, 0);
+		  setPaddle1Y(newY);
+		  socket.emit("playerMove", { player: 1, y: newY, roomId });
+		}
+		if (keysPressedRef.current["s"] || keysPressedRef.current["arrowdown"]) {
+		  const newY = Math.min(paddle1Y + speed, 500);
+		  setPaddle1Y(newY);
+		  socket.emit("playerMove", { player: 1, y: newY, roomId });
+		}
+	  } else if (playerNumber === 2) {
+		if (keysPressedRef.current["w"] || keysPressedRef.current["arrowup"]) {
+		  const newY = Math.max(paddle2Y - speed, 0);
+		  setPaddle2Y(newY);
+		  socket.emit("playerMove", { player: 2, y: newY, roomId });
+		}
+		if (keysPressedRef.current["s"] || keysPressedRef.current["arrowdown"]) {
+		  const newY = Math.min(paddle2Y + speed, 500);
+		  setPaddle2Y(newY);
+		  socket.emit("playerMove", { player: 2, y: newY, roomId });
+		}
+	  }
+  
+	  if (
+		!ballStartedRef.current &&
+		opponentUsername !== "WAITING..." &&
+		!winner
+	  ) {
+		console.log("[Client] Starting ball...");
+		setBallStarted(true);
+		ballStartedRef.current = true;
+		socket.emit("startBall");
+	  }
+  
+	  animationFrameId = requestAnimationFrame(move);
+	};
+  
+	animationFrameId = requestAnimationFrame(move);
+	return () => cancelAnimationFrame(animationFrameId);
+  }, [
+	paddle1Y,
+	paddle2Y,
+	playerNumber,
+	roomId,
+	isRegistered,
+	winner,
+	isReconnecting,
+	opponentUsername, 
+	socket,
+  ]);
+  
 
   useEffect(() => {
     socket.on("gameReset", () => {
@@ -639,6 +748,8 @@ const fetchUserData = async () => {
 
     return () => {
       socket.off("opponentLeft", handleOpponentLeft);
+	//   socket.disconnect();
+	socket.emit("leavegame");
     };
   }, []);
 
@@ -696,8 +807,8 @@ const fetchUserData = async () => {
     window.addEventListener("beforeunload", handleLeave);
 
     return () => {
-      // socket.emit("leaveGame");
-      // localStorage.removeItem("roomId");
+    //   socket.emit("leaveGame");
+    //   localStorage.removeItem("roomId");
       window.removeEventListener("beforeunload", handleLeave);
     };
   }, []);
