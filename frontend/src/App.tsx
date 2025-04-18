@@ -1,21 +1,18 @@
 import React, { useState, useEffect, createContext, ReactNode } from "react";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import UserPage from "./pages/Userpage";
-import Creation from "./components/Creation";
 import "./styles/App.css";
 import Navbar from "./components/Navbar";
 import ProfileUpdate from "./pages/user/ProfileUpdate";
 import { fetchUserData, UserData } from "./utils/UserLogic";
 import TwoFactorAuth from "./components/2FA/2FA";
-// import TwoFASetup from "./pages/login/2FASetup";
 import ChatPage from "./pages/chat/[id]";
 import ChatLayout from "./pages/chat/chat-page";
 import { UserProvider } from "./context";
-// import TwoFASetup from './pages/login/2FASetup';
 import Friends from "./pages/Friends";
 import PongPage from "./game/PongPage";
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import EventsHandler from "./events/EventsHandler";
 
 import { Toaster } from "./components/ui/sonner";
@@ -43,14 +40,16 @@ export const UserContext = createContext<{
 
 function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [matchHistory, setMatchHistory] = useState<any[]>([]); // Default as empty array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [matchHistory, setMatchHistory] = useState<any[]>([]); // Default as empty array
+  
   useEffect(() => {
-    // Fetch user data when the component mounts
-    //user, achi, match, error, loading
-    fetchUserData(setUserData, setMatchHistory, setError, setLoading);
-  }, []);
+    if (!userData) {
+      // Only fetch data if not already fetched
+      fetchUserData(setUserData, setMatchHistory, setError, setLoading);
+    }
+  }, [userData]); // Runs only when `userData` is not availables
 
   const [socket, setSocket] = useState<Socket | null>(null);
 

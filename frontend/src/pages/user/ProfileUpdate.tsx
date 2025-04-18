@@ -13,7 +13,7 @@ const UserPage: React.FC = () => {
   const handleChange = async (field: string, value: string) => {
     if (userData?.id) {
       try {
-        console.log("Handle change")
+        console.log("Handle")
         const token = localStorage.getItem('jwt');  // JWT token from localStorage
         const response = await axios.put(
           `http://localhost:3000/api/users/${userData.id}`,

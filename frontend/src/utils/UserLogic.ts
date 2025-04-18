@@ -39,7 +39,7 @@ export const fetchUserData = async (
   
 	} catch (error) {
 	  if (axios.isAxiosError(error)) {
-		console.error('Error fetching userrr data:', error.response || error.message);
+		console.error('Error fetching user data:', error.response || error.message);
 		setError(error.response?.data?.message || 'Failed to fetch user data. Please log in.');
 	  } else {
 		console.error('An unexpected error occurred:', error);
