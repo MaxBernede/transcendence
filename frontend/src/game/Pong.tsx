@@ -115,6 +115,7 @@ const fetchUserData = async () => {
   // const { roomId: urlRoomId } = useParams();
   // console.log("useParams roomId:", urlRoomId);
   const navigate = useNavigate();
+  
   const handleCreatePrivateRoom = () => {
     const newRoomId = `room-${uuidv4()}`;
     navigate(`/pong/${newRoomId}`);

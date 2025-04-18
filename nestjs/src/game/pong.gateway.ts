@@ -115,11 +115,16 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket2?.emit('playerInfo', playerInfo);
   }
 
+
+
   private async tryMatchPlayers() {
     while (waitingQueue.length >= 2) {
 		console.log("waitingqueue: ", waitingQueue);
       const player1 = waitingQueue.shift()!;
       const player2 = waitingQueue.shift()!;
+
+	  player1.playerNumber = 1;
+	  player1.playerNumber = 2;
 
 	  console.log("waitingqueue after: ", waitingQueue);
 
@@ -400,7 +405,32 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.userToRoom.delete(userId);
     this.userInGame.delete(userId);
 
-    if (!roomEntry) return;
+	if (!roomEntry) {
+		// If not in activeRooms, clean up private room state if any
+		const userId = this.socketToUser.get(client.id);
+		if (userId) {
+		  for (const [roomId, allowed] of privateRooms.entries()) {
+			if (allowed.includes(userId)) {
+			  privateRooms.set(roomId, allowed.filter((id) => id !== userId));
+			  console.log(`User ${userId} removed from private room ${roomId}`);
+			}
+		  }
+	  
+		  // Also clean up roomUserRoles if needed
+		  for (const [roomId, roles] of roomUserRoles.entries()) {
+			if (roles.creator === userId || roles.invited === userId) {
+			  roomUserRoles.delete(roomId);
+			  console.log(`Removed roomUserRoles for ${roomId}`);
+			}
+		  }
+	  
+		  // Remove stale playerInfo
+		  players.delete(client.id);
+		}
+	  
+		return;
+	  }
+	  
 
     const [roomId, room] = roomEntry;
 
@@ -992,6 +1022,14 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (index !== -1) {
             waitingQueue.splice(index, 1);
         }
+
+		for (const [roomId, userIds] of privateRooms.entries()) {
+			if (userIds.includes(this.socketToUser.get(client.id)!)) {
+			  privateRooms.set(roomId, userIds.filter((id) => id !== this.socketToUser.get(client.id)!));
+			  console.log(`Removed user from private room ${roomId}`);
+			}
+		  }
+
       console.log('No active room found for socket', client.id);
       return;
     }
