@@ -117,8 +117,11 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private async tryMatchPlayers() {
     while (waitingQueue.length >= 2) {
+		console.log("waitingqueue: ", waitingQueue);
       const player1 = waitingQueue.shift()!;
       const player2 = waitingQueue.shift()!;
+
+	  console.log("waitingqueue after: ", waitingQueue);
 
       const socket1 = connectedUsers.get(player1.userId);
       const socket2 = connectedUsers.get(player2.userId);
@@ -126,9 +129,12 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!socket1 || !socket2) {
         if (socket1 && !waitingQueue.some((p) => p.userId === player1.userId)) {
           waitingQueue.unshift(player1);
+		  console.log("unshift:" ,player1.username);
         }
         if (socket2 && !waitingQueue.some((p) => p.userId === player2.userId)) {
           waitingQueue.unshift(player2);
+		  console.log("unshift:" ,player2.username);
+
         }
         continue;
       }
@@ -382,9 +388,10 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Handles player disconnect */
   private pendingReconnections = new Map<string, NodeJS.Timeout>();
   handleDisconnect(client: Socket) {
-    const userId = this.socketToUser.get(client.id);
-    if (!userId) return;
-
+	  const userId = this.socketToUser.get(client.id);
+	  console.log("disconnected from room: ", userId);
+	  if (!userId) return;
+	  
     const roomEntry = this.findRoomBySocketId(client.id);
 
     // Remove socket from connection maps
@@ -560,10 +567,12 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+	
     // Cleanup stale rooms
     for (const [rId, room] of activeRooms.entries()) {
-      const isPlayer =
+		const isPlayer =
         room.player1.userId === user.id || room.player2.userId === user.id;
+		console.log("users: ", room);
       const stillConnected =
         connectedUsers.has(room.player1.userId) &&
         connectedUsers.has(room.player2.userId);

@@ -177,8 +177,8 @@ export class PongService {
 
     if (!this.ballMoving.get(roomId)) {
       console.log('First paddle move detected, starting ball movement...');
-      gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
-      gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+      gameState.ball.vx = Math.random() > 0.5 ? 4 : -4;
+      gameState.ball.vy = Math.random() > 0.5 ? 4 : -4;
       this.ballMoving.set(roomId, true);
       this.startGameLoop(roomId, server);
     }
@@ -670,8 +670,8 @@ export class PongService {
     const gameState = this.gameStates.get(roomId);
     if (!gameState) return;
 
-    gameState.ball.vx = Math.random() > 0.5 ? 5 : -5;
-    gameState.ball.vy = Math.random() > 0.5 ? 5 : -5;
+    gameState.ball.vx = Math.random() > 0.5 ? 4 : -4;
+    gameState.ball.vy = Math.random() > 0.5 ? 4 : -4;
     this.ballMoving.set(roomId, true);
 
     this.startGameLoop(roomId, server);
@@ -794,8 +794,8 @@ export class PongService {
     const players = this.roomToUsers.get(roomId);
     if (players) {
       for (const user of players) {
-        this.userToRoom.delete(user.id); // or however you're tracking it
-        this.userInGame.delete(user.id); // or set user.inGame = false
+        this.userToRoom.delete(user.id); 
+        this.userInGame.delete(user.id); 
         console.log(`Removed user ${user.username} from room ${roomId}`);
       }
       this.roomToUsers.delete(roomId);
@@ -803,6 +803,60 @@ export class PongService {
 
     console.log(`cleaned up all data for room ${roomId}`);
   }
+
+// cleanupRoom(roomId: string) {
+//     console.log(`Starting cleanup for room ${roomId}`);
+    
+//     // stop active interval
+//     const interval = this.gameLoopIntervals.get(roomId);
+//     if (interval) {
+//         console.log(`Clearing interval for room ${roomId}`);
+//         clearInterval(interval);
+//         this.gameLoopIntervals.delete(roomId);
+//     } else {
+//         console.log(`No interval found for room ${roomId}`);
+//     }
+
+//     // clear game state
+//     if (this.gameStates.has(roomId)) {
+//         console.log(`Deleting game state for room ${roomId}`);
+//         this.gameStates.delete(roomId);
+//     }
+
+//     if (this.powerUpStates.has(roomId)) {
+//         console.log(`Deleting power-up states for room ${roomId}`);
+//         this.powerUpStates.delete(roomId);
+//     }
+
+//     if (this.playersReady.has(roomId)) {
+//         console.log(`Deleting players ready state for room ${roomId}`);
+//         this.playersReady.delete(roomId);
+//     }
+
+//     if (this.ballMoving.has(roomId)) {
+//         console.log(`Deleting ball moving state for room ${roomId}`);
+//         this.ballMoving.delete(roomId);
+//     }
+
+//     this.winnerDeclared.set(roomId, false);
+//     console.log(`Reset winner declared state for room ${roomId}`);
+
+//     const players = this.roomToUsers.get(roomId);
+//     if (players) {
+//         console.log(`Found players in room ${roomId}: ${players.map((user) => user.username).join(', ')}`);
+//         for (const user of players) {
+//             this.userToRoom.delete(user.id); 
+//             this.userInGame.delete(user.id); 
+//             console.log(`Removed user ${user.username} from room ${roomId}`);
+//         }
+//         this.roomToUsers.delete(roomId);
+//     } else {
+//         console.log(`No players found in room ${roomId}`);
+//     }
+
+//     console.log(`Completed cleanup for room ${roomId}`);
+// }
+
 
   getRoomInfo(roomId: string) {
     const users = this.roomToUsers.get(roomId);

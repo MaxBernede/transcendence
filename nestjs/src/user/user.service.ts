@@ -263,7 +263,7 @@ export class UserService {
 
   async findByUsername(username: string): Promise<User | null> {
     const users = await this.userRepository.find();
-    console.log('all users:', users);
+    // console.log('all users:', users);
     return users.find(u => u.username === username) ?? null;
   }
   
