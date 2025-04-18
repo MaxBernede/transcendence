@@ -7,7 +7,6 @@ import MatchList from '../components/MatchList';
 import EventsHandler from '../events/EventsHandler';
 import OnlineStatus from '../components/OnlineStatus';
 import { UserData } from '../utils/UserLogic';
-
 const UserPage: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
 	const [localUserData, setLocalUserData] = useState<UserData | null>(null);
@@ -96,7 +95,7 @@ const UserPage: React.FC = () => {
 			</div>
 
 			<div className="match-history mt-6 w-full">
-				<MatchList userId={id ? id : ""} />
+        <MatchList localUserData={localUserData} /> 
 			</div>
 		</div>
 	);
