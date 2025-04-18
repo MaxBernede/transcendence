@@ -477,6 +477,9 @@ export class ConversationsService {
     receiverId: number,
     convoDto: CreateConversationDto,
   ) {
+    if (senderId == receiverId){
+      throw new BadRequestException('Cannot create DM with yourself');
+    }
     const senderConversations = await this.userConversationRepository.find({
       where: {
         user: { id: senderId },

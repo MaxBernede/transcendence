@@ -136,7 +136,6 @@ async login(@Body() loginDto: { username: string }, @Res() res: Response) {
   }
 }
 
-//! FOR DEVELOPMENT PURPOSES ONLY
 @Public()
 @Post('login2')
 @ApiOperation({ summary: 'Create a new conversation' })
