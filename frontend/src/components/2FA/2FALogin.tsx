@@ -19,10 +19,9 @@ const TwoFactorAuthLogin: React.FC<TwoFactorAuthLoginProps> = ({ userId }) => {
 				}),
 				credentials: 'include',
 			});
-			if (response.ok){
+			if (response.ok) {
 				const data = await response.json();
-				setIsValid(true);
-				window.location.href = 'http://localhost:3001/user/me';
+				window.location.href = data.redirectUrl;
 			}
 			else{
 				setTimeout(() => {

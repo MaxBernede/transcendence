@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, Res } from '@nestjs/common';
 import { TwoFactorAuthService } from './two-factor-auth.service';
 import { UserService } from 'src/user/user.service';
 import { Response } from 'express';
+import { CommandStartedEvent } from 'typeorm';
 
 @Controller('2fa')
 export class TwoFactorAuthController {
@@ -48,7 +49,7 @@ export class TwoFactorAuthController {
 			// If valid, just redirect ? not sure its the right place tho
 			const jwt = user.tempJWT
 			this.twoFactorAuthService.setJwtCookieTwo(res, jwt);
-			return res.redirect(`http://localhost:3001/user/${user.intraId}`);
+			return res.status(200).json({ redirectUrl: `http://localhost:3001/user/${user.id}` });
 		} 
 		catch (error) {
 			console.error('Error updating user data:', error);
