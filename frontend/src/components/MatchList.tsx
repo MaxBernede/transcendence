@@ -17,8 +17,8 @@ export default function MatchList({ userId }: { userId: string }) {
 	const { userData } = useContext(UserContext);  // Assuming you're using UserContext to store user data
 	// const location = useLocation();
 	useEffect(() => {
-		console.log("Debugging - userId:", userId);
-		console.log("Debugging - userData:", userData);
+		// console.log("Debugging - userId:", userId);
+		// console.log("Debugging - userData:", userData);
 
 		let currentUserId = userId === "me" && userData?.id ? userData.id : userId;
 		// Only fetch matches if userData is available and valid userId is provided

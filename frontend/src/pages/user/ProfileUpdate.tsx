@@ -1,4 +1,3 @@
-// UserPage.tsx
 import React, { useContext } from 'react';
 import { UserContext } from '../../App';
 import EditableFieldButton from '../../utils/EditButton';
@@ -6,9 +5,8 @@ import axios from 'axios';
 import Remove2FAButton from '../../components/2FA/2FARemove';
 import TwoFactorAuth from '../../components/2FA/2FA';
 import { Box } from '@mui/material';
-import Header from '../../utils/Mybox';
-import ProfilePictureUpload from '../../utils/ProfilePicUp';
 import AvatarUpdate from './AvatarUpdate';
+import FetchMyUser from '../../components/FetchMyUser'; // adapte le chemin selon ton projet
 
 const UserPage: React.FC = () => {
   const { userData, setUserData, loading, error } = useContext(UserContext);
@@ -47,6 +45,7 @@ const UserPage: React.FC = () => {
     justifyContent="center"
     minHeight="100vh" // This ensures the content is vertically centered
     padding="2rem" >
+      <FetchMyUser setUserData={setUserData} />
         <AvatarUpdate></AvatarUpdate>
         {/* <ProfilePictureUpload></ProfilePictureUpload> */}
       {/* Editable username */}

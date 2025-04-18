@@ -35,5 +35,5 @@
 
 
 # fix
-when going to another person profile, after we need to reload our infos
-access to the other person 2fa
+when going to another person profile, after we need to reload our infos with /me
+me is refused when going to edit after someone profile

@@ -27,7 +27,7 @@ export const fetchUserData = async (
 	  });
 	  console.log(response);
 	  const user = response.data;
-	  console.log('Fetched user data:', user);
+	//   console.log('Fetched user data:', user);
   
 	  setUserData({
 		...user,

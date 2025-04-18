@@ -53,7 +53,7 @@ export class UserController {
 @UseGuards(JwtAuthGuard)
 @Get('me')
 async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-  // console.log("Fetching user with ID:", payload.sub);
+  console.log("Fetching user with ID:", payload.sub);
 
   const existingUser = await this.userRepository.findOne({
     where: { id: payload.sub }, // Use ID instead of email
@@ -76,15 +76,22 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
 
   @Get(':id')
   async getUser(@Param('id') id: string, @Req() request: Request) {
-    console.log('Requested User ID or Username:', id); // Debug log
+    // console.log('Requested User ID or Username:', id); // Debug log
 
+    let me = false
     if (id === 'me') {
       // Resolve "me" to the current user's ID using AuthGuard
+      console.log('🔒 Authenticated User:', {
+        headers: request.headers,
+        user: request['user'],
+        method: request.method,
+      });
       const userId = request['user']?.sub;
       if (!userId) {
         throw new NotFoundException('User not authenticated');
       }
       id = userId.toString();
+      me = true
     }
 
     // Determine if the resolved ID is numeric
@@ -94,13 +101,15 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     try {
       // Try fetching the user from the database
       user = await this.userService.findOne(isNumericId ? +id : id);
-      console.log('User datas', user);
+      // console.log('User datas', user);
     } catch (error) {
       console.error('Error fetching user:', error.message);
       user = null;
     }
 
     if (user) {
+      if (me == true)
+        return user
       const {
         tempJWT,
         secret_2fa,

@@ -109,7 +109,7 @@ export class EventsGateway
     this.socketUserMap.set(client.id, user.sub);
     await this.userRepository.update(user.sub, { activity_status: true });
     const updatedUser = await this.userRepository.findOneBy({ id: user.sub });
-    console.log('User updated', updatedUser);
+    // console.log('User updated', updatedUser);
     // console.log(client.id, 'registered for events ', user.sub);
 
 	

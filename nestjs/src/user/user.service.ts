@@ -155,7 +155,7 @@ export class UserService {
       user.avatar = user.image.link;
     }
 
-    console.log('Final user data:', user);
+    // console.log('Final user data:', user);
     return user;
   }
 
