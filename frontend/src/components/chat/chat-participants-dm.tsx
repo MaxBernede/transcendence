@@ -38,11 +38,11 @@ export const DmParticipants: React.FC<DMComponentProps> = ({
             </CardHeader>
             <OnlineStatus isOnline={participant?.activity_status === true} />
             <WinLossStatus wins={participant.wins} losses={participant.losses} />
-            <CardContent className="text-sm text-center">
+            {/* <CardContent className="text-sm text-center">
               TODO: Add user details here and a pong game invite button TODO:
               Add user details here and a pong game invite buttonTODO: Add user
               details here and a pong game invite button
-            </CardContent>
+            </CardContent> */}
           </Card>
         ))}
     </div>
