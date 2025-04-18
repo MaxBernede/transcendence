@@ -209,7 +209,7 @@ export class ConversationsGateway
     if (isValid === false) {
       return;
     }
-    console.log('Client connected:', client.id);
+    // console.log('Client connected:', client.id);
 
     const payload: TokenPayload = client['user'];
     // console.log('User:', client['user']);
