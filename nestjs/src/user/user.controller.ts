@@ -101,7 +101,13 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     }
 
     if (user) {
-      return user;
+      const {
+        tempJWT,
+        secret_2fa,
+        ...safeUser
+      } = user;
+      
+      return safeUser;
     }
 
     console.warn(`User with ID or username "${id}" not found.`);

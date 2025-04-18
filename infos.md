@@ -34,3 +34,6 @@
 	
 
 
+# fix
+when going to another person profile, after we need to reload our infos
+access to the other person 2fa
