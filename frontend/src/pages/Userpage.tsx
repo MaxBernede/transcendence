@@ -15,60 +15,42 @@ const UserPage: React.FC = () => {
 	const [localError, setLocalError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!id) return;
-
-		const fetchUserData = async () => {
-			try {
-				const res = await fetch(`/api/users/${id}`);
-				if (!res.ok) throw new Error('User fetch failed');
-				const data = await res.json();
-				setLocalUserData(data);
-			} catch (err) {
-				console.error('Error fetching user:', err);
-				setLocalError('Failed to fetch user data');
-			}
-		};
-
-		const waitForSocket = () => {
-			const handler = EventsHandler.getInstance();
-			if (handler.isReady()) {
-				fetchUserData();
-			} else {
-				const socket = handler.getSocket();
-				socket?.once("connect", fetchUserData);
-				setTimeout(fetchUserData, 2000);
-			}
-		};
-
-		waitForSocket();
-	}, [id]);
-
-	useEffect(() => {
-		const fetchUserAndMatches = async () => {
-			try {
-				const resUser = await fetch(`/api/users/${id}`);
-				if (!resUser.ok) throw new Error('User not found');
-				const user = await resUser.json();
-				setLocalUserData(user);
-
-				const actualId = id === 'me' ? user.id : id;
-
-				const resMatches = await fetch(`/matches/${actualId}`);
-				if (!resMatches.ok) throw new Error('Matches not found');
-				const matchData = await resMatches.json();
-				setLocalMatchHistory(matchData);
-			} catch (err) {
-				console.error('Error fetching user or matches:', err);
-				setLocalError('Failed to fetch data');
-			} finally {
-				setLocalLoading(false);
-			}
-		};
-
-		if (id) {
-			fetchUserAndMatches();
-		}
-	}, [id]);
+    if (!id) return;
+  
+    const fetchData = async () => {
+      try {
+        // Fetch user data
+        const resUser = await fetch(`/api/users/${id}`);
+        if (!resUser.ok) throw new Error('User fetch failed');
+        const user = await resUser.json();
+        setLocalUserData(user);
+  
+        // Fetch match history
+        const actualId = id === 'me' ? user.id : id;
+        const resMatches = await fetch(`/matches/${actualId}`);
+        if (!resMatches.ok) throw new Error('Matches not found');
+        const matchData = await resMatches.json();
+        setLocalMatchHistory(matchData);
+  
+      } catch (err) {
+        console.error('Error fetching user or matches:', err);
+        setLocalError('Failed to fetch data');
+      } finally {
+        setLocalLoading(false);
+      }
+    };
+  
+    // Wait for socket before fetching data
+    const handler = EventsHandler.getInstance();
+    if (handler.isReady()) {
+      fetchData();
+    } 
+    else {
+      const socket = handler.getSocket();
+      socket?.once("connect", fetchData);
+    }
+  
+  }, [id]);
 
 	if (localLoading) return <p>Loading...</p>;
 	if (localError) return <p>{localError}</p>;

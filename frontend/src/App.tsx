@@ -14,9 +14,7 @@ import ChatLayout from "./pages/chat/chat-page";
 import { UserProvider } from "./context";
 // import TwoFASetup from './pages/login/2FASetup';
 import Friends from "./pages/Friends";
-import UserProfile from "./pages/UserProfile";
 import PongPage from "./game/PongPage";
-import LoginPage from "./pages/login/page";
 import { io, Socket } from "socket.io-client";
 import EventsHandler from "./events/EventsHandler";
 
