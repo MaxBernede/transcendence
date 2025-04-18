@@ -60,7 +60,7 @@ export const JoinGroup = () => {
 
     const joinGroupDto: NewGroup = {
       id: formData.id,
-	  password: formData.password,
+      password: formData.password,
     };
 
     console.log("joining:", joinGroupDto.id);
@@ -68,7 +68,7 @@ export const JoinGroup = () => {
     try {
       setLoading(true); // Set loading state to true
       const { data } = await axios.post(
-        "http://localhost:3000/conversations/join-conversation",
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/join-conversation`,
         { id: joinGroupDto.id, password: joinGroupDto.password },
         { withCredentials: true }
       );
@@ -118,7 +118,7 @@ export const JoinGroup = () => {
   return (
     <AlertDialog open={isOpen}>
       <AlertDialogTrigger asChild>
-        <Button 
+        <Button
           className="flex-1 bg-blue-900/30 backdrop-blur-sm rounded-lg shadow-lg hover:bg-blue-800/40 transition-colors border-0"
           onClick={handleOpenDialog}
         >
@@ -149,7 +149,7 @@ export const JoinGroup = () => {
                   </FormItem>
                 )}
               />
-			  <FormField
+              <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (

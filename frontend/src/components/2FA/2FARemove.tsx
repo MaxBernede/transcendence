@@ -1,7 +1,7 @@
-import React, { useContext } from 'react';
-import axios from 'axios';
-import { UserContext } from '../../App'; // Import UserContext
-import { Button } from '@mui/material';
+import React, { useContext } from "react";
+import axios from "axios";
+import { UserContext } from "../../App"; // Import UserContext
+import { Button } from "@mui/material";
 
 interface Remove2FAButtonProps {
   className?: string;
@@ -13,9 +13,9 @@ const Remove2FAButton: React.FC<Remove2FAButtonProps> = ({ className }) => {
   const handleRemove2FA = async () => {
     if (userData?.id) {
       try {
-        const token = localStorage.getItem('jwt'); // JWT token from localStorage
+        const token = localStorage.getItem("jwt"); // JWT token from localStorage
         const response = await axios.put(
-          `http://localhost:3000/api/users/${userData.id}`,
+          `${process.env.REACT_APP_BACKEND_IP}/api/users/${userData.id}`,
           { secret_2fa: null }, // Set secret_2fa to null
           {
             headers: {
@@ -26,9 +26,9 @@ const Remove2FAButton: React.FC<Remove2FAButtonProps> = ({ className }) => {
 
         // Update userData in state after the successful update
         setUserData({ ...userData, secret_2fa: null });
-        console.log('2FA secret removed:', response.data);
+        console.log("2FA secret removed:", response.data);
       } catch (err) {
-        console.error('Error removing 2FA secret', err);
+        console.error("Error removing 2FA secret", err);
       }
     }
   };
@@ -38,19 +38,19 @@ const Remove2FAButton: React.FC<Remove2FAButtonProps> = ({ className }) => {
   }
 
   return (
-    <div className={'mainContainer'}>
-			<br />
-			<div className={'inputContainer'}>
-				<Button
-					variant="contained"
-					color="error"  // button color red for error
-					sx={{ marginTop: '20px' }}
-					onClick={handleRemove2FA}
-				>
-					Deactivate the 2FA
-				</Button>
-			</div>
-		</div>
+    <div className={"mainContainer"}>
+      <br />
+      <div className={"inputContainer"}>
+        <Button
+          variant="contained"
+          color="error" // button color red for error
+          sx={{ marginTop: "20px" }}
+          onClick={handleRemove2FA}
+        >
+          Deactivate the 2FA
+        </Button>
+      </div>
+    </div>
   );
 };
 

@@ -35,7 +35,7 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:3000/conversations/${channelId}/participants`,
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/${channelId}/participants`,
         {
           withCredentials: true,
         }
@@ -132,7 +132,7 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
 
       try {
         const user = await axios.get(
-          `http://localhost:3000/api/users/${data.userId}`,
+          `${process.env.REACT_APP_BACKEND_IP}/api/users/${data.userId}`,
           {
             withCredentials: true,
           }
@@ -159,8 +159,9 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     };
 
     const handleEventActionKick = async (
-		data: z.infer<typeof GroupUserStatusUpdateSchema>
-	  ) => {if (data.userId === currentUserId) {
+      data: z.infer<typeof GroupUserStatusUpdateSchema>
+    ) => {
+      if (data.userId === currentUserId) {
         //? if the current page is the conversation page, redirect to the home page
         if (data.conversationId === channelId) {
           // redirect to /chat
@@ -170,7 +171,7 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
       }
     };
 
-	const handleEventActionBan = async (
+    const handleEventActionBan = async (
       data: z.infer<typeof GroupUserStatusUpdateSchema>
     ) => {
       console.log("BAN action received in conversations-list:", data);

@@ -33,7 +33,7 @@ const newPasswordSchema = z.object({
     .regex(/^[a-zA-Z0-9]*$/, "Password must be alphanumeric")
     .min(0, "Password cannot be negative")
     .optional()
-    .transform(val => val || ""),
+    .transform((val) => val || ""),
 });
 
 type NewPassword = z.infer<typeof newPasswordSchema>;
@@ -43,7 +43,10 @@ interface ChangePasswordProps {
   conversationId: string;
 }
 
-export const ChangePassword: React.FC<ChangePasswordProps> = ({ onClose, conversationId }) => {
+export const ChangePassword: React.FC<ChangePasswordProps> = ({
+  onClose,
+  conversationId,
+}) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
@@ -70,7 +73,7 @@ export const ChangePassword: React.FC<ChangePasswordProps> = ({ onClose, convers
     try {
       setLoading(true);
       const { data } = await axios.post(
-        "http://localhost:3000/conversations/change-password",
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/change-password`,
         newPassword,
         {
           withCredentials: true,

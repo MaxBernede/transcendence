@@ -70,7 +70,7 @@ const ConversationList = () => {
     const fetchConversations = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:3000/conversations",
+          `${process.env.REACT_APP_BACKEND_IP}/conversations`,
           {
             withCredentials: true,
           }
@@ -100,7 +100,7 @@ const ConversationList = () => {
     const addConversationToList = async (conversationId: string) => {
       try {
         const response = await axios.get(
-          `http://localhost:3000/conversations/${conversationId}`,
+          `${process.env.REACT_APP_BACKEND_IP}/conversations/${conversationId}`,
           { withCredentials: true }
         );
         const newConversation = response.data;
@@ -134,7 +134,7 @@ const ConversationList = () => {
 
       //   try {
       //     const response = await axios.get(
-      //       `http://localhost:3000/conversations/${validatedDate.conversationId}`,
+      //       `${process.env.REACT_APP_BACKEND_IP}/conversations/${validatedDate.conversationId}`,
       //       { withCredentials: true }
       //     );
       //     const newConversation = response.data;
@@ -215,10 +215,13 @@ const ConversationList = () => {
     console.log("Redirect URL:", redirectUrl);
     try {
       //TODO: add api query param for custom redirect
-      const response = await axios.get("http://localhost:3000/auth/", {
-        //Auth will call the getAuth
-        withCredentials: true, // Include cookies (not necessary)
-      });
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_IP}/auth/`,
+        {
+          //Auth will call the getAuth
+          withCredentials: true, // Include cookies (not necessary)
+        }
+      );
       console.log("Response:", response.data);
       window.location.href = response.data.url; // Redirect toward the login page if necessary
     } catch (error) {
@@ -231,7 +234,7 @@ const ConversationList = () => {
     console.log("Leaving group:", conversationId);
     try {
       const response = await axios.delete(
-        `http://localhost:3000/conversations/leave-conversation/${conversationId}`,
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/leave-conversation/${conversationId}`,
         { withCredentials: true }
       );
       console.log("User removed from group:", response.data);

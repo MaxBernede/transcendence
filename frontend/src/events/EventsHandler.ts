@@ -10,10 +10,10 @@ class EventsHandler {
   private socket: Socket | null = null;
 
   private constructor() {
-    this.socket = io("http://localhost:3000/events", {
+    this.socket = io(`${process.env.REACT_APP_BACKEND_IP}/events`, {
       withCredentials: true,
     });
-    // this.socket = io("http://localhost:3000/events", {
+    // this.socket = io(`${process.env.REACT_APP_BACKEND_IP}/events`, {
     //   withCredentials: true,
     //   reconnection: true, // Enable reconnection
     //   reconnectionAttempts: Infinity, // Try to reconnect indefinitely
@@ -32,9 +32,9 @@ class EventsHandler {
     return EventsHandler.instance;
   }
 
-	public isReady(): boolean {
-		return this.socket?.connected ?? false;
-	}
+  public isReady(): boolean {
+    return this.socket?.connected ?? false;
+  }
 
   public getSocket(): Socket | null {
     return this.socket;

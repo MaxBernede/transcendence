@@ -34,6 +34,7 @@ import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import * as path from 'path';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('api/users')
 export class UserController {
@@ -43,6 +44,8 @@ export class UserController {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly configService: ConfigService,
   ) {}
 
   @Post()
@@ -50,27 +53,26 @@ export class UserController {
     return this.userService.createUser(createUserDto);
   }
 
-@UseGuards(JwtAuthGuard)
-@Get('me')
-async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
-  // console.log("Fetching user with ID:", payload.sub);
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getMe(
+    @GetUserPayload() payload: TokenPayload,
+    @Req() request: Request,
+  ) {
+    // console.log("Fetching user with ID:", payload.sub);
 
-  const existingUser = await this.userRepository.findOne({
-    where: { id: payload.sub }, // Use ID instead of email
-  });
+    const existingUser = await this.userRepository.findOne({
+      where: { id: payload.sub }, // Use ID instead of email
+    });
 
-  if (!existingUser) {
-    throw new UnauthorizedException("User not found.");
+    if (!existingUser) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return existingUser;
   }
-  return existingUser;
-}
-
 
   @Put(':id')
-  async updateUser(
-    @Param('id') id: string,
-    @Body() updatedData: any,
-  ) {
+  async updateUser(@Param('id') id: string, @Body() updatedData: any) {
     return this.userService.updateUser(id, updatedData);
   }
 
@@ -155,9 +157,11 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
       }),
     ]);
 
+	const frontend_ip = this.configService.getOrThrow('FRONTEND_IP');
+
     const tempJWT = { tempJWT: null };
     await this.userService.updateUser(user.id.toString(), tempJWT);
-    return res.redirect(`http://localhost:3001/user/${user.id}`);
+    return res.redirect(`http://${frontend_ip}/user/${user.id}`);
   }
 
   @Post(':id/upload-avatar')
@@ -194,14 +198,24 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
+    const server_ip: string =
+      this.configService.getOrThrow<string>('BACKEND_IP');
 
     // Fetch user data to check if they already have an avatar
     const user = await this.userService.findOneById(Number(userId));
     if (user && user.avatar) {
       // If the user has an existing avatar, delete the previous file
-      const previousAvatarPath = path.join(process.cwd(), 'uploads', 'avatars', user.avatar.replace('http://localhost:3000/uploads/avatars/', ''));
+
+      const replacedAvatarPath = `${server_ip}/uploads/avatars/`;
+
+      const previousAvatarPath = path.join(
+        process.cwd(),
+        'uploads',
+        'avatars',
+        user.avatar.replace(replacedAvatarPath, ''),
+      );
       console.log('Previous avatar path:', previousAvatarPath);
-  
+
       try {
         // Check if the file exists and delete it
         if (fs.existsSync(previousAvatarPath)) {
@@ -212,7 +226,8 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
         console.error('Error deleting previous avatar:', err);
       }
     }
-    const avatarUrl = `http://localhost:3000/uploads/avatars/${file.filename}`;
+
+    const avatarUrl = `${server_ip}/uploads/avatars/${file.filename}`;
     // console.log('New avatar URL:', avatarUrl);
     // console.log('userId:', userId);
     await this.userService.updateAvatar(userId, avatarUrl);
@@ -251,5 +266,4 @@ async getMe(@GetUserPayload() payload: TokenPayload, @Req() request: Request) {
       res.status(404).send('Image not found');
     }
   }
-
 }

@@ -9,7 +9,7 @@ import { ChatGameInvite } from './conversations/entities/chat-game-invite.entity
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
-  host: process.env.POSTGRES_HOST || 'localhost',
+  host: process.env.POSTGRES_HOST || process.env.BACKEND_IP || 'localhost',
   port: +process.env.POSTGRES_PORT || 5432,
   username: process.env.POSTGRES_USER || 'user',
   password: process.env.POSTGRES_PASSWORD || 'postgres',

@@ -32,7 +32,7 @@ import { useNavigate } from "react-router-dom";
 const newGroupSchema = z.object({
   username: z
     .string()
-    .regex(/^[a-zA-Z0-9]+$/, "Username must be alphanumeric")
+    .regex(/^[a-zA-Z0-9-]+$/, "Username must be alphanumeric")
     .min(1, "Username cannot be empty")
     .nonempty("At least one participant is required"),
 });
@@ -68,7 +68,7 @@ export const CreateNewDm = () => {
     try {
       setLoading(true);
       const { data } = await axios.post(
-        "http://localhost:3000/conversations",
+        `${process.env.REACT_APP_BACKEND_IP}/conversations`,
         newDmConversation,
         {
           withCredentials: true,
@@ -119,7 +119,7 @@ export const CreateNewDm = () => {
   return (
     <AlertDialog open={isOpen}>
       <AlertDialogTrigger asChild>
-        <Button 
+        <Button
           className="flex-1 bg-blue-900/30 backdrop-blur-sm rounded-lg shadow-lg hover:bg-blue-800/40 transition-colors border-0"
           onClick={handleOpenDialog}
         >

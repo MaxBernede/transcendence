@@ -41,7 +41,7 @@ const newGroupSchema = z.object({
   isPrivate: z.boolean().default(false),
   participants: z
     .string()
-    .regex(/^[a-zA-Z0-9]+$/, "Username must be alphanumeric")
+    .regex(/^[a-zA-Z0-9-]+$/, "Username must be alphanumeric")
     .min(1, "Username cannot be empty")
     .nonempty("At least one participant is required"),
 });
@@ -111,7 +111,7 @@ export const CreateNewGroup = () => {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/conversations",
+        `${process.env.REACT_APP_BACKEND_IP}/conversations`,
         newGroupConversation,
         {
           withCredentials: true,
@@ -154,13 +154,16 @@ export const CreateNewGroup = () => {
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        handleCloseDialog();
-      }
-    }}>
+    <AlertDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          handleCloseDialog();
+        }
+      }}
+    >
       <AlertDialogTrigger asChild>
-        <Button 
+        <Button
           className="flex-1 bg-blue-900/30 backdrop-blur-sm rounded-lg shadow-lg hover:bg-blue-800/40 transition-colors border-0"
           onClick={handleOpenDialog}
         >

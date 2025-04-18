@@ -91,13 +91,12 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const handleCloseBan = () => {
     setRenderBanSelect(false);
   };
-  
 
   const handleUnmute = async (userId: number) => {
     console.log("Unmuting user:", userId);
     try {
       const response = await axios.post(
-        `http://localhost:3000/conversations/${conversationId}/users/${userId}/unmute`,
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/${conversationId}/users/${userId}/unmute`,
         {},
         { withCredentials: true }
       );
@@ -132,7 +131,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
 
     try {
       const response = await axios.post(
-        `http://localhost:3000/conversations/update-role`,
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/update-role`,
         {
           conversationId: conversationId,
           memberId: userId,
@@ -154,7 +153,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
 
     try {
       const response = await axios.post(
-        `http://localhost:3000/conversations/update-role`,
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/update-role`,
         {
           conversationId: conversationId,
           memberId: userId,
@@ -176,7 +175,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
 
     try {
       const response = await axios.post(
-        `http://localhost:3000/conversations/update-role`,
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/update-role`,
         {
           conversationId: conversationId,
           memberId: userId,
@@ -202,7 +201,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
     };
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/conversations",
+        `${process.env.REACT_APP_BACKEND_IP}/conversations`,
         newDmConversation,
         {
           withCredentials: true,
@@ -221,7 +220,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const handleInviteToPong = async (participant: PublicUserInfo) => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/pong/createInvite",
+        `${process.env.REACT_APP_BACKEND_IP}/pong/createInvite`,
         {
           username: participant.username,
           userId: participant.id,
@@ -245,13 +244,13 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
         MEMBERS - {participants.length}
         {currentUserRole === "OWNER" && (
           <>
-            <Settings 
-              className="w-5 h-5 cursor-pointer hover:text-blue-500 transition-colors" 
+            <Settings
+              className="w-5 h-5 cursor-pointer hover:text-blue-500 transition-colors"
               onClick={() => setShowChangePassword(true)}
             />
             {showChangePassword && (
-              <ChangePassword 
-                onClose={() => setShowChangePassword(false)} 
+              <ChangePassword
+                onClose={() => setShowChangePassword(false)}
                 conversationId={conversationId}
               />
             )}
@@ -304,7 +303,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
           </ContextMenuTrigger>
 
           <ContextMenuContent className="bg-slate-900 border-none">
-            <ContextMenuItem 
+            <ContextMenuItem
               onClick={() => handleViewProfile(participant.username)}
               className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md"
             >
@@ -465,7 +464,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
               </ContextMenuTrigger>
 
               <ContextMenuContent className="bg-slate-900 border-none">
-                <ContextMenuItem 
+                <ContextMenuItem
                   onClick={() => handleViewProfile(participant.username)}
                   className="hover:bg-blue-500 hover:text-white px-4 py-2 rounded-md"
                 >
@@ -518,7 +517,7 @@ const removeUserFromGroup = async (userId: number, conversationId: string) => {
 
   try {
     const response = await axios.delete(
-      `http://localhost:3000/conversations/${conversationId}/users/${userId}`,
+      `${process.env.REACT_APP_BACKEND_IP}/conversations/${conversationId}/users/${userId}`,
       { withCredentials: true } // Use an object for the second argument
     );
 
@@ -533,7 +532,7 @@ const banUserFromGroup = async (userId: number, conversationId: string) => {
 
   try {
     const response = await axios.post(
-      `http://localhost:3000/conversations/${conversationId}/users/${userId}/ban`,
+      `${process.env.REACT_APP_BACKEND_IP}/conversations/${conversationId}/users/${userId}/ban`,
       {},
       { withCredentials: true }
     );
@@ -549,7 +548,7 @@ const unbanUserFromGroup = async (userId: number, conversationId: string) => {
 
   try {
     const response = await axios.post(
-      `http://localhost:3000/conversations/${conversationId}/users/${userId}/unban`,
+      `${process.env.REACT_APP_BACKEND_IP}/conversations/${conversationId}/users/${userId}/unban`,
       {},
       { withCredentials: true }
     );
@@ -566,7 +565,7 @@ const unbanUserFromGroup = async (userId: number, conversationId: string) => {
 
 //   try {
 //     // const response = await axios.post(
-//     //   `http://localhost:3000/conversations/${conversationId}/users/${userId}/promote`,
+//     //   `${process.env.REACT_APP_BACKEND_IP}/conversations/${conversationId}/users/${userId}/promote`,
 //     //   { withCredentials: true }
 //     // );
 //   } catch {}

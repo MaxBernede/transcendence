@@ -22,12 +22,13 @@ import { EventsType } from "../../common/types/event-type"
 //   USER_ADDED_TO_CHAT = 'USER_ADDED_TO_CHAT',
 //   USER_REMOVED_FROM_CHAT = 'USER_REMOVED_FROM_CHAT',
 // }
-
 @WebSocketGateway({
   // path: '/socket.io',
   namespace: '/events',
   cors: {
-    origin: 'http://localhost:3001', // Allow requests only from this origin (frontend)
+    // origin: 'http://localhost:3001', // Allow requests only from this origin (frontend)
+    // origin: '*', // Allow requests from any origin (for testing purposes)
+	origin: true,
     methods: ['GET', 'POST'],
     credentials: true, // Allow cookies to be sent/received if needed
   },

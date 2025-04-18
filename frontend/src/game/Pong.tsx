@@ -16,7 +16,9 @@ import { UserPayload, useUserContext } from "../context";
 // this file connects to a Websocket server to sync real time movement
 // and manages the game state (ball, paddle, scores) + handles player input
 
-const socket = io("http://localhost:3000/pong", { withCredentials: true });
+const socket = io(`${process.env.REACT_APP_BACKEND_IP}/pong`, {
+  withCredentials: true,
+});
 
 interface Player {
   username: string;
@@ -44,7 +46,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
   // fetches logged-in user info and updates local state
   // const fetchUserData = async () => {
   //   try {
-  //     const response = await axios.get("http://localhost:3000/api/users/me", {
+  //     const response = await axios.get(`${process.env.REACT_APP_BACKEND_IP}/api/users/me`, {
   //       withCredentials: true,
   //     });
 
@@ -59,24 +61,26 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
 
   const hasFetchedUserRef = useRef(false);
 
-const fetchUserData = async () => {
-  if (hasFetchedUserRef.current) return;
-  hasFetchedUserRef.current = true;
+  const fetchUserData = async () => {
+    if (hasFetchedUserRef.current) return;
+    hasFetchedUserRef.current = true;
 
-  try {
-    const response = await axios.get("http://localhost:3000/api/users/me", {
-      withCredentials: true,
-    });
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_IP}/api/users/me`,
+        {
+          withCredentials: true,
+        }
+      );
 
-    if (response.data.username) {
-      setLoggedInUser(response.data.username);
-      setUserId(response.data.id.toString());
+      if (response.data.username) {
+        setLoggedInUser(response.data.username);
+        setUserId(response.data.id.toString());
+      }
+    } catch (err) {
+      console.error("Failed to fetch user data:", err);
     }
-  } catch (err) {
-    console.error("Failed to fetch user data:", err);
-  }
-};
-
+  };
 
   const {
     gameContainerRef,
@@ -149,7 +153,9 @@ const fetchUserData = async () => {
   // fetch current user's name from users/me and store it in loggedinuser
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/users/me", { withCredentials: true })
+      .get(`${process.env.REACT_APP_BACKEND_IP}/api/users/me`, {
+        withCredentials: true,
+      })
       .then((response) => {
         if (response.data.username) {
           setLoggedInUser(response.data.username);
@@ -173,21 +179,20 @@ const fetchUserData = async () => {
       socket.emit("requestPlayers");
       socket.emit("playerReady");
     };
-  
+
     socket.on("registered", handleRegistered);
-  
+
     if (urlRoomId) {
       socket.emit("joinPrivateRoom", {
         roomId: urlRoomId,
         userId: me.id,
       });
     }
-  
+
     return () => {
       socket.off("registered", handleRegistered);
     };
   }, [urlRoomId, me.id]);
-  
 
   // once loggedinuser is set it registers player to server and lists connected players
   // useEffect(() => {
