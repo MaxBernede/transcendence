@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import {
-	ChangePasswordDto,
+  ChangePasswordDto,
   CreateConversationDto,
   JoinConversationDto,
   LeaveConversationDto,
@@ -98,7 +98,10 @@ export class ConversationsController {
   }
 
   @Post('change-password')
-  async changePassword(@GetUserPayload() user: TokenPayload, @Body() changePasswordDto: ChangePasswordDto) {
+  async changePassword(
+    @GetUserPayload() user: TokenPayload,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
     return this.conversationsService.changePassword(user, changePasswordDto);
   }
 
@@ -202,14 +205,14 @@ export class ConversationsController {
     return this.conversationsService.leaveConversation(user, conversationId);
   }
 
-//   @Post('create-game-invite')
-//   async createGameInvite(
-// 	@GetUserPayload() user: TokenPayload,
-// 	@Body() createGameInviteDto: any,
-//   ) {
-// 	return this.conversationsService.createGameInvite(
-// 	  user,
-// 	  createGameInviteDto,
-// 	);
-//   }
+  //   @Post('create-game-invite')
+  //   async createGameInvite(
+  // 	@GetUserPayload() user: TokenPayload,
+  // 	@Body() createGameInviteDto: any,
+  //   ) {
+  // 	return this.conversationsService.createGameInvite(
+  // 	  user,
+  // 	  createGameInviteDto,
+  // 	);
+  //   }
 }

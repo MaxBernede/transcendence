@@ -54,7 +54,7 @@ const ChatPage = () => {
 
     const initializeSocket = () => {
       try {
-        const newSocket = io("http://localhost:3000/chat", {
+        const newSocket = io(`${process.env.REACT_APP_BACKEND_IP}/chat`, {
           withCredentials: true,
         });
         setSocket(newSocket);

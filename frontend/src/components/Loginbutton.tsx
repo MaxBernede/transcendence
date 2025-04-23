@@ -7,11 +7,14 @@ import ButtonComponent from "../utils/ButtonCompo";
 const LoginButton = () => {
   const handleLogin = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth/", {
-        //Auth will call the getAuth
-        withCredentials: true, // Include cookies (not necessary)
-      });
-    //   console.log("Response:", response.data);
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_IP}/auth/`,
+        {
+          //Auth will call the getAuth
+          withCredentials: true, // Include cookies (not necessary)
+        }
+      );
+      //   console.log("Response:", response.data);
       window.location.href = response.data.url; // redirect toward the login
     } catch (error) {
       console.error("Error in the connexion :", error);
@@ -22,7 +25,7 @@ const LoginButton = () => {
   return (
     <div className={"mainContainer"}>
       <br />
-        <ButtonComponent onClick={handleLogin}>Login with 42</ButtonComponent>
+      <ButtonComponent onClick={handleLogin}>Login with 42</ButtonComponent>
     </div>
   );
 };

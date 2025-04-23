@@ -27,8 +27,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 interface ChatMessageProps {
-  messageObject: Message
-//   messageObject: ChatMessageType;
+  messageObject: Message;
+  //   messageObject: ChatMessageType;
   currentUserId: number;
 }
 
@@ -50,24 +50,26 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   }
 
   function handleCopy() {
-    navigator.clipboard.writeText(messageObject.text)
+    navigator.clipboard
+      .writeText(messageObject.text)
       .then(() => {
-        toast.success('Message copied to clipboard');
+        toast.success("Message copied to clipboard");
       })
       .catch((err) => {
-        console.error('Failed to copy message:', err);
-        toast.error('Failed to copy message');
+        console.error("Failed to copy message:", err);
+        toast.error("Failed to copy message");
       });
   }
 
   function handleCopyMessageId() {
-    navigator.clipboard.writeText(messageObject.id.toString())
+    navigator.clipboard
+      .writeText(messageObject.id.toString())
       .then(() => {
         toast.success(`Message ID ${messageObject.id} copied to clipboard`);
       })
       .catch((err) => {
-        console.error('Failed to copy message ID:', err);
-        toast.error('Failed to copy message ID');
+        console.error("Failed to copy message ID:", err);
+        toast.error("Failed to copy message ID");
       });
   }
 
@@ -78,7 +80,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   async function handleInviteToPong() {
     try {
       const response = await axios.post(
-        "http://localhost:3000/pong/createInvite",
+        `${process.env.REACT_APP_BACKEND_IP}/pong/createInvite`,
         {
           username: messageObject.senderUser.username,
           userId: messageObject.senderUser.userId,
@@ -88,7 +90,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       );
       console.log("Invite created:", response.data);
       // Navigate to the pong game page with the room ID
-    //   navigate(`/pong/${response.data.roomId}`);
+      //   navigate(`/pong/${response.data.roomId}`);
     } catch (error) {
       console.error("Failed to create invite:", error);
     }
@@ -115,7 +117,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               <span className="font-semibold truncate">
                 {messageObject.senderUser.username}
                 <span className="ml-2 text-xs text-gray-400">
-                  {messageObject.createdAt ? new Date(messageObject.createdAt).toLocaleString() : 'Invalid date'}
+                  {messageObject.createdAt
+                    ? new Date(messageObject.createdAt).toLocaleString()
+                    : "Invalid date"}
                 </span>
               </span>
               <p className="break-words whitespace-pre-wrap overflow-hidden">

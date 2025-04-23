@@ -49,7 +49,8 @@ const privateRooms = new Map<string, number[]>(); // roomId , allowedUserIds
 // Add a new map to track user roles in games
 const roomUserRoles = new Map<string, { creator: number; invited: number }>();
 
-@WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
+// @WebSocketGateway({ namespace: 'pong', cors: { origin: '*' } })
+@WebSocketGateway({ namespace: 'pong', cors: { origin: true } })
 export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;

@@ -69,7 +69,7 @@ export const MuteSelector: React.FC<MuteSelectorProps> = ({
     try {
       setLoading(true);
       const { data } = await axios.post(
-        "http://localhost:3000/conversations/mute-user",
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/mute-user`,
         formData,
         { withCredentials: true }
       );

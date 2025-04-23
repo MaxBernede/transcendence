@@ -46,8 +46,8 @@ const ChatPage = () => {
   const user: UserPayload = useUserContext();
 
   const chatMessages = messagesByRoom.get(channelId || "") || [];
-  const sortedMessages = [...chatMessages].sort((a, b) => 
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  const sortedMessages = [...chatMessages].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
   const scrollToBottom = () => {
@@ -70,8 +70,8 @@ const ChatPage = () => {
   useEffect(() => {
     const container = chatContainerRef.current;
     if (container) {
-      container.addEventListener('scroll', checkIfAtBottom);
-      return () => container.removeEventListener('scroll', checkIfAtBottom);
+      container.addEventListener("scroll", checkIfAtBottom);
+      return () => container.removeEventListener("scroll", checkIfAtBottom);
     }
   }, []);
 
@@ -86,7 +86,9 @@ const ChatPage = () => {
         setMessagesByRoom((prev) => {
           const updated = new Map(prev);
           const roomMessages = updated.get(data.conversationId) || [];
-          const existingIndex = roomMessages.findIndex(msg => msg.id === data.id);
+          const existingIndex = roomMessages.findIndex(
+            (msg) => msg.id === data.id
+          );
           if (existingIndex !== -1) {
             roomMessages[existingIndex] = data;
           } else {
@@ -145,7 +147,7 @@ const ChatPage = () => {
     const fetchConversations = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:3000/conversations/history",
+          `${process.env.REACT_APP_BACKEND_IP}/conversations/history`,
           {
             withCredentials: true,
           }
@@ -191,13 +193,14 @@ const ChatPage = () => {
 
   const handleCopyChannelId = () => {
     if (channelId) {
-      navigator.clipboard.writeText(channelId)
+      navigator.clipboard
+        .writeText(channelId)
         .then(() => {
-          toast.success('Channel ID copied to clipboard');
+          toast.success("Channel ID copied to clipboard");
         })
         .catch((err) => {
-          console.error('Failed to copy channel ID:', err);
-          toast.error('Failed to copy channel ID');
+          console.error("Failed to copy channel ID:", err);
+          toast.error("Failed to copy channel ID");
         });
     }
   };
@@ -211,7 +214,9 @@ const ChatPage = () => {
             <div className="flex items-center justify-between px-4 py-3 bg-gray-800/50 backdrop-blur-sm rounded-lg m-2 shadow-lg border border-gray-700/50">
               <div className="flex items-center space-x-2">
                 <span className="text-gray-400 text-lg">#</span>
-                <h2 className="text-xl font-semibold text-white">{channelId}</h2>
+                <h2 className="text-xl font-semibold text-white">
+                  {channelId}
+                </h2>
               </div>
             </div>
           </ContextMenuTrigger>
@@ -224,7 +229,7 @@ const ChatPage = () => {
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
-        <div 
+        <div
           ref={chatContainerRef}
           className="flex-1 overflow-y-auto bg-gray-800 p-4 rounded-lg min-w-0 mx-2"
           onScroll={checkIfAtBottom}
@@ -273,4 +278,3 @@ const ChatPage = () => {
 };
 
 export default ChatPage;
-

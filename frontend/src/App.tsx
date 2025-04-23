@@ -55,6 +55,7 @@ function App() {
 
   useEffect(() => {
     const eventsHandler = EventsHandler.getInstance();
+	console.log("BACKEND URL", process.env.REACT_APP_BACKEND_IP);
   }, []);
   return (
     <UserContext.Provider

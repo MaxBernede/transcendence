@@ -12,6 +12,7 @@ import { CreateUserDto } from './dto/createUser.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { UserConversation } from '@/conversations/entities';
+import { ConfigService } from '@nestjs/config';
 // import { UserConversation } from '@/conversations/entities/conversation.entity';
 
 @Injectable()
@@ -23,6 +24,8 @@ export class UserService {
     private readonly matchRepository: Repository<Match>,
     @InjectRepository(UserConversation)
     private userConversationRepository: Repository<UserConversation>,
+
+	private readonly configService: ConfigService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -109,9 +112,11 @@ export class UserService {
 
     if (!user) throw new NotFoundException('User not found');
 
+	const server_ip = this.configService.getOrThrow<string>('BACKEND_IP');
+	const replacedAvatarPath = `${server_ip}/uploads/avatars/`;
     if (
       user.avatar &&
-      user.avatar.startsWith('http://localhost:3000/uploads/avatars/')
+      user.avatar.startsWith(replacedAvatarPath)
     ) {
       // Remove the old file if it's a local file
       const oldFilePath = path.join(

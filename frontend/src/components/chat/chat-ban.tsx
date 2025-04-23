@@ -69,7 +69,7 @@ export const BanSelector: React.FC<BanSelectorProps> = ({
     try {
       setLoading(true);
       const { data } = await axios.post(
-        "http://localhost:3000/conversations/ban-user",
+        `${process.env.REACT_APP_BACKEND_IP}/conversations/ban-user`,
         formData,
         { withCredentials: true }
       );
