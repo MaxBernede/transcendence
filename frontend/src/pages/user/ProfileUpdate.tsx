@@ -16,7 +16,7 @@ const UserPage: React.FC = () => {
   const handleChange = async (field: string, value: string) => {
     if (userData?.id) {
       try {
-        console.log("Handle")
+        // console.log("Handle")
         const token = localStorage.getItem("jwt"); // JWT token from localStorage
         const response = await axios.put(
           `${process.env.REACT_APP_BACKEND_IP}/api/users/${userData.id}`,
@@ -30,7 +30,7 @@ const UserPage: React.FC = () => {
 
         // Dynamically update the field in userData
         setUserData({ ...userData, [field]: value });
-        console.log(`${field} updated:`, response.data);
+        // console.log(`${field} updated:`, response.data);
       } catch (err) {
         console.error(`Error updating ${field}`, err);
       }

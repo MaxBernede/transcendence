@@ -82,7 +82,7 @@ const ChatPage = () => {
       socket.off("chatToClient");
 
       socket.on("chatToClient", (data: Message) => {
-        console.log("Received message:", data);
+        //console.log("Received message:", data);
         setMessagesByRoom((prev) => {
           const updated = new Map(prev);
           const roomMessages = updated.get(data.conversationId) || [];
@@ -107,7 +107,7 @@ const ChatPage = () => {
     setupSocketListeners();
 
     if (socket && channelId) {
-      console.log("Joining room:", channelId);
+      //console.log("Joining room:", channelId);
       socket.emit("joinRoom", { conversationId: channelId });
     }
 
@@ -235,9 +235,9 @@ const ChatPage = () => {
           onScroll={checkIfAtBottom}
         >
           {sortedMessages.map((msg) => {
-            console.log("Message:", msg);
+            //console.log("Message:", msg);
             if (msg.type === "TEXT") {
-              console.log("Text message:");
+              //console.log("Text message:");
               return (
                 <div key={msg.id} className="mb-2 min-w-0">
                   <ChatMessage
@@ -247,7 +247,7 @@ const ChatPage = () => {
                 </div>
               );
             } else if (msg.type === "GAME_INVITE") {
-              console.log("Game invite message:");
+              //console.log("Game invite message:");
               return (
                 <div key={msg.id} className="mb-2">
                   <GameInviteMessage

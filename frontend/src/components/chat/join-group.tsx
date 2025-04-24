@@ -56,14 +56,14 @@ export const JoinGroup = () => {
   const customSubmit = async () => {
     const formData = form.getValues();
 
-    console.log("Custom form submitted", formData);
+    // console.log("Custom form submitted", formData);
 
     const joinGroupDto: NewGroup = {
       id: formData.id,
       password: formData.password,
     };
 
-    console.log("joining:", joinGroupDto.id);
+    // console.log("joining:", joinGroupDto.id);
 
     try {
       setLoading(true); // Set loading state to true
@@ -72,13 +72,13 @@ export const JoinGroup = () => {
         { id: joinGroupDto.id, password: joinGroupDto.password },
         { withCredentials: true }
       );
-      console.log("Navigating to chat page...");
+      // console.log("Navigating to chat page...");
       navigate(`/chat/${data.conversationId}`); // React Router navigation
       setIsOpen(false); // Close the dialog only on success
       setError(null);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to join group:", error.response?.data);
+        // console.log("Failed to join group:", error.response?.data);
         setError(error.response?.data.message); // Show error
       } else {
         console.error("Failed to join group:", error);

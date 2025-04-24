@@ -53,14 +53,14 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
 }) => {
   const user: UserPayload = useUserContext();
   const navigate = useNavigate();
-  console.log("user:", user);
+  // console.log("user:", user);
 
-  console.log("Participants:", participants);
+  // console.log("Participants:", participants);
   // Find the current user's role from participants
   const currentUser = participants.find((p) => p.id === user.id);
-  console.log("Current user:", currentUser);
+  // console.log("Current user:", currentUser);
   const currentUserRole = currentUser ? currentUser.groupRole : "MEMBER"; // Default to MEMBER
-  console.log("Current user role:", currentUserRole);
+  // console.log("Current user role:", currentUserRole);
 
   const users = participants.filter((p) => !p.banned);
   const banned_users = participants.filter((p) => p.banned);
@@ -73,7 +73,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   const [showChangePassword, setShowChangePassword] = React.useState(false);
 
   const handleMute = (selectedUser: PublicUserInfo) => {
-    console.log("Mute button clicked");
+    // console.log("Mute button clicked");
     setSelectedUser(selectedUser);
     setRenderMuteSelect(true);
   };
@@ -83,7 +83,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   };
 
   const handleBan = (selectedUser: PublicUserInfo) => {
-    console.log("Ban button clicked");
+    // console.log("Ban button clicked");
     setSelectedUser(selectedUser);
     setRenderBanSelect(true);
   };
@@ -93,7 +93,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   };
 
   const handleUnmute = async (userId: number) => {
-    console.log("Unmuting user:", userId);
+    // console.log("Unmuting user:", userId);
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_IP}/conversations/${conversationId}/users/${userId}/unmute`,
@@ -101,7 +101,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
         { withCredentials: true }
       );
 
-      console.log("User banned from group:", response.data);
+      // console.log("User banned from group:", response.data);
     } catch (error) {
       console.error("Error banning user from group:", error);
     }
@@ -127,7 +127,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   //   }, []);
 
   const PromoteToModerator = async (userId: number) => {
-    console.log(userId, "promoting to moderator");
+    // console.log(userId, "promoting to moderator");
 
     try {
       const response = await axios.post(
@@ -141,7 +141,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
       );
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to promote to moderator:", error.response?.data);
+        // console.log("Failed to promote to moderator:", error.response?.data);
       } else {
         console.error("Failed to promote to moderator:", error);
       }
@@ -149,7 +149,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   };
 
   const PromoteToOwner = async (userId: number) => {
-    console.log(userId, "promoting to owner");
+    // console.log(userId, "promoting to owner");
 
     try {
       const response = await axios.post(
@@ -163,7 +163,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
       );
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to promote to moderator:", error.response?.data);
+        // console.log("Failed to promote to moderator:", error.response?.data);
       } else {
         console.error("Failed to promote to moderator:", error);
       }
@@ -171,7 +171,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   };
 
   const DemoteToMember = async (userId: number) => {
-    console.log(userId, "demoting to member");
+    // console.log(userId, "demoting to member");
 
     try {
       const response = await axios.post(
@@ -185,7 +185,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
       );
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to promote to moderator:", error.response?.data);
+        // console.log("Failed to promote to moderator:", error.response?.data);
       } else {
         console.error("Failed to promote to moderator:", error);
       }
@@ -193,7 +193,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
   };
 
   const NavigateToDM = async (username: string) => {
-    console.log("Navigating to DM with user:", username);
+    // console.log("Navigating to DM with user:", username);
 
     const newDmConversation = {
       type: "DM",
@@ -210,7 +210,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
       navigate(`/chat/${data.id}`);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to navigate to DM:", error.response?.data);
+        // console.log("Failed to navigate to DM:", error.response?.data);
       } else {
         console.error("Failed to navigate to DM:", error);
       }
@@ -228,7 +228,7 @@ export const GroupParticipants: React.FC<DMComponentProps> = ({
         },
         { withCredentials: true }
       );
-      console.log("Invite created:", response.data);
+      // console.log("Invite created:", response.data);
     } catch (error) {
       console.error("Failed to create invite:", error);
     }
@@ -521,14 +521,14 @@ const removeUserFromGroup = async (userId: number, conversationId: string) => {
       { withCredentials: true } // Use an object for the second argument
     );
 
-    console.log("User removed from group:", response.data);
+    // console.log("User removed from group:", response.data);
   } catch (error) {
     console.error("Error removing user from group:", error);
   }
 };
 
 const banUserFromGroup = async (userId: number, conversationId: string) => {
-  console.log(`Banning user ${userId} from group`);
+  // console.log(`Banning user ${userId} from group`);
 
   try {
     const response = await axios.post(
@@ -537,14 +537,14 @@ const banUserFromGroup = async (userId: number, conversationId: string) => {
       { withCredentials: true }
     );
 
-    console.log("User banned from group:", response.data);
+    // console.log("User banned from group:", response.data);
   } catch (error) {
     console.error("Error banning user from group:", error);
   }
 };
 
 const unbanUserFromGroup = async (userId: number, conversationId: string) => {
-  console.log(`Banning user ${userId} from group`);
+  // console.log(`Banning user ${userId} from group`);
 
   try {
     const response = await axios.post(
@@ -553,7 +553,7 @@ const unbanUserFromGroup = async (userId: number, conversationId: string) => {
       { withCredentials: true }
     );
 
-    console.log("User banned from group:", response.data);
+    // console.log("User banned from group:", response.data);
   } catch (error) {
     console.error("Error banning user from group:", error);
   }

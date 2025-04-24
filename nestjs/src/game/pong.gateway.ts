@@ -74,7 +74,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   afterInit(server: Server) {
     this.server = server;
-    console.log('webSocket Server initialized');
+    // console.log('webSocket Server initialized');
   }
 
   private getSocket(clientId: string): Socket | null {
@@ -120,14 +120,14 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private async tryMatchPlayers() {
     while (waitingQueue.length >= 2) {
-		console.log("waitingqueue: ", waitingQueue);
+		// console.log("waitingqueue: ", waitingQueue);
       const player1 = waitingQueue.shift()!;
       const player2 = waitingQueue.shift()!;
 
 	  player1.playerNumber = 1;
 	  player1.playerNumber = 2;
 
-	  console.log("waitingqueue after: ", waitingQueue);
+	  // console.log("waitingqueue after: ", waitingQueue);
 
       const socket1 = connectedUsers.get(player1.userId);
       const socket2 = connectedUsers.get(player2.userId);
@@ -135,11 +135,11 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!socket1 || !socket2) {
         if (socket1 && !waitingQueue.some((p) => p.userId === player1.userId)) {
           waitingQueue.unshift(player1);
-		  console.log("unshift:" ,player1.username);
+		  // console.log("unshift:" ,player1.username);
         }
         if (socket2 && !waitingQueue.some((p) => p.userId === player2.userId)) {
           waitingQueue.unshift(player2);
-		  console.log("unshift:" ,player2.username);
+		  // console.log("unshift:" ,player2.username);
 
         }
         continue;
@@ -176,15 +176,15 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       socket1.emit('gameRoomUpdate', roomPayload);
       socket2.emit('gameRoomUpdate', roomPayload);
 
-      console.log('gameRoomUpdate emitted to both clients:', roomPayload);
+      // console.log('gameRoomUpdate emitted to both clients:', roomPayload);
 
       this.pongService.resetGame(this.server, roomId);
     }
 
-    console.log(
-      'current waiting queue:',
-      waitingQueue.map((p) => p.username),
-    );
+    // console.log(
+    //   'current waiting queue:',
+    //   waitingQueue.map((p) => p.username),
+    // );
   }
 
   handleConnection(client: Socket) {
@@ -208,9 +208,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (isPlayer) {
           clearTimeout(timeout);
           disconnectTimers.delete(roomId);
-          console.log(
-            `🧹 Cleared stale disconnect timer for room ${roomId} (user ${player.username})`,
-          );
+          // console.log(
+          //   `🧹 Cleared stale disconnect timer for room ${roomId} (user ${player.username})`,
+          // );
         }
       }
 
@@ -253,7 +253,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (roomEntry) {
         const [roomId, room] = roomEntry;
-        console.log(`starting disconnect timer for room ${roomId}`);
+        // console.log(`starting disconnect timer for room ${roomId}`);
 
         const timer = setTimeout(() => {
           const stillRoom = activeRooms.get(roomId);
@@ -263,15 +263,15 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
             stillRoom.player1.socketId !== client.id &&
             stillRoom.player2.socketId !== client.id
           ) {
-            console.log(
-              'player reconnected with a new socket. Skip timeout cleanup.',
-            );
+            // console.log(
+            //   'player reconnected with a new socket. Skip timeout cleanup.',
+            // );
             return;
           }
 
-          console.log(
-            `player ${client.id} did not reconnect in time. Cleaning up room ${roomId}`,
-          );
+          // console.log(
+            // `player ${client.id} did not reconnect in time. Cleaning up room ${roomId}`,
+          // );
           activeRooms.delete(roomId);
           this.emitPlayerInfoForRoom(roomId);
 
@@ -322,9 +322,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (!room || !isPlayer) return false;
 
-    console.log(
-      `reconnecting ${player.username} to existing room ${player.roomId}`,
-    );
+    // console.log(
+      // `reconnecting ${player.username} to existing room ${player.roomId}`,
+    // );
 
     if (room.player1.userId === player.userId) {
       room.player1.socketId = client.id;
@@ -375,9 +375,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
         activeRooms.delete(roomId);
         // Also clean up the user roles mapping
         roomUserRoles.delete(roomId);
-        console.log(
-          `cleaned up room ${roomId} due to disconnect of ${client.id}`,
-        );
+        // console.log(
+          // `cleaned up room ${roomId} due to disconnect of ${client.id}`,
+        // );
         break;
       }
     }
@@ -395,7 +395,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private pendingReconnections = new Map<string, NodeJS.Timeout>();
   handleDisconnect(client: Socket) {
 	  const userId = this.socketToUser.get(client.id);
-	  console.log("disconnected from room: ", userId);
+	  // console.log("disconnected from room: ", userId);
 	  if (!userId) return;
 	  
     const roomEntry = this.findRoomBySocketId(client.id);
@@ -413,7 +413,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		  for (const [roomId, allowed] of privateRooms.entries()) {
 			if (allowed.includes(userId)) {
 			  privateRooms.set(roomId, allowed.filter((id) => id !== userId));
-			  console.log(`User ${userId} removed from private room ${roomId}`);
+			  // console.log(`User ${userId} removed from private room ${roomId}`);
 			}
 		  }
 	  
@@ -421,7 +421,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		  for (const [roomId, roles] of roomUserRoles.entries()) {
 			if (roles.creator === userId || roles.invited === userId) {
 			  roomUserRoles.delete(roomId);
-			  console.log(`Removed roomUserRoles for ${roomId}`);
+			  // console.log(`Removed roomUserRoles for ${roomId}`);
 			}
 		  }
 	  
@@ -462,13 +462,13 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const opponentSocket = connectedUsers.get(opponent.userId);
 
       if (opponentSocket) {
-        console.log(
-          `Player ${client.id} did not reconnect, opponent still here keeping room ${roomId}`,
-        );
+        // console.log(
+          // `Player ${client.id} did not reconnect, opponent still here keeping room ${roomId}`,
+        // );
         return;
       }
 
-      console.log(`🧹 Cleaning up room ${roomId} due to timeout`);
+      // console.log(`🧹 Cleaning up room ${roomId} due to timeout`);
       this.pongService.cleanupRoom(roomId);
       this.cleanupRoomBySocket(client); // Your existing logic
       this.emitPlayerInfoForRoom(roomId);
@@ -559,9 +559,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     connectedUsers.get(player1.userId)?.emit('gameRoomUpdate', roomPayload);
     connectedUsers.get(player2.userId)?.emit('gameRoomUpdate', roomPayload);
 
-    console.log(
-      `Private room ${roomId} created for ${player1.username} and ${player2.username}`,
-    );
+    // console.log(
+      // `Private room ${roomId} created for ${player1.username} and ${player2.username}`,
+    // );
 
     // Store the user roles to track who is creator and who is invited
     const gameInvite = this.chatGameInviteRepository
@@ -575,9 +575,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
             creator: invite.createdUser.id,
             invited: invite.invitedUser.id,
           });
-          console.log(
-            `Room ${roomId}: mapped creator=${invite.createdUser.id}, invited=${invite.invitedUser.id}`,
-          );
+          // console.log(
+            // `Room ${roomId}: mapped creator=${invite.createdUser.id}, invited=${invite.invitedUser.id}`,
+          // );
         }
       });
 
@@ -588,9 +588,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('registerUser')
   async handleRegisterUser(client: Socket, payload: any) {
     const { username, userId, roomId } = payload;
-    console.log(
-      `Registering ${username} ${roomId ? `(Room: ${roomId})` : '(Public Matchmaking)'}`,
-    );
+    // console.log(
+      // `Registering ${username} ${roomId ? `(Room: ${roomId})` : '(Public Matchmaking)'}`,
+    // );
 
     const user = await this.userService.findByUsername(username);
     if (!user) {
@@ -603,13 +603,13 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     for (const [rId, room] of activeRooms.entries()) {
 		const isPlayer =
         room.player1.userId === user.id || room.player2.userId === user.id;
-		console.log("users: ", room);
+		// console.log("users: ", room);
       const stillConnected =
         connectedUsers.has(room.player1.userId) &&
         connectedUsers.has(room.player2.userId);
 
       if (isPlayer && !stillConnected) {
-        console.log(`Removing stale room ${rId} on reconnect`);
+        // console.log(`Removing stale room ${rId} on reconnect`);
         activeRooms.delete(rId);
         this.pongService.cleanupRoom(rId);
       }
@@ -657,7 +657,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!allowedUsers) {
         allowedUsers = [user.id];
         privateRooms.set(roomId, allowedUsers);
-        console.log(`Private room ${roomId} initialized by ${username}`);
+        // console.log(`Private room ${roomId} initialized by ${username}`);
       }
 
       // access control
@@ -713,7 +713,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // public matchmaking:
     waitingQueue.push(player);
-    console.log('Matchmaking player:', username);
+    // console.log('Matchmaking player:', username);
     client.emit('registered');
     this.tryMatchPlayers();
   }
@@ -728,13 +728,13 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       allowed.push(userId);
     }
 
-    console.log(`invited user ${userId} to private room ${roomId}`);
+    // console.log(`invited user ${userId} to private room ${roomId}`);
   }
 
   /** Handles game state request */
   @SubscribeMessage('requestGameState')
   handleRequestGameState(@ConnectedSocket() client: Socket) {
-    console.log('Sending fresh game state to: ${client.id}');
+    // console.log('Sending fresh game state to: ${client.id}');
     const roomId = this.findRoomBySocketId(client.id)?.[0];
     if (roomId) {
       const gameState = this.pongService.getGameState(roomId);
@@ -765,7 +765,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
         { username: room!.player1.username, playerNumber: 1 },
         { username: room!.player2.username, playerNumber: 2 },
       ];
-      console.log(`Sending player info for room ${roomId}:`, playerInfo);
+      // console.log(`Sending player info for room ${roomId}:`, playerInfo);
       client.emit('playerInfo', playerInfo);
     } else {
       console.warn(`No active room found for socket ${client.id}`);
@@ -778,10 +778,10 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { roomId: string; userId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log('Data:', data);
+    // console.log('Data:', data);
     //? check if user has acces to the room
 
-    console.log('Inviting user to room', data.roomId);
+    // console.log('Inviting user to room', data.roomId);
     const rawRoomId = data.roomId.replace(/^room-/, '');
     const gameInvite = await this.chatGameInviteRepository.findOne({
       where: { id: rawRoomId },
@@ -808,7 +808,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    console.log('Successfully invited user to room', data.roomId);
+    // console.log('Successfully invited user to room', data.roomId);
 
     this.socketToUser.set(client.id, data.userId);
     this.userToRoom.set(data.userId, data.roomId);
@@ -819,9 +819,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
         creator: gameInvite.createdUser.id,
         invited: gameInvite.invitedUser.id,
       });
-      console.log(
-        `Room ${data.roomId}: mapped creator=${gameInvite.createdUser.id}, invited=${gameInvite.invitedUser.id}`,
-      );
+      // console.log(
+      //   `Room ${data.roomId}: mapped creator=${gameInvite.createdUser.id}, invited=${gameInvite.invitedUser.id}`,
+      // );
     }
 
     const inviterId = this.socketToUser.get(client.id);
@@ -833,9 +833,9 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     // Optionally: log who invited whom
-    console.log(
-      `User ${inviterId} invited ${data.userId} to room ${data.roomId}`,
-    );
+    // console.log(
+    //   `User ${inviterId} invited ${data.userId} to room ${data.roomId}`,
+    // );
 
     this.inviteUserToRoom(data.roomId, data.userId);
 
@@ -1001,7 +1001,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const [roomId] = roomEntry;
 
-    console.log(`Power-ups toggled in room ${roomId}: ${data.enabled}`);
+    // console.log(`Power-ups toggled in room ${roomId}: ${data.enabled}`);
 
     // emit new power-up state to both players
     this.server.to(roomId).emit('powerUpsToggled', { enabled: data.enabled });
@@ -1010,12 +1010,12 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const cooldownMs = 3000;
     this.server.to(roomId).emit('powerUpsCooldown', { duration: cooldownMs });
 
-    console.log(`cooldown of ${cooldownMs}ms emitted to room ${roomId}`);
+    // console.log(`cooldown of ${cooldownMs}ms emitted to room ${roomId}`);
   }
 
   @SubscribeMessage('leaveGame')
   handleLeaveGame(@ConnectedSocket() client: Socket) {
-    console.log(`${client.id} manually left the game`);
+    // console.log(`${client.id} manually left the game`);
 
     const roomEntry = this.findRoomBySocketId(client.id);
     if (!roomEntry) {
@@ -1027,11 +1027,11 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		for (const [roomId, userIds] of privateRooms.entries()) {
 			if (userIds.includes(this.socketToUser.get(client.id)!)) {
 			  privateRooms.set(roomId, userIds.filter((id) => id !== this.socketToUser.get(client.id)!));
-			  console.log(`Removed user from private room ${roomId}`);
+			  // console.log(`Removed user from private room ${roomId}`);
 			}
 		  }
 
-      console.log('No active room found for socket', client.id);
+      // console.log('No active room found for socket', client.id);
       return;
     }
 
@@ -1064,7 +1064,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.socketToUser.delete(client.id);
     connectedUsers.delete(this.socketToUser.get(client.id)!);
 
-    console.log(`cleaned up room ${roomId} after ${client.id} left`);
+    // console.log(`cleaned up room ${roomId} after ${client.id} left`);
 
     // Add opponent back to queue (if not already)
     if (!waitingQueue.some((p) => p.userId === opponent.userId)) {

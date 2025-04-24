@@ -73,7 +73,7 @@ export const MuteSelector: React.FC<MuteSelectorProps> = ({
         formData,
         { withCredentials: true }
       );
-      console.log("User muted:", data);
+      // console.log("User muted:", data);
       setError(null);
       setLoading(false);
       onClose();

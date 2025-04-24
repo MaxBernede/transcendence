@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [editing, setEditing] = useState(false);
   const [tempUsername, setTempUsername] = useState<string>(username || '');
 
-  console.log('Avatar URL:', avatar || defaultAvatar);
+  // console.log('Avatar URL:', avatar || defaultAvatar);
 
   const handleSave = () => {
     if (!tempUsername.trim()) {
@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   // Log avatar URL for debugging
-  console.log('Avatar URL:', avatar || defaultAvatar);
+  // console.log('Avatar URL:', avatar || defaultAvatar);
   
 
   return (

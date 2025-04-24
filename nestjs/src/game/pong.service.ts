@@ -133,7 +133,7 @@ export class PongService {
 
     const users: inviteIdUsersMapData = this.inviteIdUsersMap.get(data.roomId);
 
-    console.log('users: ', users);
+    // console.log('users: ', users);
 
     if (user.username === users.user1 || user.username === users.user2) {
       return { msg: 'You succesfully joined the room' };
@@ -176,7 +176,7 @@ export class PongService {
     else return false;
 
     if (!this.ballMoving.get(roomId)) {
-      console.log('First paddle move detected, starting ball movement...');
+      // console.log('First paddle move detected, starting ball movement...');
       gameState.ball.vx = Math.random() > 0.5 ? 4 : -4;
       gameState.ball.vy = Math.random() > 0.5 ? 4 : -4;
       this.ballMoving.set(roomId, true);
@@ -189,7 +189,7 @@ export class PongService {
   public startGameLoop(roomId: string, server: Server) {
     if (this.gameLoopIntervals.has(roomId)) return;
 
-    console.log(`starting game loop for room ${roomId}...`);
+    // console.log(`starting game loop for room ${roomId}...`);
     const interval = setInterval(() => {
       const gameState = this.gameStates.get(roomId);
       const powerUpState = this.powerUpStates.get(roomId);
@@ -197,7 +197,7 @@ export class PongService {
       if (!gameState || !powerUpState) return;
 
       if (this.winnerDeclared.get(roomId)) {
-        console.log(`[GameLoop] Winner already declared for ${roomId}, skipping updates.`);
+        // console.log(`[GameLoop] Winner already declared for ${roomId}, skipping updates.`);
         return;
       }
 
@@ -279,7 +279,7 @@ export class PongService {
   }
 
   public stopGame(roomId: string, server: Server) {
-    console.log('Stopping game - Winner declared!');
+    // console.log('Stopping game - Winner declared!');
 
     this.ballMoving.set(roomId, false);
     const loop = this.gameLoopIntervals.get(roomId);
@@ -478,7 +478,7 @@ export class PongService {
 
   private async checkGameOver(roomId: string, server: Server) {
     if (this.winnerDeclared.get(roomId)) return;
-    console.log('gets into checkgameover');
+    // console.log('gets into checkgameover');
 
     const gameState = this.gameStates.get(roomId);
     if (!gameState) return;
@@ -497,7 +497,7 @@ export class PongService {
 
     if (gameState.score.player1 >= 3) {
       this.winnerDeclared.set(roomId, true);
-      console.log('Player 1 Wins!');
+      // console.log('Player 1 Wins!');
 
       winnerId = room.player1;
       looserId = room.player2;
@@ -519,7 +519,7 @@ export class PongService {
       this.stopGame(roomId, server);
     } else if (gameState.score.player2 >= 3) {
       this.winnerDeclared.set(roomId, true);
-      console.log('Player 2 Wins!');
+      // console.log('Player 2 Wins!');
 
       winnerId = room.player2;
       looserId = room.player1;
@@ -546,7 +546,7 @@ export class PongService {
     // now the vars are definitely defined
     try {
       await this.matchService.createMatch(winnerId, looserId, 3, looserScore);
-      console.log('match successfully saved.');
+      // console.log('match successfully saved.');
     } catch (error) {
       console.error('failed to save match:', error);
     }
@@ -594,13 +594,13 @@ export class PongService {
     const gameState = this.gameStates.get(roomId);
     if (!powerUp || !powerUp.isActive || !gameState) return;
 
-    console.log(`Applying power-up: ${powerUp.type} to Player ${player}`);
+    // console.log(`Applying power-up: ${powerUp.type} to Player ${player}`);
 
     if (powerUp.type === 'shrinkOpponent') {
       const opponent = player === 1 ? 2 : 1;
       server.emit('shrinkPaddle', { player: opponent });
     } else if (powerUp.type === 'speedBoost') {
-      console.log('Speed Boost! Increasing ball speed.');
+      // console.log('Speed Boost! Increasing ball speed.');
       gameState.ball.vx *= 1.5;
       gameState.ball.vy *= 1.5;
       server.emit('increaseBallSpeed', gameState.ball);
@@ -621,7 +621,7 @@ export class PongService {
 
   // Resets the ball and paddles after a goal but does NOT start the ball automatically
   private resetBall(roomId: string, server: Server) {
-    console.log('Resetting ball and paddles after goal...');
+    // console.log('Resetting ball and paddles after goal...');
 
     this.ballMoving.set(roomId, false);
     const gameState = this.gameStates.get(roomId);
@@ -635,7 +635,7 @@ export class PongService {
   }
 
   public resetGame(server: Server, roomId: string) {
-    console.log(`Resetting game for room: ${roomId}`);
+    // console.log(`Resetting game for room: ${roomId}`);
 
     this.cleanupRoom(roomId);
 
@@ -756,7 +756,7 @@ export class PongService {
     if (loop) {
       clearInterval(loop);
       this.gameLoopIntervals.delete(roomId);
-      console.log(`game loop stopped for room ${roomId}`);
+      // console.log(`game loop stopped for room ${roomId}`);
     }
   }
 
@@ -796,12 +796,12 @@ export class PongService {
       for (const user of players) {
         this.userToRoom.delete(user.id); 
         this.userInGame.delete(user.id); 
-        console.log(`Removed user ${user.username} from room ${roomId}`);
+        // console.log(`Removed user ${user.username} from room ${roomId}`);
       }
       this.roomToUsers.delete(roomId);
     }
 
-    console.log(`cleaned up all data for room ${roomId}`);
+    // console.log(`cleaned up all data for room ${roomId}`);
   }
 
 // cleanupRoom(roomId: string) {
@@ -893,7 +893,7 @@ export class PongService {
   }
 
   async createInvite(user: TokenPayload, data: createInviteDto) {
-    console.log('createInvite', user, data);
+    // console.log('createInvite', user, data);
   
     // Create gameInvite first (without ID yet)
     const gameInvite = this.chatGameInviteRepository.create({

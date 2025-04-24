@@ -75,7 +75,7 @@ const ConversationList = () => {
             withCredentials: true,
           }
         );
-        console.log("Response data:", response.data);
+        // console.log("Response data:", response.data);
 
         // Directly set the response data
         setConversations(response.data);
@@ -115,10 +115,10 @@ const ConversationList = () => {
     };
 
     const handleAddConversation = async (data: any) => {
-      console.log(
-        "ADD_CONVERSATION_TO_LIST received in conversations-list with zod:",
-        data
-      );
+      // console.log(
+      //   "ADD_CONVERSATION_TO_LIST received in conversations-list with zod:",
+      //   data
+      // );
 
       const result = AddConversationToListSchema.safeParse(data);
 
@@ -148,10 +148,10 @@ const ConversationList = () => {
     };
 
     const handleRemoveConversation = (data: any) => {
-      console.log(
-        "REMOVE_CONVERSATION_FROM_LIST received in conversations-list:",
-        data
-      );
+      // console.log(
+      //   "REMOVE_CONVERSATION_FROM_LIST received in conversations-list:",
+      //   data
+      // );
 
       const result = RemoveConversationFromListSchema.safeParse(data);
 
@@ -174,10 +174,10 @@ const ConversationList = () => {
     const handleGroupUserStatusUpdate = (
       data: z.infer<typeof GroupUserStatusUpdateSchema>
     ) => {
-      console.log(
-        "GROUP_USER_STATUS_UPDATED received in conversations-list:",
-        data
-      );
+      // console.log(
+      //   "GROUP_USER_STATUS_UPDATED received in conversations-list:",
+      //   data
+      // );
 
       if (
         data.userId === me.id &&
@@ -212,7 +212,7 @@ const ConversationList = () => {
   const handleLogin = async () => {
     const currentPath = window.location.pathname; // Get the path after localhost
     const redirectUrl = encodeURIComponent(currentPath); // Ensure the path is URL encoded
-    console.log("Redirect URL:", redirectUrl);
+    // console.log("Redirect URL:", redirectUrl);
     try {
       //TODO: add api query param for custom redirect
       const response = await axios.get(
@@ -222,7 +222,7 @@ const ConversationList = () => {
           withCredentials: true, // Include cookies (not necessary)
         }
       );
-      console.log("Response:", response.data);
+      // console.log("Response:", response.data);
       window.location.href = response.data.url; // Redirect toward the login page if necessary
     } catch (error) {
       console.error("Error in the connection:", error);
@@ -231,13 +231,13 @@ const ConversationList = () => {
   };
 
   const leaveGroup = async (conversationId: string) => {
-    console.log("Leaving group:", conversationId);
+    // console.log("Leaving group:", conversationId);
     try {
       const response = await axios.delete(
         `${process.env.REACT_APP_BACKEND_IP}/conversations/leave-conversation/${conversationId}`,
         { withCredentials: true }
       );
-      console.log("User removed from group:", response.data);
+      // console.log("User removed from group:", response.data);
       removeConversation(conversationId);
       toast.success("Successfully left the group!", { duration: 3000 });
     } catch (error) {

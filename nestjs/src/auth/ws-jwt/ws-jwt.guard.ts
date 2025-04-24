@@ -21,7 +21,7 @@ export class WsJwtGuard implements CanActivate {
       return true;
     }
   
-    console.log('WS Guard used in WS context');
+    // console.log('WS Guard used in WS context');
     const client: Socket = context.switchToWs().getClient();
     return this.validateToken(client); // important: return the result
   }

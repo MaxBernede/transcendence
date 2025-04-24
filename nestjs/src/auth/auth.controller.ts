@@ -47,7 +47,7 @@ export class AuthController {
   //   async intraJwt(@Req() req: Request, @Res() res: Response) {
   //     const clientIp =
   //       req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  //     console.log('Client IP:', clientIp);
+  //     //console.log('Client IP:', clientIp);
   //     // check the refresh token
   //     const code: string = res.req.query.code.toString();
   //     if (!code)
@@ -131,7 +131,7 @@ export class AuthController {
       jwt.verify(token, this.configService.getOrThrow<string>('JWT_SECRET')); // Use your secret or key here
       return res.json({ authenticated: true });
     } catch (error) {
-      console.log('Wrong token used to check the jwt');
+      //console.log('Wrong token used to check the jwt');
       return res.status(401).json({ authenticated: false });
     }
   }
@@ -192,16 +192,16 @@ export class AuthController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   async login2(@Body() loginDto: { username: string }, @Res() res: Response) {
-    console.log('loginDto:', loginDto);
+    //console.log('loginDto:', loginDto);
     try {
       const user = await this.userRepository.findOne({
         where: { username: loginDto.username },
       });
 
-      console.log('user:', user);
+      //console.log('user:', user);
 
       if (!user) {
-        console.log('Internal Server Error: User not found');
+        //console.log('Internal Server Error: User not found');
         throw new InternalServerErrorException('User not found');
       }
       const payload = typeof TokenPayload;
@@ -211,10 +211,10 @@ export class AuthController {
         email: user.email,
       };
 
-      console.log('p:', p);
+      //console.log('p:', p);
 
       const jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
-      console.log('JWT_SECRET:', jwtSecret);
+      //console.log('JWT_SECRET:', jwtSecret);
       const jwt = this.jwtService.sign(p, { secret: jwtSecret });
 
       res.setHeader('Set-Cookie', [

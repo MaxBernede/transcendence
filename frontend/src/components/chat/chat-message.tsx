@@ -42,7 +42,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
   // Handlers
   function handleEdit() {
-    console.log("Edit message");
+    // console.log("Edit message");
   }
 
   function handleDelete() {
@@ -88,7 +88,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         },
         { withCredentials: true }
       );
-      console.log("Invite created:", response.data);
+      // console.log("Invite created:", response.data);
       // Navigate to the pong game page with the room ID
       //   navigate(`/pong/${response.data.roomId}`);
     } catch (error) {
@@ -101,7 +101,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   }
 
   function confirmDelete() {
-    console.log("Message deleted");
+    // console.log("Message deleted");
     setIsDialogOpen(false);
   }
 

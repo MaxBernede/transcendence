@@ -61,14 +61,14 @@ export const ChangePassword: React.FC<ChangePasswordProps> = ({
   const customSubmit = async () => {
     const formData = form.getValues();
 
-    console.log("Custom form submitted", formData);
+    // console.log("Custom form submitted", formData);
 
     const newPassword = {
       id: conversationId,
       password: formData.password,
     };
 
-    console.log("New Password:", newPassword);
+    // console.log("New Password:", newPassword);
 
     try {
       setLoading(true);
@@ -79,12 +79,12 @@ export const ChangePassword: React.FC<ChangePasswordProps> = ({
           withCredentials: true,
         }
       );
-      console.log("Changed password:", data);
+      // console.log("Changed password:", data);
       onClose();
       setError(null);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to change password:", error.response?.data);
+        // console.log("Failed to change password:", error.response?.data);
         setError(error.response?.data.message);
       } else {
         console.error("Failed to change password:", error);
@@ -107,7 +107,7 @@ export const ChangePassword: React.FC<ChangePasswordProps> = ({
       customSubmit();
     }
     if (e.key === "Escape") {
-      console.log("Escape key pressed");
+      // console.log("Escape key pressed");
       setError(null);
       setIsOpen(false);
       handleCloseDialog();

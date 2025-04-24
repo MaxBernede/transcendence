@@ -56,14 +56,14 @@ export const CreateNewDm = () => {
   const customSubmit = async () => {
     const formData = form.getValues();
 
-    console.log("Custom form submitted", formData);
+    // console.log("Custom form submitted", formData);
 
     const newDmConversation = {
       type: "DM",
       participants: [formData.username],
     };
 
-    console.log("New DM Conversation:", newDmConversation);
+    // console.log("New DM Conversation:", newDmConversation);
 
     try {
       setLoading(true);
@@ -74,14 +74,14 @@ export const CreateNewDm = () => {
           withCredentials: true,
         }
       );
-      console.log("Created dm:", data);
-      console.log("Navigating to chat page...");
+      // console.log("Created dm:", data);
+      // console.log("Navigating to chat page...");
       navigate(`/chat/${data.id}`);
       setIsOpen(false);
       setError(null);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to join group:", error.response?.data);
+        // console.log("Failed to join group:", error.response?.data);
         setError(error.response?.data.message);
       } else {
         console.error("Failed to join group:", error);
@@ -110,7 +110,7 @@ export const CreateNewDm = () => {
       customSubmit();
     }
     if (e.key === "Escape") {
-      console.log("Escape key pressed");
+      // console.log("Escape key pressed");
       setError(null);
       setIsOpen(false);
       handleCloseDialog();

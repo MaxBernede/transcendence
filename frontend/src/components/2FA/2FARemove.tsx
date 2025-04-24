@@ -26,7 +26,7 @@ const Remove2FAButton: React.FC<Remove2FAButtonProps> = ({ className }) => {
 
         // Update userData in state after the successful update
         setUserData({ ...userData, secret_2fa: null });
-        console.log("2FA secret removed:", response.data);
+        // console.log("2FA secret removed:", response.data);
       } catch (err) {
         console.error("Error removing 2FA secret", err);
       }

@@ -27,7 +27,7 @@ export const usePongGame = (
 
   useEffect(() => {
       socket.on("powerUpSpawned", (data) => {
-          console.log("Power-up received from server:", data);
+          //console.log("Power-up received from server:", data);
           setPowerUpX(data.x);
           setPowerUpY(data.y);
           setPowerUpType(data.type);
@@ -35,7 +35,7 @@ export const usePongGame = (
       });
 
       socket.on("powerUpCleared", () => {
-          console.log("Power-up cleared!");
+          //console.log("Power-up cleared!");
           setPowerUpX(null);
           setPowerUpY(null);
           setPowerUpType(null);
@@ -61,7 +61,7 @@ export const usePongGame = (
 
   useEffect(() => {
     socket.on("bothPlayersReady", () => {
-        console.log("Both players are ready! Waiting for confirmation...");
+        //console.log("Both players are ready! Waiting for confirmation...");
         setWinner(null); // remove pop-up and prepare for new game
     });
 
@@ -72,7 +72,7 @@ export const usePongGame = (
 	
 
 	const handleStartGame = () => {
-		console.log("User clicked 'Start Game'");
+		//console.log("User clicked 'Start Game'");
 	
 		if (!roomId) {
 			console.warn("No room assigned to this player.");
@@ -86,7 +86,7 @@ export const usePongGame = (
     
     useEffect(() => {
         const handleGameRoomUpdate = ({ roomId }: { roomId: string }) => {
-          console.log("received roomId:", roomId);
+          //console.log("received roomId:", roomId);
           setRoomId(roomId);
         };
       

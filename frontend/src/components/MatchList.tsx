@@ -26,7 +26,7 @@ export default function MatchList({ localUserData }: MatchListProps) {
       return;
     }
 
-    console.log("Fetching matches for user:", localUserData.id);
+    // console.log("Fetching matches for user:", localUserData.id);
 
     const controller = new AbortController();
     const signal = controller.signal;

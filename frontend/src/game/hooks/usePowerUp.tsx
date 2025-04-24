@@ -30,7 +30,7 @@ export const usePowerUp = (
   // WebSocket: Listen for power-up events from the server
   useEffect(() => {
     socket.on("powerUpSpawned", (data) => {
-        console.log(" Power-up received from server:", data);
+        //console.log(" Power-up received from server:", data);
         setPowerUpX(data.x);
         setPowerUpY(data.y);
         setPowerUpType(data.type);
@@ -38,7 +38,7 @@ export const usePowerUp = (
     });
 
     socket.on("powerUpCleared", () => {
-        console.log("Power-up cleared!");
+        //console.log("Power-up cleared!");
         setPowerUpX(null);
         setPowerUpY(null);
         setPowerUpType(null);
@@ -53,7 +53,7 @@ export const usePowerUp = (
 
   useEffect(() => {
     socket.on("updatePowerUp", (data) => {
-        console.log("Power-up movement update received:", data);
+        //console.log("Power-up movement update received:", data);
         setPowerUpX(data.x);
         setPowerUpY(data.y);
     });
@@ -66,7 +66,7 @@ export const usePowerUp = (
 
   useEffect(() => {
     socket.on("shrinkPaddle", (data) => {
-        console.log(`Shrinking Player ${data.player}'s paddle`);
+        //console.log(`Shrinking Player ${data.player}'s paddle`);
         
         if (data.player === 1) {
             setPaddleHeight1((h: number) => Math.max(h * 0.5, 40)); 
@@ -75,14 +75,14 @@ export const usePowerUp = (
         }
 
         setTimeout(() => {
-            console.log(`⏳ Restoring Player ${data.player}'s paddle size after 7 seconds`);
+            //console.log(`⏳ Restoring Player ${data.player}'s paddle size after 7 seconds`);
             if (data.player === 1) setPaddleHeight1(100);
             if (data.player === 2) setPaddleHeight2(100);
         }, 7000);
     });
 
     socket.on("enlargePaddle", (data) => {
-        console.log(`Enlarging Player ${data.player}'s paddle`);
+        //console.log(`Enlarging Player ${data.player}'s paddle`);
 
         if (data.player === 1) {
             setPaddleHeight1((h: number) => Math.min(h * 1.5, 150));
@@ -91,7 +91,7 @@ export const usePowerUp = (
         }
 
         setTimeout(() => {
-            console.log(`⏳ Restoring Player ${data.player}'s paddle size after 7 seconds`);
+            //console.log(`⏳ Restoring Player ${data.player}'s paddle size after 7 seconds`);
             if (data.player === 1) setPaddleHeight1(100);
             if (data.player === 2) setPaddleHeight2(100);
         }, 7000);

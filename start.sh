@@ -1,4 +1,7 @@
 #!/bin/bash
+
+clear
+
 make
 
 cd nestjs

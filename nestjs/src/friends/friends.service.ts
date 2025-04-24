@@ -15,7 +15,7 @@ export class FriendsService {
   ) {}
 
   async findAll(): Promise<FriendsEntity[]> {
-    console.log("Find All")
+    // console.log("Find All")
     return this.friendsRepository.find();
   }
 
@@ -122,7 +122,7 @@ export class FriendsService {
 
   // Gives all the friends info needed
   async getFriendsByUserId(userId: number): Promise<FriendsResponse> {
-    console.log("USER ID :", userId)
+    // console.log("USER ID :", userId)
     // Fetch data from the database based on the status
     const friends = await this.friendsRepository.find({
       where: [

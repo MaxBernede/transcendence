@@ -54,7 +54,7 @@ const GameInviteMessage: React.FC<GameInviteMessageProps> = ({
   
 
   const handleJoinGame = () => {
-    console.log("Join game with ID:", gameInvite.gameId);
+    // console.log("Join game with ID:", gameInvite.gameId);
     //TODO: redirect to game page with dynamic id and validate that the user is part of the gameId else redirect to somewhere idk
 
     // redirect to the game page

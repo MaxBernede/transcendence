@@ -50,7 +50,7 @@ const ChatPage = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    console.log("ChatPage init, me: ", me);
+    // console.log("ChatPage init, me: ", me);
 
     const initializeSocket = () => {
       try {
@@ -58,7 +58,7 @@ const ChatPage = () => {
           withCredentials: true,
         });
         setSocket(newSocket);
-        console.log("Socket connected successfully");
+        // console.log("Socket connected successfully");
       } catch (error) {
         console.error("Error while initializing socket: ", error);
       }
@@ -69,7 +69,7 @@ const ChatPage = () => {
     return () => {
       if (socket) {
         socket.close(); // Clean up the socket connection on unmount
-        console.log("Socket connection closed");
+        // console.log("Socket connection closed");
       }
     };
   }, []); // Only run this effect once, when the component mounts

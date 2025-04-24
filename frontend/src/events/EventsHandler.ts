@@ -45,11 +45,11 @@ class EventsHandler {
     if (!this.socket) return;
 
     this.socket.on("connect", () => {
-      console.log("Socket connected:", this.socket?.id);
+      // console.log("Socket connected:", this.socket?.id);
     });
 
     this.socket.on("disconnect", () => {
-      console.log("Socket disconnected");
+      // console.log("Socket disconnected");
     });
 
     //? Add any global listeners here, notifications?

@@ -42,7 +42,7 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
       );
       const data = response.data;
 
-      console.log(data);
+      // console.log(data);
       const formattedParticipants: PublicUserInfo[] = data.participants.map(
         (participant: any) => ({
           id: participant.id,
@@ -76,7 +76,7 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     const eventsHandler = EventsHandler.getInstance();
 
     const handleRoleUpdate = async (data: any) => {
-      console.log("GROUP_ROLE_UPDATED received in conversations-list:", data);
+      // console.log("GROUP_ROLE_UPDATED received in conversations-list:", data);
 
       //? data: { conversationId: "", memberId: 1, role: "ADMIN" }
 
@@ -101,10 +101,10 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     const eventsHandler = EventsHandler.getInstance();
 
     const handleRemoveConversation = (data: any) => {
-      console.log(
-        "REMOVE_PARTICIPANT_FROM_CONVERSATION received in conversations-list:",
-        data
-      );
+      // console.log(
+      //   "REMOVE_PARTICIPANT_FROM_CONVERSATION received in conversations-list:",
+      //   data
+      // );
 
       const result = RemoveParticipantFromConversationSchema.safeParse(data);
 
@@ -125,10 +125,10 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     };
 
     const handleAddParticipant = async (data: any) => {
-      console.log(
-        "ADD_PARTICIPANT_TO_CONVERSATION received in conversations-list:",
-        data
-      );
+      // console.log(
+      //   "ADD_PARTICIPANT_TO_CONVERSATION received in conversations-list:",
+      //   data
+      // );
 
       try {
         const user = await axios.get(
@@ -152,7 +152,7 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
             muted_untill: null,
           },
         ]);
-        console.log("User data:", user.data);
+        // console.log("User data:", user.data);
       } catch (error) {
         console.error("Invalid data received:", error);
       }
@@ -174,11 +174,11 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     const handleEventActionBan = async (
       data: z.infer<typeof GroupUserStatusUpdateSchema>
     ) => {
-      console.log("BAN action received in conversations-list:", data);
-      console.log("Current user ID:", currentUserId);
+      // console.log("BAN action received in conversations-list:", data);
+      // console.log("Current user ID:", currentUserId);
       // if banned user === me, remove from participants
       if (data.userId === currentUserId) {
-        console.log("Banned user is me, removing from participants");
+        // console.log("Banned user is me, removing from participants");
         //? if the current page is the conversation page, redirect to the home page
         if (data.conversationId === channelId) {
           // redirect to /chat
@@ -192,10 +192,10 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
           );
         });
       } else {
-        console.log(
-          "Banned user is not me, updating participants:",
-          currentUserId
-        );
+        // console.log(
+        //   "Banned user is not me, updating participants:",
+        //   currentUserId
+        // );
         setParticipants((prev) => {
           const index = prev.findIndex((p) => p.id === data.userId);
           if (index === -1) return prev; // No change needed
@@ -214,7 +214,7 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     const handleEventActionUnban = async (
       data: z.infer<typeof GroupUserStatusUpdateSchema>
     ) => {
-      console.log("UNBAN action received in conversations-list:", data);
+      // console.log("UNBAN action received in conversations-list:", data);
 
       setParticipants((prev) => {
         // Filter out the user with the matching ID
@@ -225,10 +225,10 @@ const ChannelParticipants: React.FC<ChannelParticipantsProps> = ({
     const handleGroupUserStatusUpdate = async (
       data: z.infer<typeof GroupUserStatusUpdateSchema>
     ) => {
-      console.log(
-        "GROUP_USER_STATUS_UPDATED received in conversations-list:",
-        data
-      );
+      // console.log(
+      //   "GROUP_USER_STATUS_UPDATED received in conversations-list:",
+      //   data
+      // );
 
       switch (data.action) {
         case GroupUserStatusAction.BAN:

@@ -138,7 +138,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
   // Reset game state when the page refreshes
   useEffect(() => {
     const handleBeforeUnload = () => {
-      console.log("Clearing game state on refresh.");
+      // console.log("Clearing game state on refresh.");
       localStorage.removeItem("gameState");
       setWinner(null);
       setScore1(0);
@@ -182,7 +182,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
 
   useEffect(() => {
     const handleRegistered = () => {
-      console.log("got registered from server");
+      // console.log("got registered from server");
       setIsRegistered(true);
       socket.emit("requestPlayers");
       socket.emit("playerReady");
@@ -229,11 +229,11 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
 
   useEffect(() => {
     if (loggedInUser && userId) {
-      console.log("ending registerUser", {
-        userId,
-        username: loggedInUser,
-        roomId: urlRoomId || null,
-      });
+      // console.log("ending registerUser", {
+      //   userId,
+      //   username: loggedInUser,
+      //   roomId: urlRoomId || null,
+      // });
 
       socket.emit("registerUser", {
         userId,
@@ -284,7 +284,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
 
       // ignore game state if we just reset
       if (justResetRef.current) {
-        console.log("ignoring old gameState after reset.");
+        // console.log("ignoring old gameState after reset.");
         justResetRef.current = false;
         return;
       }
@@ -294,7 +294,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
     };
 
     const handleGameReset = () => {
-      console.log("game reset triggered");
+      // console.log("game reset triggered");
       setScore1(0);
       setScore2(0);
       setBallStarted(false);
@@ -330,7 +330,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
   // listens to playerinfo updates from Websocket server
   useEffect(() => {
     const handlePlayerInfo = (players: Player[]) => {
-      console.log("live players in room:", players);
+      // console.log("live players in room:", players);
 
       currentPlayersRef.current = players;
 
@@ -343,13 +343,13 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
       const opponent = players.find((p) => p.username !== loggedInUser);
 
       if (currentPlayer) {
-        console.log(
-          `Restoring stored player number: ${currentPlayer.playerNumber}`
-        );
+        // console.log(
+        //   `Restoring stored player number: ${currentPlayer.playerNumber}`
+        // );
         storedPlayerNumber = currentPlayer.playerNumber;
       } else if (players.length === 1) {
         storedPlayerNumber = players[0].playerNumber === 1 ? 2 : 1;
-        console.log(`Assigning opposite player number: ${storedPlayerNumber}`);
+        // console.log(`Assigning opposite player number: ${storedPlayerNumber}`);
       }
 
       if (playerNumber !== storedPlayerNumber) {
@@ -358,9 +358,9 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
       }
 
       if (opponent) {
-        console.log(
-          `Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`
-        );
+        // console.log(
+        //   `Opponent Found: ${opponent.username}, Player Number: ${opponent.playerNumber}`
+        // );
         setOpponentUsername(opponent.username);
 
         if (players.length === 2) {
@@ -380,7 +380,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
   }, [loggedInUser, playerNumber]);
 
   useEffect(() => {
-    console.log("roomId from hook:", roomId);
+    // console.log("roomId from hook:", roomId);
   }, [roomId]);
 
   useEffect(() => {
@@ -489,7 +489,7 @@ const Pong: React.FC<PongProps> = ({ urlRoomId }) => {
 
 useEffect(() => {
 	socket.on("gameOver", (data) => {
-	  console.log(`${data.winner} Wins!`);
+	  // console.log(`${data.winner} Wins!`);
 	  setWinner(data.winner);
   
 	  if (data.finalScore) {
@@ -565,7 +565,7 @@ useEffect(() => {
 		opponentUsername !== "WAITING..." &&
 		!winner
 	  ) {
-		console.log("[Client] Starting ball...");
+		// console.log("[Client] Starting ball...");
 		setBallStarted(true);
 		ballStartedRef.current = true;
 		socket.emit("startBall");
@@ -591,7 +591,7 @@ useEffect(() => {
 
   useEffect(() => {
     socket.on("gameReset", () => {
-      console.log("Game has been fully reset! Ensuring fresh state...");
+      // console.log("Game has been fully reset! Ensuring fresh state...");
 
       // Reset everything on the frontend
       setWinner(null);
@@ -607,7 +607,7 @@ useEffect(() => {
 
       // Add delay to avoid syncing issues
       setTimeout(() => {
-        console.log(" Requesting fresh game state from server...");
+        // console.log(" Requesting fresh game state from server...");
         socket.emit("requestGameState");
       }, 100);
     });
@@ -619,7 +619,7 @@ useEffect(() => {
 
   useEffect(() => {
     socket.on("waitingForOpponent", (data) => {
-      console.log(`${data.waitingFor} is waiting for their opponent...`);
+      // console.log(`${data.waitingFor} is waiting for their opponent...`);
 
       if (!winner) {
         setOpponentUsername("WAITING...");
@@ -627,7 +627,7 @@ useEffect(() => {
     });
 
     socket.on("gameReset", () => {
-      console.log("Both players clicked 'Play Again'! Restarting game...");
+      // console.log("Both players clicked 'Play Again'! Restarting game...");
 
       // Fully reset game state
 
@@ -644,7 +644,7 @@ useEffect(() => {
 
       // Restore correct opponent name
       setTimeout(() => {
-        console.log(" Requesting fresh player info from server...");
+        // console.log(" Requesting fresh player info from server...");
         socket.emit("requestPlayers");
       }, 500);
     });
@@ -659,7 +659,7 @@ useEffect(() => {
   const [isPlayerReady, setIsPlayerReady] = useState<boolean>(false); // Track if THIS player is ready
 
   const handleResetGame = () => {
-    console.log("Player clicked 'Play Again'... Waiting for opponent.");
+    // console.log("Player clicked 'Play Again'... Waiting for opponent.");
 
     localStorage.removeItem("roomId");
     setWinner(null); // Hide popup for THIS player
@@ -673,7 +673,7 @@ useEffect(() => {
   // Handle "bothPlayersReady" event correctly
   useEffect(() => {
     socket.on("bothPlayersReady", () => {
-      console.log("Both players are ready! Restarting game...");
+      // console.log("Both players are ready! Restarting game...");
 
       setPlayersReady(2); // Ensure both players are marked as ready
       setScore1(0);
@@ -688,11 +688,11 @@ useEffect(() => {
 
       // Request fresh player data AFTER the game resets
       setTimeout(() => {
-        console.log("Requesting fresh player info from server...");
+        // console.log("Requesting fresh player info from server...");
         socket.emit("requestPlayers");
 
         //start the ball after reset
-        console.log("Triggering ball movement...");
+        // console.log("Triggering ball movement...");
         socket.emit("startBall");
       }, 500);
     });
@@ -704,12 +704,12 @@ useEffect(() => {
 
   useEffect(() => {
     socket.on("playersReady", (readyPlayers) => {
-      console.log(` Server says ${readyPlayers} players are ready!`);
+      // console.log(` Server says ${readyPlayers} players are ready!`);
       setPlayersReady(readyPlayers);
 
       // If both players are ready, restore opponent's username
       if (readyPlayers === 2) {
-        console.log("Both players are ready! Assigning opponent...");
+        // console.log("Both players are ready! Assigning opponent...");
         socket.emit("requestPlayers"); // Request fresh player info from the server
       }
     });
@@ -722,7 +722,7 @@ useEffect(() => {
   useEffect(() => {
     socket.on("playerWaiting", (playerNum) => {
       if (playerNum !== playerNumber) {
-        console.log("Opponent is waiting...");
+        // console.log("Opponent is waiting...");
         setOpponentUsername("WAITING...");
       }
     });
@@ -734,7 +734,7 @@ useEffect(() => {
 
   useEffect(() => {
     socket.on("powerUpsToggled", (data) => {
-      console.log("Power-ups toggled:", data.enabled);
+      // console.log("Power-ups toggled:", data.enabled);
       setPowerUpsEnabled(data.enabled);
     });
 
@@ -745,7 +745,7 @@ useEffect(() => {
 
   useEffect(() => {
     const handleOpponentLeft = () => {
-      console.log("[SOCKET] Received opponentLeft!");
+      // console.log("[SOCKET] Received opponentLeft!");
       alert("Opponent left the game. please refresh to start new game!");
       window.location.reload(); // or navigate("/lobby") if using react-router
     };
@@ -772,7 +772,7 @@ useEffect(() => {
 
   useEffect(() => {
     const handleRoomUpdate = ({ roomId }: { roomId: string }) => {
-      console.log("hook received roomId:", roomId);
+      // console.log("hook received roomId:", roomId);
       setRoomId(roomId);
       localStorage.setItem("roomId", roomId);
 
@@ -835,7 +835,7 @@ useEffect(() => {
         const currentPlayers = getCurrentPlayers(); // You must implement this to return latest player list
 
         if (currentPlayers.length < 2) {
-          console.log("Still no opponent, triggering reconnect state.");
+          // console.log("Still no opponent, triggering reconnect state.");
           localStorage.removeItem("gameState");
           localStorage.removeItem("roomId");
 
@@ -852,13 +852,13 @@ useEffect(() => {
           ballStartedRef.current = false;
           setIsReconnecting(true);
         } else {
-          console.log("Opponent already reconnected. Skipping reset.");
+          // console.log("Opponent already reconnected. Skipping reset.");
         }
       }, 2000); // 2s grace window
     };
 
     const handleResumeGame = () => {
-      console.log("Game resumed after reconnect");
+      // console.log("Game resumed after reconnect");
       if (disconnectTimeout) clearTimeout(disconnectTimeout);
       setIsReconnecting(false);
     };
@@ -875,7 +875,7 @@ useEffect(() => {
 
   useEffect(() => {
     return () => {
-      console.log("Cleaning up all socket and key event listeners...");
+      // console.log("Cleaning up all socket and key event listeners...");
 
       socket.off("gameState");
       socket.off("playerInfo");
@@ -897,7 +897,7 @@ useEffect(() => {
 
   useEffect(() => {
     return () => {
-      console.log("[CLEANUP] Component unmounted. Leaving game.");
+      // console.log("[CLEANUP] Component unmounted. Leaving game.");
       socket.emit("leaveGame");
       localStorage.removeItem("roomId");
     };
@@ -942,7 +942,7 @@ useEffect(() => {
 
   useEffect(() => {
     socket.on("accessDenied", () => {
-      console.log("Access denied to room, redirecting to home...");
+      // console.log("Access denied to room, redirecting to home...");
       navigate("/");
     });
 

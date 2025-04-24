@@ -83,11 +83,11 @@ export class UserController {
     let me = false
     if (id === 'me') {
       // Resolve "me" to the current user's ID using AuthGuard
-      console.log('🔒 Authenticated User:', {
-        headers: request.headers,
-        user: request['user'],
-        method: request.method,
-      });
+      // console.log('🔒 Authenticated User:', {
+      //   headers: request.headers,
+      //   user: request['user'],
+      //   method: request.method,
+      // });
       const userId = request['user']?.sub;
       if (!userId) {
         throw new NotFoundException('User not authenticated');
@@ -185,7 +185,7 @@ export class UserController {
       storage: diskStorage({
         destination: './uploads/avatars',
         filename: (req, file, callback) => {
-          console.log('Writing file to destination:', './uploads/avatars');
+          // console.log('Writing file to destination:', './uploads/avatars');
           const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
           callback(
             null,
@@ -194,9 +194,9 @@ export class UserController {
         },
       }),
       fileFilter: (req, file, callback) => {
-        console.log('File received:', file.originalname);
+        // console.log('File received:', file.originalname);
         if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
-          console.log('Invalid file type:', file.mimetype);
+          // console.log('Invalid file type:', file.mimetype);
           return callback(
             new BadRequestException('Only image files are allowed'),
             false,
@@ -229,13 +229,13 @@ export class UserController {
         'avatars',
         user.avatar.replace(replacedAvatarPath, ''),
       );
-      console.log('Previous avatar path:', previousAvatarPath);
+      // console.log('Previous avatar path:', previousAvatarPath);
 
       try {
         // Check if the file exists and delete it
         if (fs.existsSync(previousAvatarPath)) {
           fs.unlinkSync(previousAvatarPath);
-          console.log(`Previous avatar deleted: ${previousAvatarPath}`);
+          // console.log(`Previous avatar deleted: ${previousAvatarPath}`);
         }
       } catch (err) {
         console.error('Error deleting previous avatar:', err);

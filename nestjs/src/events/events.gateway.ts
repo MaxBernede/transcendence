@@ -101,7 +101,7 @@ export class EventsGateway
   async handleConnection(client: Socket, ...args: any[]) {
     const user: TokenPayload = await this.validateClient(client);
     if (user === null) {
-      console.log(client.id, 'is not valid');
+      // console.log(client.id, 'is not valid');
 
       client.disconnect(true);
       return;
@@ -123,7 +123,7 @@ export class EventsGateway
 
   sendEventToUser(type: EventsType, userIds: number[], data: any) {
     userIds.forEach((userId) => {
-		console.log("sending event of type", type, "to user", userId)
+		// console.log("sending event of type", type, "to user", userId)
       const socketId = this.userSocketMap.get(userId);
       if (socketId) {
         this.wss.to(socketId).emit(type, data);

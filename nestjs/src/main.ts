@@ -19,8 +19,8 @@ async function bootstrap() {
 
   // Fetch ConfigService for debugging
   const configService = app.get(ConfigService);
-  console.log('INTRA_CLIENT_ID:', configService.get('INTRA_CLIENT_ID'));
-  console.log('INTRA_CLIENT_SECRET:', configService.get('INTRA_CLIENT_SECRET'));
+  // console.log('INTRA_CLIENT_ID:', configService.get('INTRA_CLIENT_ID'));
+  // console.log('INTRA_CLIENT_SECRET:', configService.get('INTRA_CLIENT_SECRET'));
 
   // Enable validation globally
   const config = new DocumentBuilder()
@@ -78,7 +78,7 @@ async function bootstrap() {
 
   // app.use('/uploads', express.static(uploadPath));
   const uploadsPath = path.join(process.cwd(), 'uploads');
-  console.log('Serving static files from:', uploadsPath);
+  // console.log('Serving static files from:', uploadsPath);
   app.use('/uploads', express.static(uploadsPath));
 
   const publicAssetsPath = join(
@@ -89,13 +89,13 @@ async function bootstrap() {
     'public',
     'assets',
   );
-  console.log(`Serving static public assets from: ${publicAssetsPath}`);
+  // console.log(`Serving static public assets from: ${publicAssetsPath}`);
   app.use('/assets', express.static(publicAssetsPath));
 
   // console.log(`Static assets served from: ${uploadPath}`);
-  console.log(
-    `Static public assets served from: ${join(__dirname, '..', 'frontend', 'public', 'assets')}`,
-  );
+  // console.log(
+  //   `Static public assets served from: ${join(__dirname, '..', 'frontend', 'public', 'assets')}`,
+  // );
 
   //   Enable CORS for frontend communication
   app.enableCors({
@@ -112,7 +112,7 @@ async function bootstrap() {
   // Log server listening port
   app.useWebSocketAdapter(new IoAdapter(app));
   const pongGateway = app.get(PongGateway);
-  console.log('✅ WebSocket Gateway is Running:', pongGateway ? 'YES' : 'NO');
+  // console.log('✅ WebSocket Gateway is Running:', pongGateway ? 'YES' : 'NO');
 
   const port = 3000;
   await app.listen(port);

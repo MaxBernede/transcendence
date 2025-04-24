@@ -143,7 +143,7 @@ export class ConversationsController {
     @GetUserPayload() user: TokenPayload,
     @Body() createConversationDto: CreateConversationDto,
   ) {
-    console.log('createConversationDto:', createConversationDto);
+    // console.log('createConversationDto:', createConversationDto);
     return this.conversationsService.createConversation(
       user,
       createConversationDto,
@@ -154,7 +154,7 @@ export class ConversationsController {
   async getMyConversationsWithParticipants(
     @GetUserPayload() user: TokenPayload,
   ) {
-    console.log('user:', user);
+    // console.log('user:', user);
     const temp: any =
       await this.conversationsService.getConversationsWithParticipants(user);
     // console.log('temp:', temp[0].chats);
@@ -163,7 +163,7 @@ export class ConversationsController {
 
   @Get('history')
   async getMyChatHistory(@GetUserPayload() user: TokenPayload) {
-    console.log('/conversations/history');
+    // console.log('/conversations/history');
     const temp = await this.conversationsService.getChatHistory(user);
     return temp;
   }

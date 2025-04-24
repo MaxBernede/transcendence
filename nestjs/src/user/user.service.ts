@@ -64,7 +64,7 @@ export class UserService {
     // Prioritize `image.link`, then `avatar`, and finally the default avatar
     user.avatar = user.image?.link || user.avatar || '/assets/Bat.jpg';
 
-    console.log('Final Avatar Returned:', user.avatar);
+    // console.log('Final Avatar Returned:', user.avatar);
     return user;
   }
 
@@ -87,13 +87,13 @@ export class UserService {
       }
   
       if (updatedData.image) {
-        console.log('Updating image:', updatedData.image);
+        // console.log('Updating image:', updatedData.image);
         user.image = updatedData.image;
         user.avatar =
           updatedData.image.link ||
           updatedData.image.versions?.large ||
           '/assets/Bat.jpg';
-        console.log('Updated avatar based on image:', user.avatar);
+        // console.log('Updated avatar based on image:', user.avatar);
       }
   
       Object.assign(user, updatedData);
@@ -203,12 +203,12 @@ export class UserService {
 
     if (user) {
       // user = { ...user, ...userInfo };
-      console.log('user already exist, not overwriting informations');
+      // console.log('user already exist, not overwriting informations');
 	//   return user;
     } else {
       user = this.userRepository.create(userInfo);
     }
-    console.log('User saved:', user);
+    // console.log('User saved:', user);
 
     return this.userRepository.save(user);
   }
@@ -236,7 +236,7 @@ export class UserService {
   }
 
   async incrementWins(userId: number) {
-    console.log(`⚡ Incrementing WINS for User ID: ${userId}`);
+    // console.log(`⚡ Incrementing WINS for User ID: ${userId}`);
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -245,13 +245,13 @@ export class UserService {
     }
 
     user.wins += 1;
-    console.log(`new wins count: ${user.wins}`);
+    // console.log(`new wins count: ${user.wins}`);
     await this.userRepository.save(user);
     return user;
   }
 
   async incrementLoose(userId: number) {
-    console.log(`incrementing LOSSES for User ID: ${userId}`);
+    // console.log(`incrementing LOSSES for User ID: ${userId}`);
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -260,7 +260,7 @@ export class UserService {
     }
 
     user.loose += 1;
-    console.log(`new losses count: ${user.loose}`);
+    // console.log(`new losses count: ${user.loose}`);
     await this.userRepository.save(user);
     return user;
   }

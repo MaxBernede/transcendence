@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ]),
       secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
     });
-    console.log('JwtStrategy initialized');
+    // console.log('JwtStrategy initialized');
   }
 
   async validate(payload: TokenPayload) {

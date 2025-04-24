@@ -48,7 +48,7 @@ export class TwoFactorAuthController {
 
     // Here check if the isValid and if yes update values for intraID in DBB
     if (!isValid) {
-      console.log('Invalid');
+      // console.log('Invalid');
       return res.status(400).json({ message: 'Invalid token' });
     }
     try {
@@ -76,7 +76,7 @@ export class TwoFactorAuthController {
     const isValid = this.twoFactorAuthService.verifyToken(secret, token);
 
     // Here check if the isValid and if yes update values for intraID in DBB
-    console.log('intra id in verify 2FA: ', intraId);
+    // console.log('intra id in verify 2FA: ', intraId);
     if (!isValid) return { isValid, message: 'Invalid 2FA token' };
     try {
       const user = await this.userService.findOne(intraId); // Find the user in the database by intraId

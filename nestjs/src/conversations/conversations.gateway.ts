@@ -121,7 +121,7 @@ export class ConversationsGateway
       const payload: TokenPayload = this.jwtService.verify(token);
       client['user'] = payload;
 
-      // console.log(`Client validated: ${payload.username}`);
+      // //console.log(`Client validated: ${payload.username}`);
       return true;
     } catch (error) {
       console.error('Error validating client:', error.message);
@@ -136,7 +136,7 @@ export class ConversationsGateway
   }
 
   afterInit(server: Server) {
-    // console.log('Init socket server');
+    // //console.log('Init socket server');
   }
 
   async saveChat(message: ChatDto) {
@@ -197,7 +197,7 @@ export class ConversationsGateway
   }
 
   handleDisconnect(client: Socket) {
-    // console.log('Client disconnected:', client.id);
+    // //console.log('Client disconnected:', client.id);
     // userSocketMap.delete(client.id);
     // this.socketIdUserMap.delete(client.id);
     const userId = this.socketIdUserMap.get(client.id);
@@ -211,10 +211,10 @@ export class ConversationsGateway
     if (isValid === false) {
       return;
     }
-    // console.log('Client connected:', client.id);
+    // //console.log('Client connected:', client.id);
 
     const payload: TokenPayload = client['user'];
-    // console.log('User:', client['user']);
+    // //console.log('User:', client['user']);
 
     //? get all conversations for this user
     // const conversations = await this.userConversationRepository.find({
@@ -234,7 +234,7 @@ export class ConversationsGateway
 
     // conversations.forEach((conversation) => {
     //   client.join(conversation.conversationId);
-    //   console.log(
+    //   //console.log(
     //     payload.username,
     //     'joined room:',
     //     conversation.conversationId,
@@ -243,11 +243,11 @@ export class ConversationsGateway
 
     conversations.forEach((conversation) => {
       client.join(conversation.conversation.id);
-      console.log(
-        payload.username,
-        'joined room:',
-        conversation.conversation.id,
-      );
+      // //console.log(
+      //   payload.username,
+      //   'joined room:',
+      //   conversation.conversation.id,
+      // );
     });
 
     this.userSocketMap.set(payload.sub, client.id);
@@ -324,17 +324,17 @@ export class ConversationsGateway
       return;
     }
 
-    console.log('Message:', message);
+    //console.log('Message:', message);
     const user = client['user'];
 
     const dbUser: PublicUserInfoDto = await this.userRepository.findOne({
       where: { id: user.sub },
       select: ['id', 'username', 'avatar'], // Only select the required fields
     });
-    console.log('User:', dbUser);
+    //console.log('User:', dbUser);
     try {
       const validatedUser = PublicUserInfoSchema.parse(dbUser);
-      console.log('Validated User:', validatedUser);
+      //console.log('Validated User:', validatedUser);
     } catch (error) {
       console.error('Validation error:', error);
       throw new InternalServerErrorException('Validation error');
@@ -399,7 +399,7 @@ export class ConversationsGateway
     try {
       savedMessage = await this.saveChat(newMessage);
     } catch (error) {
-      console.log('Error saving chat');
+      //console.log('Error saving chat');
       throw new InternalServerErrorException('Error saving chat');
     }
     const res: serverToClientDto = {
@@ -443,9 +443,9 @@ export class ConversationsGateway
     }
 
     const user = client['user'];
-    console.log(
-      `User ${user.username} manually joining room ${data.conversationId}`,
-    );
+    //console.log(
+    //   `User ${user.username} manually joining room ${data.conversationId}`,
+    // );
 
     // Check if user has access to this conversation
     try {
@@ -460,15 +460,15 @@ export class ConversationsGateway
       });
 
       if (!userConversation) {
-        console.log(
-          `User ${user.username} doesn't have access to conversation ${data.conversationId}`,
-        );
+        //console.log(
+        //   `User ${user.username} doesn't have access to conversation ${data.conversationId}`,
+        // );
         return;
       }
 
       // Join the room
       client.join(data.conversationId);
-      console.log(`User ${user.username} joined room: ${data.conversationId}`);
+      //console.log(`User ${user.username} joined room: ${data.conversationId}`);
     } catch (error) {
       console.error('Error joining room:', error);
     }

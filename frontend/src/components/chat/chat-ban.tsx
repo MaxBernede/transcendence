@@ -73,7 +73,7 @@ export const BanSelector: React.FC<BanSelectorProps> = ({
         formData,
         { withCredentials: true }
       );
-      console.log("User Band:", data);
+      // console.log("User Band:", data);
       setError(null);
       setLoading(false);
       onClose();

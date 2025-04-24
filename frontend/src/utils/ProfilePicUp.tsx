@@ -18,8 +18,9 @@ const ProfilePictureUpload: React.FC = () => {
   // Handle image upload (for now, we just log the file)
   const handleUpload = () => {
     if (image) {
+      ;
       // Normally, here you would upload the image to the server.
-      console.log('Uploading image:', image);
+      // console.log('Uploading image:', image);
     }
   };
 

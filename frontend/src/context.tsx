@@ -22,7 +22,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const fetchUser = async () => {
-      console.log("fetchUser");
+      // console.log("fetchUser");
       try {
         const { data } = await axios.get(
           `${process.env.REACT_APP_BACKEND_IP}/api/users/me`,

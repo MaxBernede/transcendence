@@ -107,7 +107,7 @@ export const CreateNewGroup = () => {
       participants: participants,
     };
 
-    console.log("New Group Conversation:", newGroupConversation);
+    // console.log("New Group Conversation:", newGroupConversation);
 
     try {
       const { data } = await axios.post(
@@ -117,14 +117,14 @@ export const CreateNewGroup = () => {
           withCredentials: true,
         }
       );
-      console.log("Created group:", data);
-      console.log("Navigating to chat page...");
+      // console.log("Created group:", data);
+      // console.log("Navigating to chat page...");
       navigate(`/chat/${data.id}`);
       handleCloseDialog();
       setError(null);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log("Failed to join group:", error.response?.data);
+        // console.log("Failed to join group:", error.response?.data);
         setError(error.response?.data.message);
       } else {
         console.error("Failed to join group:", error);
@@ -148,7 +148,7 @@ export const CreateNewGroup = () => {
       customSubmit();
     }
     if (e.key === "Escape") {
-      console.log("Escape key pressed");
+      // console.log("Escape key pressed");
       handleCloseDialog();
     }
   };

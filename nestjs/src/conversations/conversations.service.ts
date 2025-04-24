@@ -85,7 +85,7 @@ export class ConversationsService {
   ) {}
 
   async leaveConversation(user: TokenPayload, conversationId: string) {
-    console.log(user.sub, 'leaving conversation', conversationId);
+    // console.log(user.sub, 'leaving conversation', conversationId);
 
     //? if conversation is a dm, return error
     const conversation = await this.conversationRepository.findOne({
@@ -95,7 +95,7 @@ export class ConversationsService {
       throw new NotFoundException('Conversation not found');
     }
     if (conversation.type === 'DM') {
-      console.log('Cannot leave a DM conversation');
+      // console.log('Cannot leave a DM conversation');
       throw new BadRequestException('Cannot leave a DM conversation');
     }
 
@@ -115,8 +115,8 @@ export class ConversationsService {
     if (!me) {
       throw new BadRequestException('User not part of the conversation');
     }
-    console.log('me:', me);
-    console.log('participants:', participants);
+    // console.log('me:', me);
+    // console.log('participants:', participants);
     if (participants.length === 1) {
       //? remove user from userConversations
       await this.userConversationRepository.delete({
@@ -181,7 +181,7 @@ export class ConversationsService {
   ) {
     const { id, password } = changePasswordDto;
 
-    console.log('changePasswordDto:', changePasswordDto);
+    // console.log('changePasswordDto:', changePasswordDto);
 
     const conversation = await this.conversationRepository.findOneBy({
       id,
@@ -237,8 +237,8 @@ export class ConversationsService {
     user: TokenPayload,
     conversationId: JoinConversationDto,
   ) {
-    console.log('joinConversation:', user.username, conversationId.id);
-    console.log('joinConversation:', conversationId);
+    // console.log('joinConversation:', user.username, conversationId.id);
+    // console.log('joinConversation:', conversationId);
     //? Check if conversation exist
     const conversation = await this.conversationRepository.findOneBy({
       id: conversationId.id,
@@ -256,7 +256,7 @@ export class ConversationsService {
       if (!conversationId.password) {
         throw new BadRequestException('Password is required');
       }
-      console.log('conversation.password:', conversation.password);
+      // console.log('conversation.password:', conversation.password);
       const passwordMatch = await argon2.verify(
         conversation.password,
         conversationId.password,
@@ -287,7 +287,7 @@ export class ConversationsService {
         relations: ['user'],
       });
       const userIds = users.map((user) => user.user.id);
-      console.log('users:', userIds);
+      // console.log('users:', userIds);
 
       if (users.length === 0) {
         entry.role = 'OWNER';
@@ -362,7 +362,7 @@ export class ConversationsService {
     user: TokenPayload,
     createConversationDto: CreateConversationDto,
   ) {
-    console.log('createConversationDto:', createConversationDto);
+    // console.log('createConversationDto:', createConversationDto);
     // console.log('user:', user);
     const senderUserId = user.sub;
 
@@ -370,7 +370,7 @@ export class ConversationsService {
       createConversationDto.participants[0], //? index 1 for dm only
     );
     const receiverId = receiver.id;
-    console.log('receiver:', receiverId);
+    // console.log('receiver:', receiverId);
 
     if (createConversationDto.type === 'DM') {
       return this.createConversationDm(
@@ -403,7 +403,7 @@ export class ConversationsService {
       );
     }
 
-    console.log('groupName:', groupName);
+    // console.log('groupName:', groupName);
 
     const participantIds: number[] = [];
     participantIds.push(senderId);
@@ -422,7 +422,7 @@ export class ConversationsService {
     if (password) {
       try {
         passwordHash = await argon2.hash(password);
-        console.log('passwordHash:', passwordHash);
+        // console.log('passwordHash:', passwordHash);
       } catch (error) {
         throw new BadRequestException('Error hashing the password');
       }
@@ -453,7 +453,7 @@ export class ConversationsService {
       await this.userConversationRepository.save(enrty);
     }
 
-    console.log(participantIds);
+    // console.log(participantIds);
 
     const d: z.infer<typeof AddConversationToListSchema> = {
       conversationId: newConversation.id,
@@ -686,7 +686,7 @@ export class ConversationsService {
               gameInviteData: gameInvite,
             };
 
-            console.log('outgoing message:', message);
+            // console.log('outgoing message:', message);
 
             return message;
           }),
@@ -787,7 +787,7 @@ export class ConversationsService {
     }
 
     const bannedStatus = userConversation.banned;
-    console.log('status:', userConversation);
+    // console.log('status:', userConversation);
     if (bannedStatus) {
       throw new UnauthorizedException('You are banned from this conversation');
     }
@@ -872,7 +872,7 @@ export class ConversationsService {
   ) {
     try {
       const { participants } = await this.getParticipants(conversationId, user);
-      //   console.log('participants:', participants);
+        // console.log('participants:', participants);
 
       const currentUser = participants.find((p) => p.id === user.sub);
       if (!currentUser) {
@@ -907,7 +907,7 @@ export class ConversationsService {
         throw new BadRequestException('User not found in the conversation');
       }
 
-      //   console.log('currentUser:', currentUser.group_role);
+        // console.log('currentUser:', currentUser.group_role);
       //   if (currentUser.group_role !== 'OWNER') {
       // 	  throw new UnauthorizedException(
       // 		  'You are not the owner of the conversation',
@@ -941,7 +941,7 @@ export class ConversationsService {
         conversation: { id: conversationId },
         user: { id: targetUser.id },
       });
-      console.log('User removed from conversation:', targetUser.username);
+      // console.log('User removed from conversation:', targetUser.username);
 
       //? send event to the removed user to remove the conversation from their list
       //   const removeFromListEvent: z.infer<typeof RemoveConversationFromListSchema> = {
@@ -995,7 +995,7 @@ export class ConversationsService {
 
       //? Check if the user is the owner of the conversation
     } catch (error) {
-      console.log('Error fetching participants:', error);
+      // console.log('Error fetching participants:', error);
       throw new BadRequestException('Error fetching participants');
     }
   }
@@ -1076,9 +1076,9 @@ export class ConversationsService {
 
       return { message: 'Role updated successfully' };
 
-      //   console.log('myRole:', myRole);
+        // console.log('myRole:', myRole);
     } catch (error) {
-      console.log('error:', error);
+      // console.log('error:', error);
       throw new BadRequestException('Error updating role');
     }
   }
@@ -1098,7 +1098,7 @@ export class ConversationsService {
       );
     }
     const userIds: number[] = participants.map((p) => p.user.id);
-    console.log('userIds:', userIds);
+    // console.log('userIds:', userIds);
     this.eventsGateway.sendEventToUser(eventsType, userIds, obj);
   }
 
@@ -1107,7 +1107,7 @@ export class ConversationsService {
     userId: number,
     user: TokenPayload,
   ) {
-    console.log('banUserFromConversation:', conversationId, userId, user);
+    // console.log('banUserFromConversation:', conversationId, userId, user);
 
     ///? check if the conversation exists
     const conversation = await this.conversationRepository.findOne({
@@ -1143,7 +1143,7 @@ export class ConversationsService {
       try {
         await this.userConversationRepository.save(targetUser);
       } catch (error) {
-        console.log('error:', error);
+        // console.log('error:', error);
         throw new BadRequestException('Error banning user');
       }
       const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
@@ -1186,7 +1186,7 @@ export class ConversationsService {
     userId: number,
     user: TokenPayload,
   ) {
-    console.log('banUserFromConversation:', conversationId, userId, user);
+    // console.log('banUserFromConversation:', conversationId, userId, user);
 
     ///? check if the conversation exists
     const conversation = await this.conversationRepository.findOne({
@@ -1220,7 +1220,7 @@ export class ConversationsService {
         // await this.userConversationRepository.save(targetUser);
         await this.userConversationRepository.delete(targetUser.id);
       } catch (error) {
-        console.log('error:', error);
+        // console.log('error:', error);
         throw new BadRequestException('Error unbanning user');
       }
       const eventData: z.infer<typeof GroupUserStatusUpdateSchema> = {
@@ -1286,7 +1286,7 @@ export class ConversationsService {
   }
 
   async banUser(user: TokenPayload, data: any) {
-    console.log('banUser:', user, data);
+    // console.log('banUser:', user, data);
     const valid = await this.hasAuthority(
       user.sub,
       data.id,
@@ -1297,7 +1297,7 @@ export class ConversationsService {
         'You are not authorized to mute this user',
       );
     }
-    console.log('valid:', valid);
+    // console.log('valid:', valid);
 
     const userConv = await this.userConversationRepository.findOne({
       where: {
@@ -1321,7 +1321,7 @@ export class ConversationsService {
     //? if minutes, hours and days are all 0, then mute indefinitely
     if (data.minutes === 0 && data.hours === 0 && data.days === 0) {
       userConv.banned = true;
-      console.log('userConv:', userConv);
+      // console.log('userConv:', userConv);
       await this.userConversationRepository.save(userConv);
       this.sendEventToGroupParticipants(
         data.conversationId,
@@ -1379,7 +1379,7 @@ export class ConversationsService {
   }
 
   async muteUser(user: TokenPayload, data: any) {
-    console.log('muteUser:', user, data);
+    // console.log('muteUser:', user, data);
     const valid = await this.hasAuthority(
       user.sub,
       data.id,
@@ -1390,7 +1390,7 @@ export class ConversationsService {
         'You are not authorized to mute this user',
       );
     }
-    console.log('valid:', valid);
+    // console.log('valid:', valid);
 
     const userConv = await this.userConversationRepository.findOne({
       where: {
@@ -1406,7 +1406,7 @@ export class ConversationsService {
     //? if minutes, hours and days are all 0, then mute indefinitely
     if (data.minutes === 0 && data.hours === 0 && data.days === 0) {
       userConv.muted = true;
-      console.log('userConv:', userConv);
+      // console.log('userConv:', userConv);
       await this.userConversationRepository.save(userConv);
       return { message: 'User muted successfully' };
     }
