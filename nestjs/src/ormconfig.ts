@@ -9,11 +9,11 @@ import { ChatGameInvite } from './conversations/entities/chat-game-invite.entity
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
-  host: process.env.POSTGRES_HOST || process.env.BACKEND_IP || 'localhost',
-  port: +process.env.POSTGRES_PORT || 5432,
-  username: process.env.POSTGRES_USER || 'user',
-  password: process.env.POSTGRES_PASSWORD || 'postgres',
-  database: process.env.POSTGRES_DB || 'postgres',
+  host: process.env.POSTGRES_HOST,
+  port: +process.env.POSTGRES_PORT,
+  username: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB,
   entities: [User, Match, Chat, Conversation, UserConversation, FriendsEntity, ChatGameInvite],
   synchronize: true, // For development only
   migrations: ['dist/migrations/*.js'],

@@ -18,7 +18,8 @@ import { MatchModule } from './match/match.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../.env',
+      envFilePath: '.env',
+      // envFilePath: '../.env',
     }),
     TypeOrmModule.forFeature([User]),
     TypeOrmModule.forRoot(typeOrmConfig),
