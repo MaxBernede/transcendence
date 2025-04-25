@@ -20,15 +20,30 @@ const UserPage: React.FC = () => {
     const fetchData = async () => {
       try {
         // Fetch user data
-        const resUser = await fetch(`/api/users/${id}`);
-        if (!resUser.ok) throw new Error("User fetch failed");
+        const resUser = await fetch(`${process.env.REACT_APP_BACKEND_IP}/api/users/${id}`,
+          { credentials: 'include' }
+        );
+        if (!resUser.ok) {
+          console.error("Failed to fetch user:", resUser.status);
+          const errorText = await resUser.text(); // Log the response body for inspection
+          console.error(errorText);
+          throw new Error("User fetch failed");
+        }
         const user = await resUser.json();
         setLocalUserData(user);
-
+        console.log("User data:", user);
+  
         // Fetch match history
         const actualId = id === "me" ? user.id : id;
-        const resMatches = await fetch(`/matches/${actualId}`);
-        if (!resMatches.ok) throw new Error("Matches not found");
+        const resMatches = await fetch(`${process.env.REACT_APP_BACKEND_IP}/matches/${actualId}`
+          { credentials: 'include' }
+        );
+        if (!resMatches.ok) {
+          console.error("Failed to fetch matches:", resMatches.status);
+          const errorText = await resMatches.text(); // Log the response body for inspection
+          console.error(errorText);
+          throw new Error("Matches not found");
+        }
         const matchData = await resMatches.json();
         setLocalMatchHistory(matchData);
       } catch (err) {

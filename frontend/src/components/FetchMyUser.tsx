@@ -9,7 +9,7 @@ const FetchMyUser: React.FC<Props> = ({ setUserData }) => {
 		const fetchMe = async () => {
 			try {
 				const token = localStorage.getItem('jwt');
-				const res = await fetch('/api/users/me', {
+				const res = await fetch(`${process.env.REACT_APP_BACKEND_IP}/api/users/me`, {
 					headers: {
 						Authorization: `Bearer ${token}`,
 					},

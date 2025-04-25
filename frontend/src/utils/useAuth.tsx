@@ -9,7 +9,9 @@ const useAuth = () => {
 
 	useEffect(() => {
 		axios
-			.get('/auth/verify', { withCredentials: true })
+			.get(`${process.env.REACT_APP_BACKEND_IP}/auth/verify`, {
+				withCredentials: true,
+			})
 			.then((response) => {
 				setIsAuthenticated(response.data.authenticated);
 			})
