@@ -1,72 +1,4 @@
-# services:
 
-#   db:
-#     image: postgres
-#     restart: always
-#     container_name: postgres
-#     environment:
-#       POSTGRES_PASSWORD: postgres
-#       POSTGRES_USER: user
-#       POSTGRES_DB: postgres
-#     ports:
-#       - "5432:5432"
-#     networks:
-#     - backend
-
-#   pgadmin:
-#     container_name: pgadmin
-#     build:
-#       context: ./pgadmin
-#       dockerfile: Dockerfile
-#     restart: always
-#     env_file: .env
-#     ports:
-#       - '5050:80'
-#     depends_on:
-#       - db
-#     networks:
-#       - backend
-#     volumes:
-#       - ./pgadmin/config/servers.json:/pgadmin4/servers.json
-#       - ./pgadmin/config/config_distro.py:/pgadmin4/config_distro.py
-
-#   frontend:
-#     container_name: frontend
-#     ports:
-#       - '3001:3001'
-#     volumes:
-#       - frontend_data:/app  # Mounts the frontend code to /app inside the container
-#     build:
-#       context: ./frontend
-#       dockerfile: Dockerfile
-
-#   backend:
-#     container_name: backend
-#     ports:
-#       - '3000:3000'
-#     volumes:
-#       - backend_data:/app  # Mounts the backend code to /usr/src/app inside the container
-#     build:
-#       context: ./nestjs
-#       dockerfile: Dockerfile
-
-# volumes:
-#   frontend_data:
-#     driver: local
-#     driver_opts:
-#       type: none
-#       device: /home/mbernede/Desktop/transcendence/frontend
-#       o: bind
-#     backend_data:
-#     driver: local
-#     driver_opts:
-#       type: none
-#       device: /home/mbernede/Desktop/transcendence/nestjs
-#       o: bind
-
-# networks:
-#   backend:
-#     driver: bridge
 
 services:
   db:
@@ -82,20 +14,20 @@ services:
     ports:
       - "5432:5432"
 
-  # pgadmin:
-  #   container_name: pgadmin
-  #   build:
-  #     context: ./pgadmin
-  #     dockerfile: Dockerfile
-  #   restart: always
-  #   env_file: .env
-  #   ports:
-  #     - "5050:80"
-  #   depends_on:
-  #     - db
-  #   volumes:
-  #     - ./pgadmin/config/servers.json:/pgadmin4/servers.json
-  #     - ./pgadmin/config/config_distro.py:/pgadmin4/config_distro.py
+  pgadmin:
+    container_name: pgadmin
+    build:
+      context: ./pgadmin
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    volumes:
+      - ./pgadmin/config/servers.json:/pgadmin4/servers.json
+      - ./pgadmin/config/config_distro.py:/pgadmin4/config_distro.py
 
   frontend:
     container_name: frontend
@@ -106,8 +38,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    # networks:
-    #   - backend
 
   backend:
     container_name: backend
@@ -120,8 +50,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    # networks:
-    #   - backend
 
 volumes:
   frontend_data:
