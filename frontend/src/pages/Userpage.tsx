@@ -35,7 +35,7 @@ const UserPage: React.FC = () => {
   
         // Fetch match history
         const actualId = id === "me" ? user.id : id;
-        const resMatches = await fetch(`${process.env.REACT_APP_BACKEND_IP}/matches/${actualId}`
+        const resMatches = await fetch(`${process.env.REACT_APP_BACKEND_IP}/matches/${actualId}`,
           { credentials: 'include' }
         );
         if (!resMatches.ok) {
