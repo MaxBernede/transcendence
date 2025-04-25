@@ -35,8 +35,16 @@ update2_env_file() {
 		|| echo "FRONTEND_IP=\"http://$IP:3001\"" >> "$FILE"
 }
 
+change_device_paths() {
+	sed -i \
+		-e 's|device: .*/frontend|device: '"$PWD"'/frontend|' \
+		-e 's|device: .*/nestjs|device: '"$PWD"'/nestjs|' \
+		docker-compose.yml
+}
+
 update_env_file ".env"
 update_env_file "frontend/.env"
 update2_env_file ".env"
+change_device_paths
 
 echo "✅ .env and frontend/.env updated with IP $IP"
