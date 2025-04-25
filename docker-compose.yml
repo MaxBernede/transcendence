@@ -128,11 +128,11 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /home/mbernede/Desktop/transcendence/frontend
+      device: /home/ivan-mel/Documents/Projects/Transcendence/frontend
       o: bind
   backend_data:
     driver: local
     driver_opts:
       type: none
-      device: /home/mbernede/Desktop/transcendence/nestjs
+      device: /home/ivan-mel/Documents/Projects/Transcendence/nestjs
       o: bind
