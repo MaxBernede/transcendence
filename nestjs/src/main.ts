@@ -101,13 +101,10 @@ async function bootstrap() {
   app.enableCors({
     // origin: '*', // Allow requests from any origin (for testing purposes)
 	origin: true, // Allow requests from any origin (for testing purposes)
-    // origin: 'http://localhost:3001', // Allow requests from your frontend's port
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
-  //   app.enableCors();
-  // console.log('CORS enabled for origin:', 'http://localhost:3001');
 
   // Log server listening port
   app.useWebSocketAdapter(new IoAdapter(app));
@@ -116,7 +113,6 @@ async function bootstrap() {
 
   const port = 3000;
   await app.listen(port);
-  // console.log(`Server is running on http://localhost:${port}`);
 }
 
 bootstrap();

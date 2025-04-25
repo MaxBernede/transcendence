@@ -42,38 +42,6 @@ export class AuthController {
     return this.authService.getAuthToken(res);
   }
 
-  //   @Public()
-  //   @Get('getJwt')
-  //   async intraJwt(@Req() req: Request, @Res() res: Response) {
-  //     const clientIp =
-  //       req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  //     //console.log('Client IP:', clientIp);
-  //     // check the refresh token
-  //     const code: string = res.req.query.code.toString();
-  //     if (!code)
-  //       return res.status(400).json({ message: 'Missing authorization code.' });
-
-  //     try {
-  //       const jwt = await this.authService.intraJwt(code);
-  //       // there could be an error in parseint ? idk
-  //       const user = await this.userService.findOneById(
-  //         parseInt(this.authService.getUserIdFromJwt(jwt), 10),
-  //       );
-
-  //       if (user && user.secret_2fa)
-  //         return res.redirect(`http://localhost:3001/2FASetup?id=${user.id}`);
-
-  //       this.authService.setJwtCookie(res, jwt);
-  //       if (user && user.newUser) {
-  //         await this.userService.updateUser(String(user.id), { newUser: false });
-  //         return res.redirect(`http://localhost:3001/user/profileupdate`); //if first login, needs to prompt to change infos :)
-  //       }
-  //       return res.redirect(`http://localhost:3001/user/me`);
-  //     } catch (error) {
-  //       console.error(error);
-  //       return res.status(500).json({ message: 'Failed to fetch JWT.' });
-  //     }
-  //   }
   @Public()
   @Get('getJwt')
   async intraJwt(@Res() res: Response) {

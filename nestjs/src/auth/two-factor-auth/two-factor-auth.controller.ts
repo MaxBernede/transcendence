@@ -61,7 +61,6 @@ export class TwoFactorAuthController {
       const jwt = user.tempJWT;
       this.twoFactorAuthService.setJwtCookieTwo(res, jwt);
       return res.redirect(`http://${frontend_ip}/user/${user.intraId}`);
-    //   return res.redirect(`http://localhost:3001/user/${user.intraId}`);
     } catch (error) {
       console.error('Error updating user data:', error);
       return res.status(400).json({ message: 'Invalid token' });

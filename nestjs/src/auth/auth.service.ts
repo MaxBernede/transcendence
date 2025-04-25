@@ -27,7 +27,6 @@ export class AuthService {
     const clientId = this.configService.getOrThrow<string>('INTRA_CLIENT_ID');
 	const server_ip = this.configService.getOrThrow<string>('BACKEND_IP');
     const redirectUri = `${server_ip}/auth/getJwt`;
-    // const redirectUri = 'http://localhost:3000/auth/getJwt';
     const authUrl = `https://api.intra.42.fr/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
     res.json({ url: authUrl });
   }
@@ -48,7 +47,6 @@ export class AuthService {
 
     const server_ip = this.configService.getOrThrow<string>('BACKEND_IP');
     const redirectUri = `${server_ip}/auth/getJwt`;
-    // const redirectUri = 'http://localhost:3000/auth/getJwt';
 
     const { data } = await axios.post('https://api.intra.42.fr/oauth/token', {
       grant_type: 'authorization_code',
@@ -108,7 +106,6 @@ export class AuthService {
   clearCookies(res: Response) {
     res.clearCookie('jwt', {
       path: '/', // Same path as when the cookie was set
-      //   domain: 'localhost', // Optional: Set the same domain if used
       httpOnly: true, // Match the same HttpOnly flag used when setting the cookie
       secure: false, // Ensure it matches the secure flag (use true if on HTTPS)
       sameSite: 'strict', // SameSite attribute should match as well

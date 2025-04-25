@@ -20,6 +20,6 @@ COPY --from=build /app/build ./build
 EXPOSE 3001
 
 # Corrected CMD to use an environment variable for the host
-# CMD ["serve", "-s", "build", "-l", "0.0.0.0:3001"]
+CMD ["serve", "-s", "build", "-l", "3001"]
 
-CMD ["npm", "start"]
+# CMD ["npm", "start"]

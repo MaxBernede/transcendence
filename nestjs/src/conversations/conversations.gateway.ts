@@ -67,8 +67,6 @@ export interface serverToClientDto {
   // path: '/socket.io',
   namespace: '/chat',
   cors: {
-    // origin: 'http://localhost:3001', // Allow requests only from this origin (frontend)
-	// origin: '*', // Allow requests from any origin (for testing purposes)
 	origin: true,
     methods: ['GET', 'POST'],
     credentials: true, // Allow cookies to be sent/received if needed
