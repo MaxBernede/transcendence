@@ -21,7 +21,22 @@ update_env_file() {
 		|| echo "REACT_APP_FRONTEND_IP=\"http://$IP:3001\"" >> "$FILE"
 }
 
+
+update2_env_file() {
+	FILE=$1
+	touch "$FILE"
+
+	grep -q "^BACKEND_IP=" "$FILE" \
+		&& sed -i "s|^BACKEND_IP=.*|BACKEND_IP=\"http://$IP:3000\"|" "$FILE" \
+		|| echo "BACKEND_IP=\"http://$IP:3000\"" >> "$FILE"
+
+	grep -q "^FRONTEND_IP=" "$FILE" \
+		&& sed -i "s|^FRONTEND_IP=.*|FRONTEND_IP=\"http://$IP:3001\"|" "$FILE" \
+		|| echo "FRONTEND_IP=\"http://$IP:3001\"" >> "$FILE"
+}
+
 update_env_file ".env"
 update_env_file "frontend/.env"
+update2_env_file ".env"
 
-echo "✅ .env et frontend/.env mis à jour avec l'IP $IP"
+echo "✅ .env and frontend/.env updated with IP $IP"
