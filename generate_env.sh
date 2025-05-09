@@ -35,6 +35,21 @@ update2_env_file() {
 		|| echo "FRONTEND_IP=\"http://$IP:3001\"" >> "$FILE"
 }
 
+update_data_paths() {
+	FILE=$1
+	touch "$FILE"
+	BACKEND_PATH="$PWD/nestjs"
+	FRONTEND_PATH="$PWD/frontend"
+
+	grep -q "^BACKEND_DATA=" "$FILE" \
+		&& sed -i "s|^BACKEND_DATA=.*|BACKEND_DATA=\"$BACKEND_PATH\"|" "$FILE" \
+		|| echo "BACKEND_DATA=\"$BACKEND_PATH\"" >> "$FILE"
+
+	grep -q "^FRONTEND_DATA=" "$FILE" \
+		&& sed -i "s|^FRONTEND_DATA=.*|FRONTEND_DATA=\"$FRONTEND_PATH\"|" "$FILE" \
+		|| echo "FRONTEND_DATA=\"$FRONTEND_PATH\"" >> "$FILE"
+}
+
 change_device_paths() {
 	sed -i \
 		-e 's|device: .*/frontend|device: '"$PWD"'/frontend|' \
@@ -46,5 +61,6 @@ update_env_file ".env"
 update_env_file "frontend/.env"
 update2_env_file ".env"
 change_device_paths
+update_data_paths ".env"
 
 echo "✅ .env and frontend/.env updated with IP $IP"
