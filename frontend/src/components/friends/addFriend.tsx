@@ -29,7 +29,7 @@ const AddFriend: React.FC<AddFriendProps> = () => {
 		  });
 	
 		  if (response.ok) {
-			alert('Friend added successfully!');
+			// alert('Friend added successfully!');
 			setFriend('');
 			setErrorMessage(null)
 			window.location.reload();
