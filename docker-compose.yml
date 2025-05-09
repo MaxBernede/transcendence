@@ -54,14 +54,4 @@ services:
 
 volumes:
   frontend_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /sgoinfre/imisumi/test_trans/frontend
-      o: bind
   backend_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /sgoinfre/imisumi/test_trans/nestjs
-      o: bind
