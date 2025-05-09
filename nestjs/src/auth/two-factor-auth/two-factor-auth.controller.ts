@@ -31,12 +31,11 @@ export class TwoFactorAuthController {
   @Post('verify')
   async verify2FA(
     @Body() body: { token: string; intraId: number },
-    @Res() res: Response, @Req() req,
-	 
-  ) {
+    @Res() res: Response, @Req() req) 
+	{
     const { token, intraId } = body;
 
-    // console.log(intraId)
+    console.log(intraId)
     //check if intraid or id ?? omg im so fcked
     const user = await this.userService.findOneById(intraId);
 
@@ -48,7 +47,7 @@ export class TwoFactorAuthController {
 
     // Here check if the isValid and if yes update values for intraID in DBB
     if (!isValid) {
-      // console.log('Invalid');
+      console.log('Invalid');
       return res.status(400).json({ message: 'Invalid token' });
     }
     try {
@@ -60,7 +59,7 @@ export class TwoFactorAuthController {
       // If valid, just redirect ? not sure its the right place tho
       const jwt = user.tempJWT;
       this.twoFactorAuthService.setJwtCookieTwo(res, jwt);
-      return res.redirect(`http://${frontend_ip}/user/${user.intraId}`);
+      return res.status(200).json({ redirectUrl: `http://${frontend_ip}/user/${user.intraId}` });
     } catch (error) {
       console.error('Error updating user data:', error);
       return res.status(400).json({ message: 'Invalid token' });

@@ -16,13 +16,14 @@ const BlockUser: React.FC<AddFriendProps> = () => {
 	
 		try {
 		  // Make the POST request to the API
-		  const response = await fetch('friends/blockUser', {
+		  const response = await fetch(`${process.env.REACT_APP_BACKEND_IP}/friends/blockUser`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				mainId: userData?.id,
 				friendUsername: username,
 			}),
+			credentials: 'include',
 		  });
 	
 		  if (response.ok) {

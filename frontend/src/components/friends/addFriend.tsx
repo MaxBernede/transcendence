@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import React, { useState, useContext } from "react";
 import ButtonComponent from "../../utils/ButtonCompo";
 import InputComponent from "../../utils/InputCompo";
 import ErrorMessage from "../../utils/ErrorMessage";
@@ -12,10 +12,12 @@ const AddFriend: React.FC<AddFriendProps> = () => {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null); // State for error message
 	
 	const addFriend = async () => {
+		console.log("addFriend function triggered with input:", friend); // ✅ Log input value
+
 		if (!friend) return;  // Ensure the friend field is not empty
 		try {
 		  // Make the POST request to the API
-		  const response = await fetch('friends/addFriends', {
+		  const response = await fetch(`${process.env.REACT_APP_BACKEND_IP}/friends/addFriends`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -23,10 +25,11 @@ const AddFriend: React.FC<AddFriendProps> = () => {
 			  friendUsername: friend,
 			  action: 'request'
 			}),
+			credentials: 'include', // include this if your backend uses cookies
 		  });
 	
 		  if (response.ok) {
-			// alert('Friend added successfully!');
+			alert('Friend added successfully!');
 			setFriend('');
 			setErrorMessage(null)
 			window.location.reload();

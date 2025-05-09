@@ -9,8 +9,10 @@ export class FriendsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('addFriends')	
-	async addFriends(@Body() body: { mainId: number, friendUsername: string, action: string}) {
-		const { mainId, friendUsername, action } = body;
+	async addFriends(@Body() body: { mainId: number, friendUsername: string, action: string}) 
+	{
+	const { mainId, friendUsername, action } = body;
+	console.log("here")
     return await this.friendsService.handleFriendAction(mainId, friendUsername, action);
 	}
 

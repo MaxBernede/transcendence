@@ -2,8 +2,9 @@
 
 // Remove a friend
 export const removeEntity = async (type: string, id: number) => {
-    const response = await fetch(`/friends/removeFriend/${id}`, {
+    const response = await fetch(`${process.env.REACT_APP_BACKEND_IP}/friends/removeFriend/${id}`, {
       method: 'DELETE',
+	  credentials: 'include',
     });
   
     if (!response.ok) {
@@ -14,9 +15,10 @@ export const removeEntity = async (type: string, id: number) => {
   };
   
 export const acceptFriendRequest = async (id: number) => {
-    const response = await fetch(`/friends/acceptFriend/${id}`, {
+    const response = await fetch(`${process.env.REACT_APP_BACKEND_IP}/friends/acceptFriend/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+		credentials: 'include',
     });
 
     if (!response.ok) {
