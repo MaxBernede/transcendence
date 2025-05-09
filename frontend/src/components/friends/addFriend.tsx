@@ -12,7 +12,7 @@ const AddFriend: React.FC<AddFriendProps> = () => {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null); // State for error message
 	
 	const addFriend = async () => {
-		console.log("addFriend function triggered with input:", friend); // ✅ Log input value
+		// console.log("addFriend function triggered with input:", friend); // ✅ Log input value
 
 		if (!friend) return;  // Ensure the friend field is not empty
 		try {

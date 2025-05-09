@@ -14,9 +14,9 @@ const FriendsSheet: React.FC = () => {
         const fetchData = async () => {
             try {
                 const response = await fetch(`${process.env.REACT_APP_BACKEND_IP}/friends/getFriends/${userData?.id}`,
-					{
-						credentials: 'include',
-					}
+				{
+					credentials: 'include',
+				}
 				);
                 if (!response.ok) throw new Error('Failed to fetch friends data');
                 
